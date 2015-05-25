@@ -1,0 +1,9 @@
+---
+dnsmasq_pidfile: /var/run/dnsmasq/dnsmasq.pid
+dnsmasq_packages_install_recommends: true
+dnsmasq_init_system: "initd"
+
+dnsmasq_packages:
+  dnsmasq:
+    state: latest
+

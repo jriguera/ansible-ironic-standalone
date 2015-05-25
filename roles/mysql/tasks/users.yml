@@ -1,0 +1,12 @@
+---
+- name: Ensure MySQL users are present
+  mysql_user:
+    name: "{{ item.name }}"
+    host: "{{ item.host | default('localhost') }}"
+    password: "{{ item.password }}"
+    priv: "{{ item.priv | default('*.*:USAGE') }}"
+    state: present
+  with_items: mysql_user_list
+  when: mysql_user_list is defined
+  tags: ["mysql", "users"]
+

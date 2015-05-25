@@ -1,0 +1,40 @@
+---
+- name: Active the federation plugin
+  rabbitmq_plugin:
+    names: "{{ rabbitmq_federation_plugin }}"
+    new_only: yes
+  register: __rabbitmq_federation_plugin
+
+- name: Restart RabbitMQ to be able to setup federation
+  service:
+    name: "{{ rabbitmq_daemon }}"
+    state: restarted
+  when: __rabbitmq_federation_plugin.changed
+
+- name: Set the federation-upstream parameter
+  rabbitmq_parameter:
+    component: federation-upstream
+    name: "{{ item.name }}"
+    vhost: "{{ item.vhost | default('/', false) }}"
+    value: "{{ item.value }}"
+  with_items: rabbitmq_federation_configuration_list
+
+- name: Set the policy for the federation
+  rabbitmq_policy:
+    name: "{{ item.name }}"
+    vhost: "{{ item.vhost | default('/', false) }}"
+    pattern: "{{ item.pattern }}"
+    tags: "{{ item.tags }}"
+  with_items: rabbitmq_policy_configuration_list
+
+# local-username is no longer required with 3.3.0
+# http://www.rabbitmq.com/release-notes/README-3.3.0.txt
+- name: Set the local username for the federation
+  rabbitmq_parameter:
+    component: federation
+    name: local-username
+    value: "{{ item.local_username | default( 'guest', false ) }}"
+    vhost: "{{ item.vhost | default( '/', false) }}"
+  with_items: rabbitmq_federation_configuration_list
+  when: _rabbitmq_version | version_compare('3.3.0', '<')
+

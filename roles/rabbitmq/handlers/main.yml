@@ -1,0 +1,13 @@
+---  
+- name: restart rabbitmq
+  service: name={{ rabbitmq_daemon }} state=restarted
+
+- name: reload rabbitmq
+  service: name={{ rabbitmq_daemon }} state=reloaded
+  
+- name: start rabbitmq
+  service: name={{ rabbitmq_daemon }} state=started
+
+- name: stop rabbitmq
+  service: name={{ rabbitmq_daemon }} state=stopped
+

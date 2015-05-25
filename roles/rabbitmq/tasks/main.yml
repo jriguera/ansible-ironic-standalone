@@ -1,0 +1,12 @@
+---
+- name: Include OS specific variables
+  include_vars: "{{ ansible_os_family }}.yml"
+  tags: ["distribution", "packages", "service", "rabbitmq"]
+
+- include: install.yml
+- include: configure.yml
+- include: plugins.yml
+- include: vhost.yml
+- include: federate.yml
+  when: rabbitmq_federate
+

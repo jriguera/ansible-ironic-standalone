@@ -1,0 +1,69 @@
+---
+- name: Create the ssl folder
+  file:
+    path: "{{ rabbitmq_ssl_dir }}"
+    owner: "{{ rabbitmq_user }}"
+    group: "{{ rabbitmq_group }}"
+    mode: 0750
+    state: directory
+  when: rabbitmq_ssl
+  tags: ["rabbitmq", "configure", "ssl"]
+
+- name: Copy the ssl certificates
+  copy:
+    src: "{{ item }}"
+    dest: "{{ rabbitmq_ssl_dir }}/{{ item | basename }}"
+    owner: "{{ rabbitmq_user }}"
+    group: "{{ rabbitmq_group }}"
+    mode: 0640
+  with_items:
+    - "{{ rabbitmq_ssl_cacertfile }}"
+    - "{{ rabbitmq_ssl_keyfile }}"
+    - "{{ rabbitmq_ssl_certfile }}"
+  when: rabbitmq_ssl
+  tags: ["rabbitmq", "configure", "ssl"]
+
+- name: Generate the main configuration file
+  template:
+    src: rabbitmq.config.j2
+    dest: "{{ rabbitmq_config }}"
+    owner: "{{ rabbitmq_user }}"
+    group: "{{ rabbitmq_group }}"
+    mode: 0644
+  notify: restart rabbitmq
+  register: __rabbitmq_updated_conf
+  tags: ["rabbitmq", "configure"]
+
+- name: Generate environment-specific configuration
+  template:
+    src: rabbitmq-env.conf.j2
+    dest: "{{ rabbitmq_confenv }}"
+    owner: "{{ rabbitmq_user }}"
+    group: "{{ rabbitmq_group }}"
+    mode: 0644
+  notify: restart rabbitmq
+  when: >
+    rabbitmq_env_dict is defined and
+    not rabbitmq_env_dict is none
+  register: __rabbitmq_updated_env
+  tags: ["rabbitmq", "configure"]
+  
+- name: Checking if configuration was updated
+  set_fact: >
+    _rabbitmq_updated="{{ __rabbitmq_updated_conf.changed }}" or "{{ __rabbitmq_updated_env.changed }}"
+  tags: ["rabbitmq", "configure"]
+
+- name: Ensure RabbitMQ is started and enabled on boot
+  service: name="{{ rabbitmq_daemon }}" state=started enabled="{{ rabbitmq_enabled_on_startup | ternary('yes', 'no') }}"
+  tags: ["rabbitmq", "configure"]
+
+- name: Get the RabbitMQ version
+  shell: rabbitmqctl status | sed -n 's/.*{rabbit,"RabbitMQ","\(.*\)"}.*/\1/p'
+  register: __rabbitmq_version
+  tags: ["rabbitmq"]
+
+- name: Set RabbitMQ version
+  set_fact: >
+    _rabbitmq_version="{{ __rabbitmq_version.stdout }}"
+  tags: ["rabbitmq"]
+

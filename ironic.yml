@@ -1,0 +1,55 @@
+---
+# Database server
+- hosts: database
+  sudo: true
+  roles:
+    - role: mysql
+      mysql_database_list:
+        - name: ironic
+      mysql_user_list:
+        - name: ironic
+          password: mysql
+          priv: "ironic.*:ALL"
+    - role: monit
+
+# RabbitMQ server
+- hosts: messaging
+  sudo: true
+  roles:
+    - role: rabbitmq
+      rabbitmq_vhost_definition_list:
+        - name: "ironic"
+      rabbitmq_users_definition_list:
+        - user: "ironic"
+          password: "rabbitmq"
+          vhost: "ironic"
+          tags: [ "administrator", "management" ]
+    - role: monit
+
+# Ironic server
+- hosts: provisioning
+  sudo: true
+  roles:
+    - role: ironic
+      ironic_my_ip: "{{ansible_eth0.ipv4.address}}"
+      ironic_conductor_api_url: "http://{{ironic_my_ip}}:6385/"
+      ironic_pxe_tftp_server: "{{ansible_eth1.ipv4.address}}"
+      ironic_oslo_messaging_rabbit_host: "localhost"
+      ironic_oslo_messaging_rabbit_userid: "ironic"
+      ironic_oslo_messaging_rabbit_password: "rabbitmq"
+      ironic_oslo_messaging_rabbit_virtual_host: "ironic"
+      ironic_database_mysql_host: "localhost"
+      ironic_database_mysql_userid: "ironic"
+      ironic_database_mysql_password: "mysql"
+      ironic_database_mysql_db: "ironic"
+    - role: dnsmasq
+      dnsmasq_conf_domain: "pxe"
+      dnsmasq_conf_dhcp:
+        eth1:
+          range: [10.0.0.100, 10.0.0.200, infinite]
+          ignore_names: true
+          generate_names: true
+          boot: [ "{{ironic_pxe_bootfile_name}}" ]
+          tftp: "{{ironic_pxe_tftp_root}}"
+    - role: monit
+

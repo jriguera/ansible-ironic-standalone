@@ -1,0 +1,12 @@
+---
+rabbitmq_os_repo_url: "deb http://www.rabbitmq.com/debian/ testing main"
+rabbitmq_os_repo_key: "https://www.rabbitmq.com/rabbitmq-signing-key-public.asc"
+rabbitmq_packages_install_recommends: true
+rabbitmq_init_system: "initd"
+
+rabbitmq_pidfile: /var/run/rabbitmq/pid
+
+rabbitmq_packages:
+  rabbitmq-server:
+    state: latest
+

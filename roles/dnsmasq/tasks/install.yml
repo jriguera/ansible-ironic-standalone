@@ -1,0 +1,90 @@
+---
+- name: Debian - Import repository key
+  apt_key: url="{{ dnsmasq_os_repo_key }}" state=present
+  when: >
+    ansible_os_family == 'Debian' and 
+    not dnsmasq_os_packages and
+    not dnsmasq_os_repo_key is none and
+    dnsmasq_os_repo_key | search("http://.*")
+  ignore_errors: yes
+  tags: ["dnsmasq", "install", "debian"]
+
+- name: Debian - Add repository package
+  apt: name="{{ dnsmasq_os_repo_key }}" state=latest
+  when: >
+    ansible_os_family == 'Debian' and 
+    not dnsmasq_os_packages and
+    not dnsmasq_os_repo_key is none and
+    not dnsmasq_os_repo_key | search("http://.*")
+  tags: ["dnsmasq", "install", "debian"]
+
+- name: Debian - Add repository url
+  apt_repository: repo="{{ dnsmasq_os_repo_url }}" state=present
+  when: >
+    ansible_os_family == 'Debian' 
+    and not dnsmasq_os_packages
+  tags: ["dnsmasq", "install", "debian"]
+
+- name: RedHat - Add repository
+  yum: name="{{ dnsmasq_os_repo_url }}" state=present
+  when: >
+    ansible_os_family == 'RedHat' and 
+    not dnsmasq_os_packages
+  tags: ["dnsmasq", "install", "redhat"]
+
+- name: RedHat - Import repository key
+  rpm_key: key="{{ dnsmasq_os_repo_key }}" state=present
+  when: >
+    ansible_os_family == 'RedHat' and 
+    not dnsmasq_os_packages and 
+    not dnsmasq_os_repo_key is none
+  tags: ["dnsmasq", "install", "redhat"]
+
+- name: RedHat - Install required packages
+  yum:
+    name: "{{ item.key }}{{ '-' + item.version | default('*') }}"
+    state: "{{ item.state | default('present') }}"
+  with_dict: dnsmasq_packages
+  when: ansible_os_family == 'RedHat'
+  register: __dnsmasq_installed
+  tags: ["dnsmasq", "install", "redhat"]
+
+- name: Debian - Install required packages
+  apt: 
+    name: "{{ item.key }}{{ '=' + item.version | default('*') }}"
+    state: "{{ item.state | default('present') }}"
+    install_recommends: "{{ dnsmasq_packages_install_recommends }}"
+  with_dict: dnsmasq_packages
+  when: ansible_os_family == 'Debian'
+  register: __dnsmasq_installed
+  tags: ["dnsmasq", "install", "debian"]
+
+- name: Check if packages were installed
+  set_fact: _dnsmasq_reinstalled="{{ __dnsmasq_installed.changed }}"
+  tags: ["dnsmasq"]
+
+- name: Ensure dnsmasq is stopped after initial install
+  service: name={{ dnsmasq_daemon }} state=stopped enabled=no
+  ignore_errors: yes
+  when: _dnsmasq_reinstalled
+  tags: ["dnsmasq", "install"]
+  
+- name: Debian - Delete upstart configuration
+  file:
+    path: "/etc/init/{{ dnsmasq_daemon }}.conf"
+    state: absent
+  when: >
+    ansible_os_family == 'Debian' and
+    dnsmasq_init_system != "upstart"
+  tags: ["dnsmasq", "install"]
+
+- name: Debian - Delete init.d configuration
+  file:
+    path: "/etc/init.d/{{ dnsmasq_daemon }}"
+    state: absent
+  when: >
+    ansible_os_family == 'Debian' and
+    dnsmasq_init_system != "initd"
+  tags: ["dnsmasq", "install"]
+
+

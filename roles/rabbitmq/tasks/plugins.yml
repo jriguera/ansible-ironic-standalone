@@ -1,0 +1,41 @@
+---
+- name: Copy the plugins
+  copy:
+    src: "{{ item }}"
+    dest: "{{ rabbitmq_plugin_dir }}/rabbitmq_server-{{ _rabbitmq_version }}/plugins/{{ item | basename }}"
+    owner: "{{ rabbitmq_user }}"
+    group: "{{ rabbitmq_group }}"
+    mode: 0644
+  with_items: (rabbitmq_plugins_dict.values() | select("string")) | list
+  when: >
+    rabbitmq_plugins_dict is defined and
+    not rabbitmq_plugins_dict is none
+  tags: ["rabbitmq", "plugins"]
+
+- name: Enable plugins
+  rabbitmq_plugin:
+    names: "{{ rabbitmq_plugins_dict | join(',') }}"
+    new_only: "{{ rabbitmq_new_only | ternary('yes','no') }}"
+  when: >
+    rabbitmq_plugins_dict is defined and
+    not rabbitmq_plugins_dict is none
+  notify: restart rabbitmq
+  tags: ["rabbitmq", "plugins"]
+
+- name: List of active plugins to disable
+  command: rabbitmq-plugins list -e -m
+  register: __plugins_result
+  when: >
+    not (rabbitmq_plugins_dict is defined and not rabbitmq_plugins_dict is none)
+  tags: ["rabbitmq", "plugins"]
+
+- name: Disable plugins if none added
+  rabbitmq_plugin:
+    name: "{{ item }}"
+    state: disabled
+  with_items: __plugins_result.stdout_lines
+  when: >
+    not (rabbitmq_plugins_dict is defined and not rabbitmq_plugins_dict is none)
+  notify: restart rabbitmq
+  tags: ["rabbitmq", "plugins"]
+

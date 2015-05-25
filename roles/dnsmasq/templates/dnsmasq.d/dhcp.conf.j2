@@ -1,0 +1,126 @@
+#jinja2: trim_blocks: "true", lstrip_blocks: "true"
+# {{ ansible_managed }}
+# Configuration file for dnsmasq.
+# DHCP configuration
+
+{% if dnsmasq_conf_dhcp_log is defined and dnsmasq_conf_dhcp_log -%}
+# Log lots of extra information about DHCP transactions.
+log-dhcp
+{% endif %}
+
+{% if dnsmasq_conf_domain is defined %}
+# Set the domain for dnsmasq. this is optional, but if it is set, it
+# does the following things.
+# 1) Allows DHCP hosts to have fully qualified domain names, as long
+#     as the domain part matches this setting.
+# 2) Sets the "domain" DHCP option thereby potentially setting the
+#    domain of all systems configured by DHCP
+# 3) Provides the domain part for "expand-hosts"
+# If the domain is given as "#" then the domain is read from the first 
+# "search" directive in /etc/resolv.conf
+domain={{ dnsmasq_conf_domain }}
+
+{% if dnsmasq_conf_dhcp_fqdn is defined and dnsmasq_conf_dhcp_fqdn -%}
+# The unqualified name is no longer put in the DNS, only the qualified name.
+dhcp-fqdn
+{% endif %}
+{% endif %}
+
+{% if dnsmasq_conf_dhcp_authoritative is defined and dnsmasq_conf_dhcp_authoritative -%}
+# Should be set when dnsmasq is definitely the only DHCP server on a network
+dhcp-authoritative
+{% endif %}
+
+{% if dnsmasq_conf_dhcp_sequential_ip is defined and dnsmasq_conf_dhcp_sequential_ip -%}
+# Dnsmasq is designed to choose IP addresses for DHCP clients using a hash 
+# of the client's MAC address.
+dhcp-sequential-ip
+{% endif %}
+
+{% if dnsmasq_conf_dhcp_no_override is defined and dnsmasq_conf_dhcp_no_override -%}
+# Disable re-use of the DHCP servername and filename fields as extra option space.
+dhcp-no-override
+{% endif %}
+
+# Integrated DHCP server, you need to supply the range of addresses available 
+# for lease and optionally a lease time. If you have more than one network, 
+# you will need to repeat this for each network on which you want to supply DHCP
+# service.
+{% for (key, values) in dnsmasq_conf_dhcp.iteritems() -%}
+dhcp-range=set:{{ key }},{{ values["range"] | join(',') }}
+
+{% if values["option"] is defined -%}
+# Send options to hosts which ask for a DHCP lease.
+# See RFC 2132 for details of available options.
+# Common options can be given to dnsmasq by name: 
+# run "dnsmasq --help dhcp" to get a list.
+# Note that all the common settings, such as netmask and
+# broadcast address, DNS server and default route, are given
+# sane defaults by dnsmasq. You very likely will not need 
+# any dhcp-options. If you use Windows clients and Samba, there
+# are some options which are recommended, they are detailed at the
+# end of this section.
+{% for opt in values["option"] -%}
+dhcp-option=tag:{{ key }},{{ opt }}
+{% endfor %}
+{% endif %}
+
+{% if values["match"] is defined -%}
+{% for match in values["option"] -%}
+dhcp-option=tag:{{ key }},{{ match }}
+{% endfor %}
+{% endif %}
+
+{% if values["boot"] is defined -%}
+# (IPv4 only) Set BOOTP options to be returned by the DHCP server. Server name 
+# and address are optional: if not provided, the name is left empty, and the 
+# address set to the address of the machine running dnsmasq. 
+{% for boot in values["boot"] -%}
+dhcp-boot=tag:{{ key }},{{ boot }}
+{% endfor %}
+{% endif %}
+
+{% if values["pxe_service"] is defined -%}
+{% for pservice in values["pxe_service"] -%}
+pxe-service=tag:{{ key }},{{ pservice }}
+{% endfor %}
+{% endif %}
+
+{% if values["pxe_prompt"] is defined -%} 
+{% for pprompt in values["pxe_prompt"] -%}
+pxe-prompt=tag:{{ key }},{{ pprompt  }}
+{% endfor %}
+{% endif %}
+
+{% if values["ignore_names"] is defined and values["ignore_names"] -%}
+# When all the given tags appear in the tag set, ignore any hostname provided 
+# by the host. 
+dhcp-ignore-names=tag:{{ key }}
+{% endif %}
+
+{% if values["generate_names"] is defined and values["generate_names"] -%}
+# (IPv4 only) Generate a name for DHCP clients which do not otherwise have one, 
+# using the MAC address expressed in hex, separated by dashes. 
+dhcp-generate-names=tag:{{ key }}
+{% endif %}
+{% endfor %}
+
+{% if dnsmasq_conf_dhcp_hostsfile is defined and not dnsmasq_conf_dhcp_hostsfile is none -%}
+# Read DHCP host information from the specified file. If a directory is given, 
+# then read all the files contained in that directory. The file contains 
+# information about one host per line
+dhcp-hostsfile={{ dnsmasq_config_dhcphosts }}
+{% endif %}
+
+{% if dnsmasq_conf_dhcp_leasefile_ro is defined and dnsmasq_conf_dhcp_leasefile_ro -%}
+# Completely suppress use of the lease database file. The file will not be 
+# created, read, or written.
+leasefile-ro
+{% endif %}
+
+{% if dnsmasq_conf_dhcp_script is defined and not dnsmasq_conf_dhcp_script is none -%}
+# Whenever a new DHCP lease is created, or an old one destroyed, or a TFTP file 
+# transfer completes, the executable specified by this option is run.
+dhcp-script={{ dnsmasq_config_dhcpscript }}
+{% endif %}
+

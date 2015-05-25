@@ -1,0 +1,147 @@
+---
+ironic_enabled_on_startup: true
+ironic_debug: false
+ironic_trace: false
+ironic_verbose: false
+
+# Default options:
+#ironic_my_ip:
+ironic_log: "/var/log/ironic/ironic.log"
+ironic_state_path: "{{ ironic_var_dir }}"
+ironic_host: "{{ inventory_hostname }}"
+ironic_publish_errors: true
+ironic_fatal_deprecations: false
+ironic_rpc_thread_pool_size: 64
+ironic_notification_driver: [ "messaging" ]
+ironic_notification_topics: "notifications"
+ironic_control_exchange: "openstack"
+#ironic_transport_url:
+ironic_rpc_backend: "rabbit"
+ironic_auth_strategy: "noauth"
+ironic_enabled_drivers: [ "pxe_ipmitool" ]
+ironic_fatal_exception_format_errors: false
+ironic_isolinux_bin: /usr/lib/syslinux/isolinux.bin
+ironic_pybasedir: /usr/lib/python2.7/dist-packages/ironic
+ironic_bindir: /usr/bin
+ironic_force_raw_images: true
+ironic_tempdir: "/tmp"
+ironic_parallel_image_downloads: false
+ironic_run_external_periodic_tasks: true
+# If defined, it will copy next two templates
+ironic_isolinux_config_template:
+ironic_grub_config_template:
+
+# Ironic-api options:
+ironic_api_host_ip: "0.0.0.0"
+ironic_api_port: 6385
+
+# Ironic-conductor options:
+ironic_conductor_api_url: "http://127.0.0.1:6385/"
+ironic_conductor_sync_power_state_interval: 60
+ironic_conductor_check_provision_state_interval: 60
+ironic_conductor_deploy_callback_timeout: 1800
+ironic_conductor_force_power_state_during_sync: false
+ironic_conductor_send_sensor_data: [ "ALL" ]
+#ironic_conductor_configdrive_swift: "ironic_configdrive"
+ironic_conductor_inspect_timeout: 1800
+ironic_conductor_clean_nodes: true
+
+# Database options:
+ironic_database_connection: "sqlite:///var/lib/ironic/ironic.db"
+#ironic_database_mysql_host: "localhost"
+#ironic_database_mysql_userid: "ironic"
+#ironic_database_mysql_password: "ironic"
+#ironic_database_mysql_db: "ironic"
+ironic_database_idle_timeout: 600
+ironic_database_pool_size: 10
+#ironic_database_pool_timeout: 
+ironic_database_use_db_reconnect: true
+
+# Keystone options:
+ironic_keystone_region_name: "RegionOne"
+# keystone adminURL, if defined
+ironic_keystone_authtoken_identity_uri:
+ironic_keystone_authtoken_service_user: "ironic"
+ironic_keystone_authtoken_service_password: "ironic"
+ironic_keystone_authtoken_service_tenant_name: "ironic"
+# keystone publicURL
+ironic_keystone_authtoken_auth_uri:
+ironic_keystone_authtoken_auth_version: "v3.0"
+
+# Neutron options. If not defined, you will need an external dhcp service: 
+#ironic_neutron_url:
+#ironic_neutron_auth_strategy: "keystone"
+#ironic_neutron_cleaning_network_uuid:
+
+# Oslo messaging options:
+ironic_oslo_concurrency_lock_path: "/var/lock/ironic"
+ironic_oslo_messaging_amqp_container_name:
+ironic_oslo_messaging_amqp_idle_timeout: 0
+ironic_oslo_messaging_rabbit_amqp_durable_queues: false
+ironic_oslo_messaging_rabbit_amqp_auto_delete: false
+ironic_oslo_messaging_rabbit_rpc_conn_pool_size: 30
+ironic_oslo_messaging_rabbit_host: "localhost"
+ironic_oslo_messaging_rabbit_port: 5672
+ironic_oslo_messaging_rabbit_userid: "guest"
+ironic_oslo_messaging_rabbit_password: "guest"
+ironic_oslo_messaging_rabbit_login_method: "AMQPLAIN"
+ironic_oslo_messaging_rabbit_virtual_host: "ironic"
+ironic_oslo_messaging_rabbit_max_retries: 0
+ironic_oslo_messaging_rabbit_ha_queues: false
+# If defined, it will copy the file
+ironic_oslo_policy_file:
+
+# Deploy options:
+ironic_deploy_efi_system_partition_size: 200
+ironic_deploy_dd_block_size: "1M"
+
+# Discoverd options:
+#ironic_discoverd_service_url:
+#ironic_discoverd_status_check_period: 60
+
+# Glance options:
+#ironic_glance_swift_endpoint_url:
+#ironic_glance_swift_temp_url_key:
+#ironic_glance_swift_temp_url_duration: 1200
+#ironic_glance_api_servers: [ ]
+#ironic_glace_auth_strategy: "keystone"
+
+# Console options:
+ironic_console_terminal: "shellinaboxd"
+ironic_console_terminal_pid_dir: "/tmp"
+
+# Agent options:
+ironic_agent_pxe_append_params: ["nofb", "nomodeset", "vga=normal"]
+ironic_agent_pxe_bootfile_name: "pxelinux.0"
+ironic_agent_erase_devices_priority: 10
+ironic_agent_manage_tftp: true
+ironic_agent_api_version: "v1"
+# If defined, it will copy the template file
+ironic_agent_pxe_config_template:
+
+# IPMI options:
+ironic_ipmi_retry_timeout: 60
+ironic_ipmi_min_command_interval: 8
+
+# PXE options:
+ironic_pxe_append_params: ["nofb", "nomodeset", "vga=normal"]
+ironic_pxe_default_ephemeral_format: "ext4"
+ironic_pxe_images_path: "/var/lib/ironic/images"
+ironic_pxe_instance_master_path: "/var/lib/ironic/master_images"
+ironic_pxe_image_cache_size: 102400
+ironic_pxe_disk_devices: ["cciss/c0d0", "sda", "hda", "vda"]
+ironic_pxe_tftp_server: "{{ ansible_eth0.ipv4.address }}"
+ironic_pxe_tftp_root: "/var/lib/ironic/tftpboot"
+ironic_pxe_tftp_master_path: "/var/lib/ironic/tftpboot/master_images"
+ironic_pxe_bootfile_name: "pxelinux.0"
+ironic_pxe_uefi_pxe_bootfile_name: "elilo.efi"
+# If defined, it will copy the next template files
+ironic_pxe_config_template:
+ironic_pxe_uefi_pxe_config_template:
+
+# Enabling iPXE by defining http server:
+#ironic_pxe_http_url:
+#ironic_pxe_http_root: "/var/lib/ironic/httpboot"
+# If defined, it will copy the file
+#ironic_pxe_ipxe_boot_script:
+

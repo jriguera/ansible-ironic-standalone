@@ -1,0 +1,205 @@
+#jinja2: trim_blocks: "true", lstrip_blocks: "true"
+# {{ ansible_managed }}
+# Configuration file for dnsmasq.
+# /etc/dnsmasq.conf (0644): server dnsmasq configuration
+#
+# Format is one option per line, legal options are the same
+# as the long options legal on the command line. See
+# "/usr/sbin/dnsmasq --help" or "man 8 dnsmasq" for details.
+
+# If you want dnsmasq to change uid and gid to something other
+# than the default, edit the following lines.
+user={{ dnsmasq_user }}
+group={{ dnsmasq_group }}
+
+{% if dnsmasq_pidfile is defined -%}
+pid-file={{ dnsmasq_pidfile }}
+{% endif %}
+
+# If you want dnsmasq to listen for DHCP and DNS requests only on
+# specified interfaces (and the loopback) give the name of the
+# interface (eg eth0) here.
+# Repeat the line for more than one interface.
+{% if dnsmasq_conf_listen is defined -%}
+{% for interface in dnsmasq_conf_listen -%}
+{% if interface | ipaddr -%}
+listen-address={{ interface }}
+{% else %}
+interface={{ interface }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if dnsmasq_conf_bind_interfaces is defined -%}
+# On systems which support it, dnsmasq binds the wildcard address,
+# even when it is listening on only some interfaces. It then discards
+# requests that it shouldn't reply to. This has the advantage of
+# working even when interfaces come and go and change address. If you
+# want dnsmasq to really bind only the interfaces it is listening on,
+# uncomment this option. About the only time you may need this is when
+# running another nameserver on the same machine.
+{% if dnsmasq_conf_bind_interfaces == 'dynamic' -%}
+bind-dynamic
+{% else %}
+bind-interfaces
+{% endif %}
+{% endif %}
+
+{% if dnsmasq_conf_log is defined -%}
+# Set the facility to which dnsmasq will send syslog entries, this defaults to 
+# DAEMON, and to LOCAL0 when debug mode is in operation. If the facility given 
+# contains at least one '/' character, it is taken to be a filename, and dnsmasq 
+# logs to the given file, instead of syslog. If the facility is '-' then dnsmasq 
+# logs to stderr.
+{% if dnsmasq_conf_log is none -%}
+log-facility=DAEMON
+{% else %}
+log-facility={{ dnsmasq_conf_log }}
+{% endif %}
+{% endif %}
+
+{% if dnsmasq_conf_log_async is defined -%}
+# Enable asynchronous logging and optionally set the limit on the number of 
+# lines which will be queued by dnsmasq when writing to the syslog is slow.
+{% if dnsmasq_conf_log_async is none %}
+log-async
+{% else %}
+log-async={{ dnsmasq_conf_log_async }}
+{% endif %}
+{% endif %}
+
+{% if dnsmasq_conf_log_dns is defined and dnsmasq_conf_log_dns -%}
+# For debugging purposes, log each DNS query as it passes through
+# dnsmasq.
+log-queries
+{% endif %}
+
+
+### DNS
+
+{% if dnsmasq_conf_domain_needed is defined and dnsmasq_conf_domain_needed -%}
+# Never forward plain names (without a dot or domain part)
+domain-needed
+{% endif %}
+
+{% if dnsmasq_conf_dns_loop_detect is defined and dnsmasq_conf_dns_loop_detect -%}
+# Enable code to detect DNS forwarding loops; ie the situation where a query 
+# sent to one of the upstream server eventually returns as a new query to the 
+# dnsmasq instance. 
+dns-loop-detect
+{% endif %}
+
+{% if dnsmasq_conf_bogus_priv is defined and dnsmasq_conf_bogus_priv -%}
+# All reverse lookups for private IP ranges (ie 192.168.x.x, etc) which 
+# are not found in /etc/hosts or the DHCP leases file are answered with 
+# "no such domain" rather than being forwarded upstream.
+# Never forward addresses in the non-routed address spaces.
+bogus-priv
+{% endif %}
+
+{% if dnsmasq_conf_no_hosts is defined and dnsmasq_conf_no_hosts -%}
+# If you don't want dnsmasq to read /etc/hosts
+no-hosts
+{% endif %}
+
+{% if dnsmasq_conf_hosts is defined and not dnsmasq_conf_hosts is none -%}
+# Additional hosts file. Read the specified file as well as /etc/hosts.
+addn-hosts={{ dnsmasq_config_addhosts }}
+{% endif %}
+
+{% if dnsmasq_conf_no_poll is defined and dnsmasq_conf_no_poll -%}
+# Don't poll /etc/resolv.conf for changes.
+no-poll
+{% elif dnsmasq_conf_clear_on_reload is defined and dnsmasq_conf_clear_on_reload %}
+# If /etc/resolv.conf is re-read or the upstream servers are set via DBus, 
+# clear the DNS cache.
+clear-on-reload
+{% endif %}
+
+# Set the dns memory cachesize here.
+cache-size={{ dnsmasq_conf_cache_size | default('1024') }}
+
+{% if dnsmasq_conf_negcache is defined -%}
+{% if not dnsmasq_conf_negcache is none -%}
+# Negative replies from upstream servers normally contain time-to-live 
+# information in SOA records which dnsmasq uses for caching.
+neg-ttl={{ dnsmasq_conf_negcache }}
+{% else %}
+# Disable negative caching. Negative caching allows dnsmasq to remember 
+# "no such domain" answers from upstream nameservers and answer identical 
+# queries without forwarding them again.
+no-negcache
+{% endif %}
+{% endif %}
+
+{% if dnsmasq_conf_strict_order is defined and dnsmasq_conf_strict_order -%}
+# This flag forces dnsmasq to try each query with each server strictly in 
+# the order they appear in /etc/resolv.conf
+strict-order
+{% endif %}
+
+{% if dnsmasq_conf_all_servers is defined and dnsmasq_conf_all_servers -%}
+# This flag forces dnsmasq to send all queries to all available servers. 
+# The reply from the server which answers first will be returned to the 
+# original requester.
+all-servers
+{% endif %}
+
+{% if dnsmasq_conf_resolv is defined and not dnsmasq_conf_resolv is none -%}
+# Resolv.conf file to read
+resolv-file={{ dnsmasq_conf_resolv }}
+{% else %}
+# If you don't want dnsmasq to read /etc/resolv.conf or any other
+# file, getting its servers from this file instead (see below), then
+# uncomment this.
+no-resolv
+{% endif %}
+
+{% if dnsmasq_conf_mx is defined -%}
+{% if dnsmasq_conf_mx == '_self' -%}
+# Return an MX record pointing to itself for all local machines.
+selfmx
+{% elif dnsmasq_conf_mx | trim == '' or dnsmasq_conf_mx == '_local' -%}
+# Return an MX record pointing to the mx-target for all local
+# machines.
+localmx
+{% else %}
+{% if dnsmasq_conf_mx_domain is defined -%}
+# Return an MX record named "maildomain.com" with target
+# servermachine.com and preference 50
+mx-host={{ dnsmasq_conf_mx_domain }},{{ dnsmasq_conf_mx }},{{ dnsmasq_conf_mx_pref | default('1') }}
+{% else %}
+# Set the default target for MX records created using the localmx option.
+mx-target={{ dnsmasq_conf_mx }}
+{% endif %}
+{% endif %}
+{% endif %}
+
+{% if dnsmasq_conf_servers is defined and dnsmasq_conf_servers is iterable -%}
+# Specify IP address of upstream servers directly. Setting this flag does not 
+# suppress reading of /etc/resolv.conf.
+{% for server in dnsmasq_conf_servers -%}
+{% if server is string -%}
+local={{ server }}
+{% else %}
+server={{ server | join(',') }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if dnsmasq_conf_address is defined and dnsmasq_conf_address is iterable -%}
+# Specify an IP address to return for any host in the given domains.
+{% for host in dnsmasq_conf_address %}
+address={{ host | join(',') }}
+{% endfor %}
+{% endif %}
+
+{% if dnsmasq_conf_host_records is defined and dnsmasq_conf_host_records is iterable -%}
+# Add A, AAAA and PTR records to the DNS. This adds one or more names to the 
+# DNS with associated IPv4 (A) and IPv6 (AAAA) records
+{% for host in dnsmasq_conf_host_records -%}
+host-record={{ host | join(',') }}
+{% endfor %}
+{% endif %}
+
+

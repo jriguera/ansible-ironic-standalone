@@ -1,0 +1,124 @@
+---
+- name: Create the state folder
+  file:
+    path: "{{ ironic_state_path }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    mode: 0755
+    state: directory
+  tags: ["ironic", "configure"]
+
+- name: Create temp folder
+  file:
+    path: "{{ ironic_tempdir }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    mode: 0755
+    state: directory
+  when: >
+    ironic_tempdir is defined and
+    ironic_tempdir != '/tmp'
+  tags: ["ironic", "configure"]
+
+- name: Create deploy file images folder
+  file:
+    path: "{{ item }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    mode: 0755
+    state: directory
+  with_items:
+    - "{{ ironic_pxe_images_path }}"
+    - "{{ ironic_pxe_instance_master_path }}"
+  tags: ["ironic", "configure"]
+
+- name: Create the logging folder
+  file:
+    path: "{{ ironic_log | dirname }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    mode: 0750
+    state: directory
+  when: >
+    ironic_log is defined and 
+    ironic_log != 'syslog'
+  tags: ["ironic", "configure"]
+
+- name: Create lock folder
+  file:
+    path: "{{ ironic_oslo_concurrency_lock_path }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    mode: 0755
+    state: directory
+  when: >
+    ironic_oslo_concurrency_lock_path is defined and 
+    not ironic_oslo_concurrency_lock_path is none 
+  tags: ["ironic", "configure"]
+
+- name: Copy oslo policy file if defined
+  copy:
+    src: "{{ ironic_oslo_policy_file }}"
+    dest: "{{ ironic_config_dir }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    mode: 0644
+  when: >
+    ironic_oslo_policy_file and
+    not ironic_oslo_policy_file is none
+  register: __ironic_policy_file
+  tags: ["ironic", "configure"]
+
+- name: Defining mysql connection
+  set_fact: >
+    ironic_database_connection="mysql://{{ironic_database_mysql_userid}}:{{ironic_database_mysql_password}}@{{ironic_database_mysql_host}}/{{ironic_database_mysql_db}}"
+  when: >
+    ironic_database_mysql_userid is defined and
+    ironic_database_mysql_password is defined and
+    ironic_database_mysql_host is defined and
+    ironic_database_mysql_db is defined
+  tags: ["ironic", "configure"]
+
+- name: Generate the main configuration file
+  template:
+    src: ironic.conf.j2
+    dest: "{{ ironic_config_file }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    mode: 0644
+  notify:
+    - restart api
+    - restart conductor
+  register: __ironic_updated_conf
+  tags: ["ironic", "configure"]
+
+- name: Checking if configuration was updated
+  set_fact: >
+    _ironic_updated="{{ __ironic_updated_conf.changed }}" or "{{ __ironic_policy_file.changed }}"
+  tags: ["ironic", "configure"]
+
+- name: Create initial database schema
+  command: ironic-dbsync --config-file "{{ ironic_config_file }}" create_schema
+  when: >
+    not ironic_database_connection | search("sqlite://.*") and
+    _ironic_reinstalled and 
+    _ironic_updated and
+    not _ironic_previous
+  tags: ["ironic", "configure"]
+
+- name: Update database schema
+  command: ironic-dbsync --config-file "{{ ironic_config_file }}" upgrade
+  when: >
+    not ironic_database_connection | search("sqlite://.*") and
+    _ironic_reinstalled and 
+    _ironic_updated and
+    _ironic_previous
+  tags: ["ironic", "configure"]
+
+- name: Ensure Ironic daemons are started and enabled on boot
+  service: name="{{ item }}" state=started enabled="{{ ironic_enabled_on_startup | ternary('yes', 'no') }}"
+  with_items:
+    - "{{ ironic_conductor_service_name }}"
+    - "{{ ironic_api_service_name }}"
+  tags: ["ironic", "configure"]
+

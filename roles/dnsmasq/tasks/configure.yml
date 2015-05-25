@@ -1,0 +1,144 @@
+---
+- name: Create the config folder
+  file:
+    path: "{{ dnsmasq_config_dir }}"
+    owner: "{{ dnsmasq_user }}"
+    group: "{{ dnsmasq_group }}"
+    mode: 0755
+    state: directory
+  tags: ["dnsmasq", "configure"]
+
+- name: Create the var folder
+  file:
+    path: "{{ dnsmasq_var_dir }}"
+    owner: "{{ dnsmasq_user }}"
+    group: "{{ dnsmasq_group }}"
+    mode: 0755
+    state: directory
+  tags: ["dnsmasq", "configure"]
+
+- name: Create the log folder
+  file:
+    path: "{{ dnsmasq_conf_log | dirname }}"
+    owner: "{{ dnsmasq_user }}"
+    group: "{{ dnsmasq_group }}"
+    mode: 0755
+    state: directory
+  when: >
+    dnsmasq_conf_log is defined and
+    not dnsmasq_conf_log is none
+  tags: ["dnsmasq", "configure"]
+
+- name: Create DHCP dnsmasq configuration
+  template:
+    src: dnsmasq.d/dhcp.conf.j2
+    dest: "{{ dnsmasq_config_dir }}/dhcp.conf"
+    owner: "{{ dnsmasq_user }}"
+    group: "{{ dnsmasq_group }}"
+    mode: 0644
+  notify: reload dnsmasq
+  register: __dnsmasq_updated_dhcp
+  when: > 
+    dnsmasq_dhcp and
+    dnsmasq_conf_dhcp is defined
+  tags: ["dnsmasq", "configure"]
+
+- name: Create TFTP dnsmasq configuration
+  template:
+    src: dnsmasq.d/tftp.conf.j2
+    dest: "{{ dnsmasq_config_dir }}/tftp.conf"
+    owner: "{{ dnsmasq_user }}"
+    group: "{{ dnsmasq_group }}"
+    mode: 0644
+  notify: reload dnsmasq
+  register: __dnsmasq_updated_tftp
+  when: 
+    dnsmasq_dhcp and
+    dnsmasq_conf_dhcp is defined and
+    dnsmasq_tftp
+  tags: ["dnsmasq", "configure"]
+
+- name: Create global dnsmasq configuration
+  template:
+    src: dnsmasq.conf.j2
+    dest: "{{ dnsmasq_config_file }}"
+    owner: "{{ dnsmasq_user }}"
+    group: "{{ dnsmasq_group }}"
+    mode: 0644
+    validate: 'dnsmasq --test --conf-file=%s'
+  notify: reload dnsmasq
+  register: __dnsmasq_updated_global
+  tags: ["dnsmasq", "configure"]
+
+- name: Create the dhcp hosts folder
+  file:
+    path: "{{ dnsmasq_config_dhcphosts | dirname }}"
+    owner: "{{ dnsmasq_user }}"
+    group: "{{ dnsmasq_group }}"
+    mode: 0755
+    state: directory
+  when: >
+    dnsmasq_conf_dhcp_hosts is defined and
+    not dnsmasq_conf_dhcp_hosts is none
+  tags: ["dnsmasq", "configure"]
+
+- name: Create dhcp hosts file from configuration
+  template:
+    src: leases.j2
+    dest: "{{ dnsmasq_config_dhcphosts }}"
+    owner: "{{ dnsmasq_user }}"
+    group: "{{ dnsmasq_group }}"
+    mode: 0644
+  notify: reload dnsmasq
+  when: >
+    dnsmasq_conf_dhcp_hosts is defined and 
+    dnsmasq_conf_dhcp_hosts is iterable
+  notify: reload dnsmasq
+  tags: ["dnsmasq", "configure"] 
+
+- name: Copy dhcp hosts file if defined
+  copy: 
+    src: "{{ dnsmasq_conf_dhcp_hosts }}" 
+    dest: "{{ dnsmasq_config_dhcphosts | dirname }}/{{ dnsmasq_conf_dhcp_hosts | basename }}" 
+    owner: "{{ dnsmasq_user }}"
+    group: "{{ dnsmasq_group }}"
+    mode: 0644
+  when: >
+    dnsmasq_conf_dhcp_hosts is defined and 
+    dnsmasq_conf_dhcp_hosts is not iterable
+  notify: reload dnsmasq
+  tags: ["dnsmasq", "configure"] 
+
+- name: Copy dhcp script file
+  copy: 
+    src: "{{ dnsmasq_conf_dhcp_script }}" 
+    dest: "{{ dnsmasq_config_dhcpscript }}" 
+    owner: root 
+    group: root 
+    mode: 0775
+  when: >
+    dnsmasq_conf_dhcp_script is defined and
+    not nsmasq_conf_dhcp_script is none
+  tags: ["dnsmasq", "configure"] 
+
+- name: Create additional hosts file
+  template:
+    src: hosts.j2
+    dest: "{{ dnsmasq_config_addhosts }}"
+    owner: "{{ dnsmasq_user }}"
+    group: "{{ dnsmasq_group }}"
+    mode: 0644
+  notify: reload dnsmasq
+  when: dnsmasq_conf_hosts is defined
+  tags: ["dnsmasq", "configure"] 
+
+- name: Checking if configuration was updated
+  set_fact: dnsmasq_updated=_dnsmasq_updated.changed
+  set_fact: >
+    _dnsmasq_updated="{{ __dnsmasq_updated_global.changed }}" or "{{ __dnsmasq_updated_dhcp.changed }}" or "{{ __dnsmasq_updated_tftp.changed }}"
+  tags: ["dnsmasq", "configure"]
+
+- name: Ensure dnsmasq is started and enabled on boot
+  service: name="{{ dnsmasq_daemon }}" state=started enabled="{{ dnsmasq_enabled_on_startup | ternary('yes', 'no') }}"
+  tags: ["dnsmasq", "configure"]
+

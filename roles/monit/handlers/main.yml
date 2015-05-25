@@ -1,0 +1,12 @@
+---
+- name: restart monit
+  service: name={{ monit_daemon }} state=restarted
+
+- name: start monit
+  service: name={{ monit_daemon }} state=started
+
+- name: stop monit
+  service: name={{ monit_daemon }} state=stopped
+  
+- name: reload monit
+  service: name={{ monit_daemon }} state=reloaded

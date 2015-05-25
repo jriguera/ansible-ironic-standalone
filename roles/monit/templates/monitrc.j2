@@ -1,0 +1,142 @@
+# {{ ansible_managed }}
+# /etc/monit/monitrc
+#
+## Monit control file
+#
+# Comments begin with a '#' and extend through the end of the line. Keywords
+# are case insensitive. All path's MUST BE FULLY QUALIFIED, starting with '/'.
+#
+# For information about the control file and a complete list of statements and
+# options, please have a look in the Monit manual.
+
+## Global section
+
+# Check services at x interval
+set daemon {{ monit_interval }}
+{% if monit_start_delay is defined and not monit_start_delay is none %}
+  # Delay the first check by x seconds when enabled
+  with start delay {{ monit_start_delay }}
+{% endif %}
+
+{% if not monit_logfile is defined -%}
+# Log to syslog.
+set logfile syslog
+{% elif monit_logfile | trim == 'syslog' %} 
+# Log to syslog with facility
+set logfile {{ monit_logfile }} facility {{ monit_syslog_facility | default('log_daemon') }}
+{% else %}
+# Log to file
+set logfile {{ monit_logfile }}
+{% endif %}
+
+# Set the location of the Monit id file which stores the unique id for the
+# Monit instance. The id is generated and stored on first Monit start
+set idfile {{ monit_idfile }}
+
+# Set the location of the Monit state file which saves monitoring states
+# on each cycle.
+set statefile {{ monit_statefile }}
+
+{% if monit_mail_server_list is defined -%}
+# Set the list of mail servers for alert delivery. Multiple servers may be 
+# specified using comma separator. By default monit uses port 25 - this
+# is possible to override with the PORT option.
+set mailserver
+{% for item in monit_mail_server_list %}
+  {{ item.host }}
+{% if item.port is defined and not item.port is none %}
+  port {{ item.port }}
+{% endif %}
+{% if item.username is defined and not item.username is none %}
+  username "{{ item.username }}"
+{% endif %}
+{% if item.password is defined and not item.password is none %}
+  password "{{ item.password }}"
+{% endif %}
+{% if item.encryption is defined and not item.encryption is none %}
+  using {{ item.encryption }}
+{% endif %}
+{%- if not loop.last -%}
+  ,
+{% endif %}
+{% endfor %}
+  with timeout 30 seconds
+  using hostname "{{ ansible_fqdn }}"
+
+# Set the e-mail template.
+set mail-format {
+  from: {{ monit_mail_from }}
+  reply-to: {{ monit_mail_reply_to }}
+  subject: {{ monit_mail_subject }}
+  message: {{ monit_mail_message | indent(4) }}
+}
+{% endif %}
+
+# By default monit will drop alert events if no mail servers are available. 
+# If you want to keep the alerts for a later delivery retry, you can use the 
+# EVENTQUEUE statement. The base directory where undelivered alerts will be 
+# stored is specified by the BASEDIR option. You can limit the maximal queue
+# size using the SLOTS option (if omitted, the queue is limited by space 
+# available in the back end filesystem).
+set eventqueue
+  basedir {{ monit_event_dir }}
+{% if monit_event_slots is defined %}
+  slots {{ monit_event_slots | default('100') }}
+{% endif %}
+
+{% if monit_mail_alert_list is defined and not monit_mail_alert_list is none -%}
+# You can set alert recipients here whom will receive alerts if/when a 
+# service defined in this file has errors. Alerts may be restricted on 
+# events by using a filter. 
+{% for item in monit_mail_alert_list -%}
+{%- for (email, events) in item.iteritems() -%}
+{% if not events is none -%}
+set alert {{ email }} only on { {{ events | join(', ') }} }
+{% else %}
+set alert {{ email }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+{% if monit_mmonit_url is defined and not monit_mmonit_url is none -%}
+# Set the url for the M/Monit collector
+set mmonit {{ monit_mmonit_url }}
+{% endif %}
+
+# Monit has an embedded web server which can be used to view status of
+# services monitored and manage services from a web interface.
+# Run the http server and allow localhost to view it, this is required to
+# make monit's CLI function.
+set httpd port {{ monit_http_port | default('2812') }}
+{%- if monit_http_bind is defined and not monit_http_bind is none %} 
+  use address {{ monit_http_bind }}
+{% endif %}
+  # Allow additional hosts to access monit's http interface
+{% for item in monit_http_allow_net_list %}
+  allow {{ item }}
+{% endfor %}
+{% for item in monit_http_allow_user_list %}
+  allow {{ item }}
+{% endfor %}
+{% for item in monit_http_allow_user_ro_list %}
+  allow {{ item }} read-only
+{% endfor %}
+{% if monit_https_cert is defined and not monit_https_cert is none %}
+  ssl enable
+  pemfile {{ monit_config_dir }}/{{ monit_https_cert | basename }}
+{% if monit_https_selfcertification is defined and monit_https_selfcertification %}
+  allowselfcertification
+{% endif %}
+{% if monit_https_client is defined and not monit_https_client is none %}
+  clientpemfile {{ monit_config_dir }}/{{ monit_https_client | basename }}
+{% endif %}
+{% if monit_http_signature is defined and not monit_http_signature %}
+  signature disable
+{% endif %}
+{% endif %}
+
+# It is possible to include additional configuration parts from other files or
+# directories.
+include {{ monit_config_dir }}/*
+

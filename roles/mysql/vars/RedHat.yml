@@ -1,0 +1,14 @@
+---
+mysql_daemon: mysqld
+mysql_config_file: /etc/my.cnf
+mysql_socket: /var/lib/mysql/mysql.sock
+mysql_pidfile: /var/run/mysqld/mysqld.pid
+
+mysql_packages_dict:
+  mysql:
+    state: latest
+  mysql-server:
+    state: latest
+  MySQL-python:
+    state: latest
+

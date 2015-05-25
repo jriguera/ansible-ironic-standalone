@@ -1,0 +1,54 @@
+# {{ ansible_managed }}
+{% set __monit_monitor=item %}
+
+{% if __monit_monitor.type == 'process' %}
+check process {{ __monit_monitor.name }} with pidfile {{ __monit_monitor.target }}
+{% if __monit_monitor.start is defined and not __monit_monitor.start is none %}
+  start program = "{{ __monit_monitor.start.script }}"
+{% if __monit_monitor.start.uid is defined %}
+    as uid "{{ __monit_monitor.start.uid }}"
+{% endif %}
+{% if __monit_monitor.start.gid is defined %}
+    as gid "{{ __monit_monitor.start.gid }}"
+{% endif %}
+{% if __monit_monitor.start.timeout is defined %}
+    with timeout {{ __monit_monitor.start.timeout }} seconds
+{% endif %}
+{% endif %}
+{% if __monit_monitor.stop is defined and not __monit_monitor.stop is none %}
+  stop program = "{{ __monit_monitor.stop.script }}"
+{% if __monit_monitor.stop.uid is defined %}
+    as uid "{{ __monit_monitor.stop.uid }}"
+{% endif %}
+{% if __monit_monitor.stop.gid is defined %}
+    as gid "{{ __monit_monitor.stop.gid }}"
+{% endif %}
+{% if __monit_monitor.stop.timeout is defined %}
+    with timeout {{ __monit_monitor.stop.timeout }} seconds
+{% endif %}
+{% endif %}
+{% if __monit_monitor.restart is defined and not __monit_monitor.restart is none %}
+  restart program = "{{ __monit_monitor.restart.script }}"
+{% if __monit_monitor.restart.uid is defined %}
+    as uid "{{ __monit_monitor.restart.uid }}"
+{% endif %}
+{% if __monit_monitor.restart.gid is defined %}
+    as gid "{{ __monit_monitor.restart.gid }}"
+{% endif %}
+{% if __monit_monitor.restart.timeout is defined %}
+    with timeout {{ __monit_monitor.restart.timeout }} seconds
+{% endif %}
+{% endif %}
+{% elif __monit_monitor.type == 'system' %}
+check system {{ monit_monitor.name }}
+{% elif __monit_monitor.type == 'host' %}
+check host {{ __monit_monitor.name }} with address {{ __monit_monitor.target }}
+{% elif monit_monitor.type == 'filesystem' %}
+check filesystem {{ __monit_monitor.name }} with path {{ __monit_monitor.target }}
+{% endif %}
+{% if __monit_monitor.rules is defined and __monit_monitor.rules %}
+{% for rule in __monit_monitor.rules %}
+  {{ rule }}
+{% endfor %}
+{% endif %}
+

@@ -1,0 +1,9 @@
+---
+monit_config_file: /etc/monitrc
+monit_config_dir: /etc/monit.d
+monit_pidfile: /var/run/monit.pid
+
+monit_packages:
+  monit:
+    state: latest
+

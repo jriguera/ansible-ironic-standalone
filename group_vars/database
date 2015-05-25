@@ -1,0 +1,11 @@
+---
+monit_monitoring_list:
+  - name: mysql
+    type: process
+    target: "{{mysql_pidfile}}"
+    start: { script: "/etc/init.d/mysql start", timeout: 60 }
+    stop: { script: "/etc/init.d/mysql stop" }
+    rules:
+      - "if failed port {{mysql_port}} protocol mysql then restart"
+      - "if 3 restarts within 3 cycles then timeout"
+

@@ -1,0 +1,13 @@
+---
+# Take the package given by the OS/distrib
+rabbitmq_os_packages: true
+
+rabbitmq_daemon: rabbitmq-server
+rabbitmq_user: rabbitmq
+rabbitmq_group: rabbitmq
+
+rabbitmq_ssl_dir: /etc/rabbitmq/ssl
+rabbitmq_config: /etc/rabbitmq/rabbitmq.config
+rabbitmq_confenv: /etc/rabbitmq/rabbitmq-env.conf
+rabbitmq_plugin_dir: /usr/lib/rabbitmq/lib/
+

@@ -1,0 +1,37 @@
+---
+- name: RedHat - Install console packages
+  yum:
+    name: "{{ item.key }}{{ '-' + item.version | default('*') }}"
+    state: "{{ item.state | default('present') }}"
+  with_dict: ironic_packages_console
+  when: ansible_os_family == 'RedHat'
+  tags: ["ironic", "install", "console", "redhat"]
+
+- name: Debian - Install console packages
+  apt: 
+    name: "{{ item.key }}{{ '=' + item.version | default('*') }}"
+    state: "{{ item.state | default('present') }}"
+    install_recommends: "{{ ironic_packages_install_recommends }}"
+  with_dict: ironic_packages_console
+  when: ansible_os_family == 'Debian'
+  tags: ["ironic", "install", "console", "debian"]
+
+- name: Create PIDs folder for console processes
+  file:
+    path: "{{ ironic_console_terminal_pid_dir }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    mode: 0755
+    state: directory
+  when: >
+    ironic_console_terminal_pid_dir is defined and
+    ironic_console_terminal_pid_dir != ironic_tempdir
+  tags: ["ironic", "configure", "console"]
+
+- name: Disable shellinabox daemon
+  service: name="{{ ironic_shellinabox }}" state=stopped enabled=no
+  when: > 
+    ironic_console_terminal is defined and 
+    ironic_console_terminal == 'shellinaboxd'
+  tags: ["ironic", "configure", "console"]
+

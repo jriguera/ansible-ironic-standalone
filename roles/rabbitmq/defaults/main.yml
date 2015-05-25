@@ -1,0 +1,43 @@
+---
+rabbitmq_enabled_on_startup: true
+
+# Main options
+rabbitmq_ssl: false
+rabbitmq_env: true
+rabbitmq_secure: true
+
+# Avoid setting up federation
+rabbitmq_federate: false
+rabbitmq_federation_plugin: "rabbitmq_federation"
+rabbitmq_federation_configuration_list:
+rabbitmq_policy_configuration_list:
+
+# RabbitMQ TCP configuration
+rabbitmq_tcp_address: "0.0.0.0"
+rabbitmq_tcp_port: 5672
+
+# Other options:
+rabbitmq_conf_reverse_dns_lookups: false
+rabbitmq_conf_auth_mechanisms: ["PLAIN", "AMQPLAIN"]
+rabbitmq_conf_delegate_count: 16
+
+# RabbitMQ SSL configuration
+rabbitmq_ssl_address: "0.0.0.0"
+rabbitmq_ssl_port: 5671
+rabbitmq_ssl_fail_if_no_peer_cert: true
+rabbitmq_ssl_cacertfile: 
+rabbitmq_ssl_certfile: 
+rabbitmq_ssl_keyfile: 
+
+# Plugins
+#rabbitmq_plugins_dict: { plugin2: src.ez }
+rabbitmq_plugins_dict: { rabbitmq_management: }
+rabbitmq_new_only: false
+
+# VHOST
+rabbitmq_vhost_definition_list: []
+rabbitmq_users_definition_list: []
+
+# Env variables
+#rabbitmq_env_dict:
+

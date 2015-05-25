@@ -1,0 +1,37 @@
+#jinja2: trim_blocks: "true", lstrip_blocks: "true"
+# {{ ansible_managed }}
+# Configuration file for dnsmasq.
+# TFPT configuration
+
+{% if dnsmasq_conf_dhcp is defined and dnsmasq_conf_dhcp is iterable  -%}
+# Enable the TFTP server function.
+enable-tftp={% for (i, v) in dnsmasq_conf_dhcp.iteritems() if v["tftp"] is defined -%}{{ i }}{% if not loop.last -%},{% endif %}{% endfor %}
+
+{% for (if, values) in dnsmasq_conf_dhcp.iteritems() -%}
+{% if values["tftp"] is defined %}
+# Look for files to transfer using TFTP relative to the given directory.
+tftp-root={{ values["tftp"] }},{{ if }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if dnsmasq_conf_tftp_secure is defined and dnsmasq_conf_tftp_secure -%}
+# Enable TFTP secure mode: without this, any file which is readable by the 
+# dnsmasq process under normal unix access-control rules is available via TFTP
+tftp-secure
+{% endif %}
+
+{% if dnsmasq_conf_tftp_lowercase is defined and dnsmasq_conf_tftp_lowercase -%}
+# Convert filenames in TFTP requests to all lowercase. This is useful for 
+# requests from Windows machines
+tftp-lowercase
+{% endif %}
+
+# Set the maximum number of concurrent TFTP connections allowed
+tftp-max={{ dnsmasq_conf_tftp_max | default('50') }}
+
+{% if dnsmasq_conf_tftp_no_blocksize is defined and dnsmasq_conf_tftp_no_blocksize -%}
+# Stop the TFTP server from negotiating the "blocksize" option with a client. 
+tftp-no-blocksize
+{% endif %}
+

@@ -1,0 +1,9 @@
+# {{ ansible_managed }}
+#
+# Comment lines start with a hash character.
+# This is a /bin/sh script file - use ordinary envt var syntax
+#
+{% for (variable, value) in rabbitmq_env_dict.iteritems() %}
+{{ variable | upper() }}="{{ value }}"
+{% endfor %}
+

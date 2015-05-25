@@ -1,0 +1,11 @@
+---
+monit_monitoring_list:
+  - name: rabbitmq
+    type: process
+    target: "{{rabbitmq_pidfile}}"
+    start: { script: "/etc/init.d/rabbitmq-server start" }
+    stop: { script: "/etc/init.d/rabbitmq-server stop" }
+    rules:
+      - "if failed port {{rabbitmq_tcp_port}} type tcp then restart"
+      - "if 3 restarts within 3 cycles then timeout"
+

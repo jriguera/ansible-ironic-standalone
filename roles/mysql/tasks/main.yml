@@ -1,0 +1,12 @@
+---
+- name: Include OS specific variables
+  include_vars: "{{ ansible_os_family }}.yml"
+  tags: ["distribution", "packages", "service", "mysql"]
+
+- include: install.yml
+- include: configure.yml
+- include: secure.yml
+- include: databases.yml
+- include: users.yml
+- include: replication.yml
+

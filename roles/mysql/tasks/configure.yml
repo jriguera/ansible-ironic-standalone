@@ -1,0 +1,35 @@
+---
+- name: Create global MySQL configuration
+  template:
+    src: my.cnf.j2
+    dest: "{{ mysql_config_file }}"
+    owner: "{{ mysql_user }}"
+    group: "{{ mysql_group }}"
+    mode: 0644
+  notify: restart mysql
+  register: __mysql_updated
+  tags: ["mysql", "configure"]
+
+- name: Check if configuration was updated
+  set_fact: _mysql_updated="{{ __mysql_updated.changed }}"
+  tags: ["mysql", "configure"]
+
+- name: Create slow query log file
+  file:
+    path: "{{ mysql_slow_query_log_file }}"
+    owner: "{{ mysql_user }}"
+    group: "{{ mysql_group }}"
+    state: touch
+    mode: 0644
+  when: mysql_slow_query_log
+  tags: ["mysql", "configure"]
+
+- name: Delete innodb log files created after initial install
+  shell: "rm {{ mysql_datadir }}/ib_logfile[01]"
+  when: _mysql_reinstalled and _mysql_updated
+  tags: ["mysql", "configure"]
+
+- name: Ensure MySQL is started and enabled on boot
+  service: name={{ mysql_daemon }} state=started enabled={{ mysql_enabled_on_startup | ternary('yes', 'no') }}
+  tags: ["mysql", "configure"]
+

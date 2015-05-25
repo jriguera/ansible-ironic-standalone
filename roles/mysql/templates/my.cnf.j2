@@ -1,0 +1,107 @@
+# {{ ansible_managed }}
+#
+# MySQL configuration file
+#
+# Comments begin with a '#' and extend through the end of the line. Keywords
+# are case insensitive.
+#
+# One can use all long options that the program supports.
+# Run program with --help to get a list of available options and with
+# --print-defaults to see which it would actually understand and use.
+# For explanations see
+# http://dev.mysql.com/doc/mysql/en/server-system-variables.html
+
+[client]
+#password = your_password
+port = {{ mysql_port }}
+socket = {{ mysql_socket }}
+
+[mysqld]
+port = {{ mysql_port }}
+bind-address = {{ mysql_bind }}
+socket = {{ mysql_socket }}
+datadir = {{ mysql_datadir }}
+symbolic-links = 0
+
+{% if mysql_log_error is defined %}
+# Logging configuration
+{% if mysql_log_error == 'syslog' %}
+syslog
+syslog-tag = {{ mysql_syslog_tag }}
+{% else %}
+log-error = {{ mysql_log_error }}
+{% endif %}
+{% endif %}
+
+{% if mysql_slow_query_log is defined and mysql_slow_query_log %}
+# Slow query log configuration
+log_slow_queries = 1
+slow_query_log = 1
+slow_query_log_file = {{ mysql_slow_query_log_file }}
+long_query_time = {{ mysql_slow_query_time }}
+{% endif %}
+
+{% if mysql_replication_master is defined and not mysql_replication_master is none %}
+# Replication settings
+server_id = {{ mysql_server_id }}
+{% if mysql_replication_role == 'master' %}
+log_bin = mysql-bin
+expire_logs_days = {{ mysql_expire_logs_days }}
+max_binlog_size = {{ mysql_max_binlog_size }}
+{% for db in mysql_databases %}
+{% if db.replicate | default(1) %}
+binlog_do_db = {{ db.name }}
+{% else %}
+binlog_ignore_db = {{ db.name }}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if mysql_replication_role == 'slave' %}
+read_only
+relay_log = relay-bin
+{% endif %}
+{% endif %}
+
+# Other settings
+wait_timeout = {{ mysql_wait_timeout }}
+default_storage_engine = innodb
+init_connect = "{{ mysql_init_connect }}"
+
+{% if mysql_performance_schema is defined and mysql_performance_schema %}
+# Enable performance schema
+performance_schema = 1
+{% endif %}
+
+# Memory settings
+key_buffer_size = {{ mysql_key_buffer_size }}
+max_allowed_packet = {{ mysql_max_allowed_packet }}
+table_open_cache = {{ mysql_table_open_cache }}
+sort_buffer_size = {{ mysql_sort_buffer_size }}
+read_buffer_size = {{ mysql_read_buffer_size }}
+read_rnd_buffer_size = {{ mysql_read_rnd_buffer_size }}
+myisam_sort_buffer_size = {{ mysql_myisam_sort_buffer_size }}
+thread_cache_size = {{ mysql_thread_cache_size }}
+query_cache_size = {{ mysql_query_cache_size }}
+
+# InnoDB settings
+innodb_file_per_table = {{ mysql_innodb_file_per_table }}
+innodb_buffer_pool_size = {{ mysql_innodb_buffer_pool_size }}
+innodb_additional_mem_pool_size = {{ mysql_innodb_additional_mem_pool_size }}
+innodb_log_file_size = {{ mysql_innodb_log_file_size }}
+innodb_log_buffer_size = {{ mysql_innodb_log_buffer_size }}
+innodb_flush_log_at_trx_commit = {{ mysql_innodb_flush_log_at_trx_commit }}
+innodb_lock_wait_timeout = {{ mysql_innodb_lock_wait_timeout }}
+
+[mysqldump]
+quick
+quote_names
+max_allowed_packet = {{ mysql_mysqldump_max_allowed_packet }}
+
+[mysqld_safe]
+# User is ignored when systemd is used
+user = {{ mysql_user }}
+nice = {{ mysql_nice | default('0') }}
+pid-file = {{ mysql_pidfile }}
+socket = {{ mysql_socket }}
+datadir = {{ mysql_datadir }}
+

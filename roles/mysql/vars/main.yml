@@ -1,0 +1,10 @@
+---
+mysql_os_packages: true
+mysql_os_repo_url:
+mysql_os_repo_key:
+
+mysql_user: mysql
+mysql_group: mysql
+
+mysql_datadir: /var/lib/mysql
+

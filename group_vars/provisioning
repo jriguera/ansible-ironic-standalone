@@ -1,0 +1,26 @@
+---
+monit_monitoring_list:
+  - name: dnsmasq
+    type: process
+    target: "{{dnsmasq_pidfile}}"
+    start: { script: "/etc/init.d/dnsmasq start" }
+    stop: { script: "/etc/init.d/dnsmasq stop" }
+    rules:
+      - "if failed port 53 type tcp protocol dns then restart"
+      - "if 3 restarts within 3 cycles then timeout"
+  - name: ironic-api
+    type: process
+    target: "{{ironic_api_pidfile}}"
+    start: { script: "service start ironic-api" }
+    stop: { script: "service stop ironic-api" }
+    rules:
+      - "if failed port 6385 type tcp then restart"
+      - "if 3 restarts within 3 cycles then timeout"
+  - name: ironic-conductor
+    type: process
+    target: "{{ironic_conductor_pidfile}}"
+    start: { script: "service start ironic-conductor" }
+    stop: { script: "service stop ironic-conductor" }
+    rules:
+      - "if 3 restarts within 3 cycles then timeout"
+

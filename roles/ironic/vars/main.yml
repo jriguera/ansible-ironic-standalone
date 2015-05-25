@@ -1,0 +1,21 @@
+---
+# Take the package given by the OS/distrib
+ironic_os_packages: false
+ironic_os_repo_url:
+ironic_os_repo_key:
+
+ironic_conductor_service_name: ironic-conductor
+ironic_conductor_pidfile: /var/run/ironic/ironic-conductor.pid
+ironic_api_service_name: ironic-api
+ironic_api_pidfile: /var/run/ironic/ironic-api.pid
+
+ironic_shellinabox: shellinabox
+ironic_user: ironic
+ironic_group: ironic
+
+ironic_config_file: /etc/ironic/ironic.conf
+ironic_config_dir: /etc/ironic/
+ironic_var_dir: /var/lib/ironic/
+
+ironic_elilo_url: http://heanet.dl.sourceforge.net/project/elilo/elilo/elilo-3.16/elilo-3.16-all.tar.gz
+

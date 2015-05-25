@@ -1,0 +1,16 @@
+---
+dnsmasq_os_packages: true
+dnsmasq_os_repo_url:
+dnsmasq_os_repo_key:
+
+dnsmasq_daemon: dnsmasq
+dnsmasq_user: dnsmasq
+dnsmasq_group: nogroup
+
+dnsmasq_config_file: /etc/dnsmasq.conf
+dnsmasq_config_dir: /etc/dnsmasq.d
+dnsmasq_var_dir: /var/lib/dnsmasq
+dnsmasq_config_addhosts: /etc/dnsmasq.hosts
+dnsmasq_config_dhcphosts: /var/lib/dnsmasq/dhcp.leases
+dnsmasq_config_dhcpscript: /var/lib/dnsmasq/script
+
