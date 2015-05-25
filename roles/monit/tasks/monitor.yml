@@ -19,7 +19,7 @@
     group: "{{ monit_group }}"
     mode: 0644
   with_items: monit_monitoring_list
-  when:
+  when: >
     monit_monitoring_list is defined and
     not monit_monitoring_list is none and
     not (item.delete is defined and item.delete)
