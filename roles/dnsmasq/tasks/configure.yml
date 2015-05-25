@@ -52,7 +52,7 @@
     mode: 0644
   notify: reload dnsmasq
   register: __dnsmasq_updated_tftp
-  when: 
+  when: > 
     dnsmasq_dhcp and
     dnsmasq_conf_dhcp is defined and
     dnsmasq_tftp
