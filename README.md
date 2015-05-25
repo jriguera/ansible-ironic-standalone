@@ -46,12 +46,12 @@ When it will be finished with vagrant, you will have those ports available:
 Remember that the client needs those environment variables:
 ```
 export OS_AUTH_TOKEN=" "
-export IRONIC_URL=http://127.0.0.1:6385/
+export IRONIC_URL=http://server:6385/
 ```
 
-And remember you have to copy the images that you create and use for
-the clients (ramdisk and deploy) to a folder in the server and reference 
-them as `file:///.../image.bin` (this is example is with an updated client):
+And remember you have to copy the images that you create and use for the 
+clients (ramdisk and deploy) to a folder in the server and reference them as 
+`file:///.../image.bin` (this is example is with an updated client):
 
 ```
 # Define the parameter for the new server
@@ -99,8 +99,8 @@ DIB_CLOUD_INIT_DATASOURCES="ConfigDrive, OpenStack" disk-image-create ubuntu bar
 Variables
 ---------
 
-Have a look at `site.yml` for vagrant setup and `ironic.yml` with the inventory 
-defined in `hosts/ironic` and `group_vars` folder for a real setup.
+Have a look at `site.yml` for vagrant setup and `ironic.yml` with the 
+inventory defined in `hosts/ironic` and `group_vars` folder for a real setup.
 
 
 License

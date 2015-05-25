@@ -9,6 +9,7 @@
         - name: ironic
           password: mysql
           priv: "ironic.*:ALL"
+
     - role: rabbitmq
       rabbitmq_vhost_definition_list:
         - name: "ironic"
@@ -17,6 +18,7 @@
           password: "rabbitmq"
           vhost: "ironic"
           tags: [ "administrator", "management" ]
+
     - role: ironic
       ironic_debug: true
       ironic_my_ip: "{{ansible_eth0.ipv4.address}}"
@@ -41,6 +43,7 @@
           generate_names: true
           boot: [ "{{ironic_pxe_bootfile_name}}" ]
           tftp: "{{ironic_pxe_tftp_root}}"
+
     - role: monit
       monit_monitoring_list:
         - name: mysql
