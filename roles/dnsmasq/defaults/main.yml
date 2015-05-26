@@ -175,7 +175,7 @@ dnsmasq_conf_dhcp_leasefile_ro: false
 
 # Enable TFTP secure mode: without this, any file which is readable by the 
 # dnsmasq process under normal unix access-control rules is available via TFTP
-dnsmasq_conf_tftp_secure: true
+dnsmasq_conf_tftp_secure: false
 
 # Convert filenames in TFTP requests to all lowercase. This is useful for 
 # requests from Windows machines
