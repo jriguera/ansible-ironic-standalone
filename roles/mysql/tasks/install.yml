@@ -88,6 +88,7 @@
   when: >
     ansible_os_family == 'Debian' and
     mysql_init_system != "upstart"
+  notify: stop mysql
   tags: ["mysql", "install"]
 
 - name: Debian - Delete init.d configuration
@@ -97,5 +98,10 @@
   when: >
     ansible_os_family == 'Debian' and
     mysql_init_system != "initd"
+  notify: stop mysql
   tags: ["mysql", "install"]
+
+# Flush all notify stop handlers, to be sure that they are done!
+# The reason is because of upstart service
+- meta: flush_handlers
 
