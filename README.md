@@ -64,7 +64,7 @@ export OS_AUTH_TOKEN=" "
 export IRONIC_URL=http://localhost:6385/
  
 # Define the new server
-ironic node-create -n $NAME -d pxe_ipmitool -i ipmi_address=$IPMI -i ipmi_username=ADMIN -i ipmi_password=ADMIN -i pxe_deploy_kernel=file:///home/jriguera/images/my-deploy-ramdisk.kernel -i pxe_deploy_ramdisk=file:///home/jriguera/images/my-deploy-ramdisk.initramfs
+ironic node-create -n $NAME -d pxe_ipmitool -i ipmi_address=$IPMI -i ipmi_username=ADMIN -i ipmi_password=ADMIN -i deploy_kernel=file:///home/jriguera/images/my-deploy-ramdisk.kernel -i deploy_ramdisk=file:///home/jriguera/images/my-deploy-ramdisk.initramfs
  
 UUID=$(ironic node-list | awk "/$NAME/ { print \$2 }")
  
