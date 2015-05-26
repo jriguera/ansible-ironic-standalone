@@ -7,7 +7,7 @@ just to be able to deploy servers like cobbler but based on images ...
 Structure and Ansible Conventions
 ---------------------------------
 
-To sum up: make everything reusable and interchangeable.
+**To sum up: make everything reusable and interchangeable.**
 
 
 Because of the fact there is not ansible conventions, it is really difficult
