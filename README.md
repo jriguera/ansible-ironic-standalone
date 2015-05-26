@@ -35,7 +35,7 @@ Howto Run
 Just type: `vagrant up` to run all the setup, after that just type
 `vagrant ssh ironic` to have a look at the settings.
 
-When it will be finished with vagrant, you will have those ports available:
+When vagrant will be finished, you will have those ports available:
 
  * http:/127.0.0.1:2812 - monit (admin:admin) 
  * http:/127.0.0.1:15672 - rabbitmq (ironic:rabbitmq)
@@ -51,7 +51,7 @@ export IRONIC_URL=http://server:6385/
 
 And remember you have to copy the images that you create and use for the 
 clients (ramdisk and deploy) to a folder in the server and reference them as 
-`file:///.../image.bin` (this is example is with an updated client):
+`file:///.../image.bin` (this is example with an updated client `pip install python-ironicclient`):
 
 ```
 # Define the parameter for the new server
@@ -85,7 +85,7 @@ ironic node-validate $UUID
 ironic node-set-provision-state --config-drive /configdrive_$NAME $UUID active
 ```
 
-To build the images (you will need `ramdisk-image-create` and `disk-image-create`):
+To build the images (you will need `ramdisk-image-create` and `disk-image-create` -install them from source-):
 
 ```
 # Create the initial ramdkisk
@@ -101,6 +101,7 @@ Variables
 
 Have a look at `site.yml` for vagrant setup and `ironic.yml` with the 
 inventory defined in `hosts/ironic` and `group_vars` folder for a real setup.
+Monit is optional, if you do not need it, just remove the role.
 
 
 License
