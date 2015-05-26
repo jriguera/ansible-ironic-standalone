@@ -71,7 +71,7 @@ UUID=$(ironic node-list | awk "/$NAME/ { print \$2 }")
 # Define the MAC
 ironic port-create -n $UUID -a $MAC
  
-MD5=$(md5sum /home/pe/images/my-image.qcow2 | cut -d' ' -f 1)
+MD5=$(md5sum /home/jriguera/images/my-image.qcow2 | cut -d' ' -f 1)
  
 # Define the rest of the parameters
 ironic node-update $UUID  add instance_info/image_source=file:///home/jriguera/images/my-image.qcow2 instance_info/kernel=file:///home/jriguera/images/my-image.vmlinuz instance_info/ramdisk=file:///home/jriguera/images/my-image.initrd instance_info/root_gb=100 instance_info/image_checksum=$MD5
