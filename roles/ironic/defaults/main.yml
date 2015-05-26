@@ -12,9 +12,9 @@ ironic_host: "{{ inventory_hostname }}"
 ironic_publish_errors: true
 ironic_fatal_deprecations: false
 ironic_rpc_thread_pool_size: 64
-ironic_notification_driver: [ "messaging" ]
-ironic_notification_topics: "notifications"
-ironic_control_exchange: "openstack"
+#ironic_notification_driver: [ "messaging" ]
+#ironic_notification_topics: "notifications"
+#ironic_control_exchange: "openstack"
 #ironic_transport_url:
 ironic_rpc_backend: "rabbit"
 ironic_auth_strategy: "noauth"
