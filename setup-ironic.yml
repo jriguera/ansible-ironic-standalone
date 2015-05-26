@@ -33,7 +33,7 @@
     - role: ironic
       ironic_my_ip: "{{ansible_eth0.ipv4.address}}"
       ironic_conductor_api_url: "http://{{ironic_my_ip}}:6385/"
-      ironic_pxe_tftp_server: "{{ansible_eth1.ipv4.address}}"
+      ironic_pxe_tftp_server: "{{ironic_my_ip}}"
       ironic_oslo_messaging_rabbit_host: "localhost"
       ironic_oslo_messaging_rabbit_userid: "ironic"
       ironic_oslo_messaging_rabbit_password: "rabbitmq"
@@ -43,10 +43,10 @@
       ironic_database_mysql_password: "mysql"
       ironic_database_mysql_db: "ironic"
     - role: dnsmasq
-      dnsmasq_conf_domain: "pxe"
+      dnsmasq_conf_domain: "pxe.pe.springer-sbm.com"
       dnsmasq_conf_dhcp:
-        eth1:
-          range: [10.0.0.100, 10.0.0.200, infinite]
+        eth0:
+          range: [10.230.44.160, 10.230.44.179, infinite]
           ignore_names: true
           generate_names: true
           boot: [ "{{ironic_pxe_bootfile_name}}" ]
