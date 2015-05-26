@@ -9,8 +9,6 @@ ironic_packages:
     state: latest
   ironic-conductor: 
     state: latest
-  python-ironicclient:
-    state: latest
 
 ironic_packages_aux:
   syslinux: 
