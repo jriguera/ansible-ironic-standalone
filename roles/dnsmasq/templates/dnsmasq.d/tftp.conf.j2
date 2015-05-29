@@ -7,7 +7,7 @@
 # Enable the TFTP server function.
 enable-tftp={% for (i, v) in dnsmasq_conf_dhcp.iteritems() if v["tftp"] is defined -%}{{ i }}{% if not loop.last -%},{% endif %}{% endfor %}
 
-{% for (if, values) in dnsmasq_conf_dhcp.iteritems() -%}
+{% for (if, values) in dnsmasq_conf_dhcp.iteritems() %}
 {% if values["tftp"] is defined %}
 # Look for files to transfer using TFTP relative to the given directory.
 tftp-root={{ values["tftp"] }},{{ if }}
