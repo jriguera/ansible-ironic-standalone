@@ -17,7 +17,9 @@
         - user: "ironic"
           password: "rabbitmq"
           vhost: "ironic"
-          tags: [ "administrator", "management" ]
+          tags: 
+            - "administrator"
+            - "management"
 
     - role: ironic
       ironic_debug: true
@@ -32,7 +34,9 @@
       ironic_database_mysql_userid: "ironic"
       ironic_database_mysql_password: "mysql"
       ironic_database_mysql_db: "ironic"
-      ironic_enabled_drivers: [ "pxe_ipmitool" ]
+      ironic_enabled_drivers: 
+        - "pxe_ipmitool"
+        - "agent_ipmitool"
       
     - role: dnsmasq
       dnsmasq_conf_domain: "pxe.local"
@@ -41,52 +45,75 @@
           range: [10.0.0.100, 10.0.0.200, infinite]
           ignore_names: true
           generate_names: true
-          boot: [ "{{ ironic_pxe_bootfile_name }}" ]
+          boot: ["{{ ironic_pxe_bootfile_name }}"]
           tftp: "{{ ironic_pxe_tftp_root }}"
+
+    - role: nginx
+      nginx_server_list:
+        - name: "image-server"
+          root: "{{ ironic_pxe_images_path }}"
+          access_log: "/var/log/nginx/ironic-image-server_access.log"
+          location_list:
+            - name: "/"
+              autoindex: "on"
 
     - role: monit
       monit_monitoring_list:
         - name: mysql
           type: process
-          target: "{{mysql_pidfile}}"
-          start: { script: "/etc/init.d/mysql start", timeout: 60 }
-          stop: { script: "/etc/init.d/mysql stop" }
-          rules:
-            - "if failed port {{mysql_port}} protocol mysql then restart"
-            - "if 3 restarts within 3 cycles then timeout"
+          target: "{{ mysql_pidfile }}"
+          start:
+            script: "/etc/init.d/mysql start"
+            timeout: 60
+          stop: 
+            script: "/etc/init.d/mysql stop"
         - name: rabbitmq
           type: process
-          target: "{{rabbitmq_pidfile}}"
-          start: { script: "/etc/init.d/rabbitmq-server start" }
-          stop: { script: "/etc/init.d/rabbitmq-server stop" }
-          rules:
-            - "if failed port {{rabbitmq_tcp_port}} type tcp then restart"
-            - "if 3 restarts within 3 cycles then timeout"
+          target: "{{ rabbitmq_pidfile }}"
+          start: 
+            script: "/etc/init.d/rabbitmq-server start"
+          stop:
+            script: "/etc/init.d/rabbitmq-server stop"
         - name: dnsmasq
           type: process
-          target: "{{dnsmasq_pidfile}}"
-          start: { script: "/etc/init.d/dnsmasq start" }
-          stop: { script: "/etc/init.d/dnsmasq stop" }
-          rules:
-            - "if failed port 53 type tcp protocol dns then restart"
-            - "if 3 restarts within 3 cycles then timeout"
+          target: "{{ dnsmasq_pidfile }}"
+          start:
+            script: "/etc/init.d/dnsmasq start"
+          stop:
+            script: "/etc/init.d/dnsmasq stop"
         - name: ironic-api
           type: process
-          target: "{{ironic_api_pidfile}}"
-          start: { script: "service start ironic-api" }
-          stop: { script: "service stop ironic-api" }
-          rules:
-            - "if failed port 6385 type tcp then restart"
-            - "if 3 restarts within 3 cycles then timeout"
+          target: "{{ ironic_api_pidfile }}"
+          start:
+            script: "service start ironic-api"
+          stop:
+            script: "service stop ironic-api"
         - name: ironic-conductor
           type: process
-          target: "{{ironic_conductor_pidfile}}"
-          start: { script: "service start ironic-conductor" }
-          stop: { script: "service stop ironic-conductor" }
-          rules:
-            - "if 3 restarts within 3 cycles then timeout"
+          target: "{{ ironic_conductor_pidfile }}"
+          start: 
+            script: "service start ironic-conductor"
+          stop: 
+            script: "service stop ironic-conductor"
+        - name: nginx
+          type: process
+          target: "{{ nginx_pidfile }}"
+          start:
+            script: "/etc/init.d/nginx start"
+          stop:
+            script: "/etc/init.d/nginx stop"
 
+  tasks:
+    - name: Download IPA Coreos ramdisk
+      get_url:
+        url: http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem.cpio.gz
+        dest: "{{ ironic_pxe_images_path }}/"
 
-#  tasks:
-#    - name: Display all variables/facts known for a host
-#      debug: var=hostvars[inventory_hostname]
+    - name: Download IPA Coreos kernel
+      get_url:
+        url: http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe.vmlinuz
+        dest: "{{ ironic_pxe_images_path }}/"
+  
+#   - name: Display all variables/facts known for a host
+#     debug: var=hostvars[inventory_hostname]
+
