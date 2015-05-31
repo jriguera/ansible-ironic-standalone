@@ -26,9 +26,4 @@
   notify: reload monit
   tags: ["monit", "monitor"]
 
-- name: List monitors
-  command: ls -1 "{{ monit_config_dir }}"
-  register: __monit_services_present
-  changed_when: false
-  tags: ["monit", "monitor"]
 
