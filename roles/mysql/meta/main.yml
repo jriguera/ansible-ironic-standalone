@@ -1,7 +1,7 @@
 ---
 galaxy_info:
-  author: geerlinggy, jriguera
-  description: MySQL server for RHEL/CentOS and Debian/Ubuntu (based on geerlingguy)
+  author: jriguera
+  description: MySQL install and setup for RedHat/Debian based distributions (based on geerlingguy)
   company: Springer SBM
   license: GPLv3
   min_ansible_version: 1.9
@@ -24,3 +24,4 @@ galaxy_info:
     - database:sql
 
 dependencies: []
+
