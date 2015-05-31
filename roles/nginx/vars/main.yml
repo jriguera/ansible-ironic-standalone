@@ -1,0 +1,12 @@
+---
+nginx_os_packages: true
+nginx_os_repo_url:
+nginx_os_repo_key:
+
+nginx_daemon: nginx
+
+nginx_pidfile: /var/run/nginx.pid
+nginx_config_dir: /etc/nginx
+nginx_config_file: /etc/nginx/nginx.conf
+nginx_ssl_dir: /etc/nginx/ssl
+

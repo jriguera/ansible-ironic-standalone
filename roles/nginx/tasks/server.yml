@@ -1,0 +1,36 @@
+---
+- name: Delete default vhost
+  file:
+    path: "{{ nginx_default_server_path }}"
+    state: absent
+  when: nginx_remove_default_server
+  notify: reload nginx
+  tags: ["nginx", "server"]
+
+- name: Delete vhost servers
+  file:
+    state: absent
+    path: "{{ nginx_sites_dir }}/{{ item.name }}.conf" 
+  with_items: nginx_server_list
+  when: >
+    nginx_server_list is defined and
+    not nginx_server_list is none and
+    (item.delete is defined and item.delete)
+  notify: reload nginx
+  tags: ["nginx", "server"]
+
+- name: Add vhost servers
+  template:
+    src: server.conf.j2
+    dest: "{{ nginx_sites_dir }}/{{ item.name }}.conf"
+    owner: "{{ nginx_user }}"
+    group: "{{ nginx_group }}"
+    mode: 0644
+  with_items: nginx_server_list
+  when: >
+    nginx_server_list is defined and
+    not nginx_server_list is none and
+    not (item.delete is defined and item.delete)
+  notify: reload nginx
+  tags: ["nginx", "server"]
+

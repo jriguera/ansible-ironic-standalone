@@ -1,0 +1,104 @@
+---
+nginx_enabled_on_startup: true
+
+# Main options
+nginx_error_log: "/var/log/nginx/error.log"
+nginx_error_log_level: "error"
+nginx_working_directory: "/tmp"
+worker_rlimit_nofile: 4096
+nginx_worker_processes: "auto"
+nginx_worker_priority: 0
+nginx_worker_connections: 512
+nginx_worker_rlimit_nofile: 4096
+# Connection processing method: http://nginx.org/en/docs/events.html
+nginx_use: "epoll"
+
+# Http core options
+nginx_sendfile: True
+nginx_sendfile_max_chunk: "100m"
+nginx_tcp_nopush: True
+nginx_tcp_nodelay: True
+server_tokens: True
+nginx_keepalive_timeout: "75s"
+nginx_keepalive_requests: 100
+nginx_connection_pool_size: "256"
+
+#nginx_default_type: "application/octet-stream"
+nginx_directio: "5m"
+#nginx_client_header_timeout: "60s"
+#nginx_client_max_body_size: "1m"
+# Setting up hashes: http://nginx.org/en/docs/hash.html
+nginx_server_names_hash_bucket_size: 64
+#nginx_server_names_hash_max_size: 512
+#nginx_resolver: ["127.0.0.1", "valid=30s"]
+nginx_resolver_timeout: "5s"
+
+# Access log options, set of "off" to disable
+#nginx_access_log: "/var/log/nginx/access.log"
+# Define to apply the format
+#nginx_access_log_format: '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" "$http_x_forwarded_for"'
+nginx_access_log_params: "buffer=16k"
+
+# Gzip options:
+nginx_gzip: true
+nginx_gzip_comp_level: 1
+nginx_gzip_min_length: 20
+nginx_gzip_proxied: "off"
+
+# SSL global optimization options. SSL has to be enabled per server:
+#nginx_ssl_protocols: ['TLSv1.2'] 
+#nginx_ssl_session_cache: "shared:SSL:10m"
+#nginx_ssl_session_timeout: "10m"
+# Wild card certificate for all servers (it will copy them to nginx_ssl_dir)
+#nginx_ssl_certificate: <file>
+#nginx_ssl_certificate_key: <file>
+
+# Global proxy cache options
+#nginx_proxy_cache_path: ["/var/cache/nginx/proxy", "levels=1:2", "zone=caching:8m"]
+#nginx_proxy_temp_path: ["/var/cache/nginx/temp", 1, 2]
+
+# Vhosts or sites
+nginx_remove_default_server: True
+nginx_server_list: []
+
+# Example with all available options (name is the only required parameter)
+#nginx_server_list:
+#  - name: "example.com"
+#    root: "/var/www/example.com"
+#    delete: False
+#    listen: 
+#      - ["80", "default_server"]
+#      - ["443", "ssl"]
+#    alias: ["www.example.com"]
+#    charset: "utf-8"
+#    disable_symlinks: "off"
+#    limit_rate: 0
+#    limit_rate_after: 0
+#    error_page: ["404", "/404.html"]
+#    access_log: "/var/log/nginx/name_access.log"
+#    index: ["index.html", "index.htm"]
+#    rewrite: 
+#      - "^/users/(.*)$ /show?user=$1? last"
+#    return: "403"
+#    location_list:
+#      - name: "^~ /images/"
+#        confiration: "parameters"
+#        try_files: "$uri $uri/ 404"
+
+# Example with a proxy backend
+#nginx_server_list:
+#  - name: "proxybackend"
+#    delete: False
+#    listen: 
+#      - ["80", "default_server"]
+#    access_log: "/var/log/nginx/name_access.log"
+#    upstream:
+#      strategy: "ip_hash"
+#      server_list:
+#        - "srv1.example.com"
+#        - "srv2.example.com weight=3"
+#        - "srv3.example.com"
+#    location_list:
+#      - name: "/"
+#        proxy_pass: "http://proxybackend"
+

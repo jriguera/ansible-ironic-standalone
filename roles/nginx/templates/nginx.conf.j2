@@ -1,0 +1,107 @@
+# {{ ansible_managed }}
+#
+# NGINX configuration file
+#
+# Comments begin with a '#' and extend through the end of the line.
+#
+user {{ nginx_user }} {{ nginx_group | default('') }};
+error_log {{ nginx_error_log }} {{ nginx_error_log_level | default('error') }};
+pid {{ nginx_pidfile }};
+worker_processes {{ nginx_worker_processes | default('1') }};
+worker_priority {{ nginx_worker_priority | default('0') }};
+{% if nginx_working_directory is defined and not nginx_working_directory is none -%}
+working_directory {{ nginx_working_directory }};
+{% endif %}
+{% if nginx_worker_rlimit_nofile is defined and not nginx_worker_rlimit_nofile is none -%}
+worker_rlimit_nofile {{ nginx_worker_rlimit_nofile }};
+{% endif %}
+
+events {
+    worker_connections {{ nginx_worker_connections | default('512') }};
+    use {{ nginx_use | default('epoll') }};
+}
+
+http {
+    # Basic settings
+    sendfile {{ nginx_sendfile |  default(False) | ternary('on','off') }};
+    sendfile_max_chunk {{ nginx_sendfile_max_chunk | default('0') }};
+    tcp_nopush {{ nginx_tcp_nopush | default(False) | ternary('on','off') }};
+    tcp_nodelay {{ nginx_tcp_nodelay | default(True) | ternary('on','off') }};
+    keepalive_timeout {{ nginx_keepalive_timeout }};
+    keepalive_requests {{ nginx_keepalive_requests }};
+    server_tokens {{ nginx_server_tokens | default(True) | ternary('on','off') }};
+    connection_pool_size {{ nginx_connection_pool_size | default('256') }};
+    
+    include {{ nginx_config_dir }}/mime.types;
+    default_type {{ nginx_default_type | default('text/plain') }};
+
+{% if nginx_resolver is defined and not nginx_resolver is none %}
+    resolver {{ nginx_resolver | join(' ') }};
+{% endif %}
+{%- if nginx_resolver_timeout is defined and not nginx_resolver_timeout is none %}
+    resolver_timeout {{ nginx_resolver_timeout }};
+{% endif %}
+    directio {{ nginx_directio | default('off') }};
+
+{% if nginx_client_header_timeout is defined and not nginx_client_header_timeout is none %}
+    client_header_timeout {{ nginx_client_header_timeout }};
+{% endif %}
+{%- if nginx_client_max_body_size is defined and not nginx_client_max_body_size is none %}
+    client_max_body_size {{ nginx_client_max_body_size }};
+{% endif %}
+{%- if nginx_server_names_hash_bucket_size is defined and not nginx_server_names_hash_bucket_size is none %}   
+    server_names_hash_bucket_size {{ nginx_server_names_hash_bucket_size }};
+{% endif %}
+{%- if nginx_server_names_hash_max_size is defined and not nginx_server_names_hash_max_size is none %}
+    server_names_hash_max_size {{ nginx_server_names_hash_max_size }};
+{% endif %} 
+
+{% if nginx_access_log is defined and nginx_access_log | trim != 'off' -%}
+{% if nginx_access_log_format is defined and not nginx_access_log_format is none %}
+    log_format defined '{{ nginx_access_log_format }}';
+    access_log {{ nginx_access_log }} defined {{ nginx_access_log_params | default('') }};
+{% else %}
+    access_log {{ nginx_access_log }} combined {{ nginx_access_log_params | default('') }};
+{% endif %}
+{% else %}
+    access_log off;
+{% endif %}
+ 
+{% if nginx_gzip is defined and nginx_gzip %}
+    # Gzip module options
+    gzip on;
+    gzip_comp_level {{ nginx_gzip_comp_level | default('1') }};
+    gzip_min_length {{ nginx_gzip_min_length | default('20') }};
+    gzip_proxied {{ nginx_gzip_proxied | default('off') }};
+{% endif %}
+
+    # Some SSL to optimize the servers
+{% if nginx_ssl_protocols is defined and not nginx_ssl_protocols is none %}
+    ssl_protocols {{ nginx_ssl_protocols | join(' ') }};
+{% endif %}
+{% if nginx_ssl_session_cache is defined and not nginx_ssl_session_cache is none %}
+    ssl_session_cache {{ nginx_ssl_session_cache }};
+{% endif %}
+{% if nginx_ssl_session_timeout is defined and not nginx_ssl_session_timeout is none %}
+    ssl_session_timeout {{ nginx_ssl_session_timeout }};
+{% endif %}
+{% if nginx_ssl_certificate is defined and not nginx_ssl_certificate is none %}
+    # Multiple hosts certificate (wild card certificate)
+    ssl_certificate {{ nginx_ssl_dir }}/{{ nginx_ssl_certificate | basename }};
+    ssl_certificate_key {{ nginx_ssl_dir }}/{{ nginx_ssl_certificate_key | basename }};
+{% endif %}
+
+    # Global proxy cache options
+{% if nginx_proxy_cache_path is defined and not nginx_proxy_cache_path is none %}
+    proxy_cache_path {{ nginx_proxy_cache_path | join(' ') }};
+{% endif %}
+{% if nginx_proxy_temp_path is defined and not nginx_proxy_temp_path is none %}
+    proxy_temp_path {{ nginx_proxy_temp_path | join(' ') }};
+{% endif %}
+
+{% if nginx_confd_dir != nginx_sites_dir %}
+    include {{ nginx_confd_dir }}/*.conf;
+{% endif %}
+    include {{ nginx_sites_dir }}/*.conf;
+}
+

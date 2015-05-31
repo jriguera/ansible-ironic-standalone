@@ -1,0 +1,15 @@
+---
+nginx_sites_dir: /etc/nginx/sites-enabled
+nginx_confd_dir: /etc/nginx/conf.d
+nginx_default_server_path: /etc/nginx/sites-enabled/default
+
+nginx_user: "www-data"
+nginx_group: "www-data"
+
+nginx_packages_install_recommends: true
+nginx_init_system: "initd"
+
+nginx_packages:
+  nginx-full:
+    state: latest
+

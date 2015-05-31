@@ -1,0 +1,74 @@
+# {{ ansible_managed }}
+#
+# NGINX server vhost configuration file
+#
+# Comments begin with a '#' and extend through the end of the line.
+#
+
+{% if item.upstream is defined %}
+# Upstreams server for caching or load balancing
+# http://nginx.org/en/docs/http/load_balancing.html
+upstream {{ item.name }} {
+{% if item.upstream.strategy is defined %}
+        {{ item.upstream.strategy }};
+{% endif %}
+{% for server in item.upstream.server_list %}
+        server {{ server }};
+{% endfor %}
+{% if item.upstream.keepalive is defined %}
+        keepalive {{ item.upstream.keepalive }};
+{% endif %}
+}
+{% endif %}
+
+
+server {
+{% if item.listen is defined %}
+{% for listen in item.listen %}
+    listen {{ listen | join(' ') }};
+{% endfor %}
+{% else %}
+    listen 80 default_server;
+{% endif %}
+    server_name {{ item.name }} {{ item.alias | default([]) | join(' ') }};
+{% if item.root is defined and not item.root is none %}
+    root {{ item.root }};
+{% endif %}
+{% if item.index is defined and not item.index is none %}
+    index {{ item.index | join(' ') }};
+{% endif %}
+    charset {{ item.charset | default('off') }};
+    disable_symlinks {{ item.disable_symlinks | default('off') }};
+    limit_rate {{ item.limit_rate | default('0') }};
+    limit_rate_after {{ item.limit_rate_after | default('0') }};
+    
+{% if item.error_page is defined and not item.error_page is none %}
+    error_page {{ item.error_page | join(' ') }};
+{% endif %}
+    
+{% if item.access_log is defined and not item.access_log is none %}
+    access_log {{ item.access_log }};
+{% endif %}
+
+{% if item.rewrite is defined %}
+{% for rw in item.rewrite %}
+    rewrite {{ rw }};
+{% endfor %}
+{% endif %}
+{% if item.return is defined %}
+    return {{ item.return }};
+{% endif %}
+
+{% if item.location_list is defined %}
+{% for location in item.location_list %}
+    location {{ location.name }} {
+{% for (p, v) in location.iteritems() %}
+{% if p != 'name' %}
+       {{ p }} {{ v }};
+{% endif %}
+{% endfor %}
+    }
+{% endfor %}
+{% endif %}
+}
+

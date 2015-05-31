@@ -1,0 +1,25 @@
+---
+galaxy_info:
+  author: Jose Riguera
+  description: Nginx installation and setup on RedHat/Debian based distributions
+  company: Springer SBM
+  license: GPLv3
+  min_ansible_version: 1.9
+
+  platforms:
+  - name: EL
+    versions:
+    - 6
+    - 7
+  - name: Debian
+    versions:
+    - all
+  - name: Ubuntu
+    versions:
+    - all
+
+  categories:
+    - development
+    - web
+
+dependencies: []

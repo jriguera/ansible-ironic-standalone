@@ -1,0 +1,15 @@
+---
+nginx_os_repo_url: "http://nginx.org/packages/centos/{{ ansible_distribution_major_version }}/$basearch/"
+nginx_os_repo_key:
+
+nginx_sites_dir: /etc/nginx/conf.d
+nginx_confd_dir: /etc/nginx/conf.d
+nginx_default_server_path: /etc/nginx/conf.d/default.conf
+
+nginx_user: "nginx"
+nginx_group: "nginx"
+
+nginx_packages:
+  nginx:
+    state: latest
+
