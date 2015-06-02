@@ -96,10 +96,10 @@ Nginx (HTTP server). Monit is just in charge of controling the processes, so you
 can also skip it. 
 
 It is important to explain that this implementation is not ready to use iPXE 
-protocol, Nginx is here because the driver **agent_ipmitool** needs an HTTP server 
-for the IPA (Ironic Python Agent). Of course, setup iPXE should not be 
-difficult, feel free to create a PR and if you do not want to use the driver 
-*agent_ipmitool* you can skip the Ngnix role and its parameters.
+protocol, Nginx is used because of the driver **agent_ipmitool**, it needs an HTTP 
+server to provide the images to the IPA (Ironic Python Agent). Of course, setup 
+iPXE should not be difficult, feel free to create a PR and if you do not want 
+to use the driver *agent_ipmitool* you can skip the Ngnix role and its parameters.
 
 The playbook ``setup-ironic.yml`` defines the roles (and variables) to apply to
 4 groups of serves (``group_vars/database``, ``group_vars/messaging``, 
@@ -130,11 +130,11 @@ Using Ironic
 The following section shows howto use Ironic from a client prespective, using 
 the Ironic command line client and a server deployed by using the Ansible 
 playbook provided. If you want to run the Ironic client on the server, you
-should install the latest python-ironicclient package -at least version 0.5.0-.
-At the moment of this writting it is not availabe on the official repo, so you
+should install the latest python-ironicclient package -use at least version 0.5.0-.
+At the time of this writing it is not availabe on the official repo, so you
 have to install it using pip:
 
-.. code-block:: sh
+.. code-block:: bash
    sudo apt-get install python-pip
    sudo pip install python-ironicclient
 
