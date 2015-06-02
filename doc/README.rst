@@ -447,6 +447,14 @@ is working on an abstraction layer.
 Currently the community is working on a way to define the network information
 (and much more) in an agnostic way, not depending on the distribution:
 
+Another interesting point is you can create a ``user_data`` file (next to 
+``meta_data.json``, in both folders) and define a complete Cloud-Init 
+configuration by using:
+
+ * Shell script (starts with #!)
+ * `Cloud config file <http://cloudinit.readthedocs.org/en/latest/topics/examples.html>`_ (starts with #cloud-config)
+
+More information about Cloud-Init here: http://cloudinit.readthedocs.org/en/latest/
 
 
 Ironic will assume that the image is not a whole disk image 
