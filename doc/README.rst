@@ -1,5 +1,5 @@
-Ironic for dumies
-=================
+Ironic for dummies
+==================
 
 This guide is focused on Ironic as standalone service to deploy baremetal 
 servers. It describes how it works and if you think that something is 
@@ -132,53 +132,49 @@ the Ironic command line client and a server deployed by using the Ansible
 playbook provided. If you want to run the Ironic client on the server, you
 should install the latest python-ironicclient package -use at least version 0.5.0-.
 At the time of this writing it is not availabe on the official repo, so you
-have to install it using pip:
+have to install it using pip::
 
-.. code-block:: bash
-   sudo apt-get install python-pip
-   sudo pip install python-ironicclient
+  sudo apt-get install python-pip
+  sudo pip install python-ironicclient
 
 Now we can see how the client works, but first we have to define the URL of the 
 Ironic-API where the client needs connect to, the best way is define some
-environmet variables:
+environmet variables::
 
-.. code-block:: sh
-   export IRONIC_URL=http://localhost:6385/
-   export OS_AUTH_TOKEN=" "
+  export IRONIC_URL=http://localhost:6385/
+  export OS_AUTH_TOKEN=" "
 
 Because there is no Identity service running (*keystone*) the variable 
 **OS_AUTH_TOKEN** contains a fake token to allow ironic client to operate.
 
-Let's list the available drivers:
+Let's list the available drivers::
 
-.. code-block:: sh
-   ironic driver-list
-   +---------------------+----------------+
-   | Supported driver(s) | Active host(s) |
-   +---------------------+----------------+
-   | agent_ipmitool      | ironic         |
-   | pxe_ipmitool        | ironic         |
-   +---------------------+----------------+
+  ironic driver-list
+  +---------------------+----------------+
+  | Supported driver(s) | Active host(s) |
+  +---------------------+----------------+
+  | agent_ipmitool      | ironic         |
+  | pxe_ipmitool        | ironic         |
+  +---------------------+----------------+
 
 
 There are two available drivers which are explained below, but first let's see 
-how to create a chassis:
+how to create a chassis::
 
-.. code-block:: sh
-   ironic chassis-create -d "My test chassis" -e location=dogo -e env=test
-   +-------------+-----------------------------------------+
-   | Property    | Value                                   |
-   +-------------+-----------------------------------------+
-   | uuid        | 1eb3951f-2406-4cf1-b4a1-115e90a65480    |
-   | description | My test chassis                         |
-   | extra       | {u'location': u'dogo', u'env': u'test'} |
-   +-------------+-----------------------------------------+
-   ironic chassis-list
-   +--------------------------------------+-------------------+
-   | UUID                                 | Description       |
-   +--------------------------------------+-------------------+
-   | 1eb3951f-2406-4cf1-b4a1-115e90a65480 | My test chassis   |
-   +--------------------------------------+-------------------+
+  ironic chassis-create -d "My test chassis" -e location=dogo -e env=test
+  +-------------+-----------------------------------------+
+  | Property    | Value                                   |
+  +-------------+-----------------------------------------+
+  | uuid        | 1eb3951f-2406-4cf1-b4a1-115e90a65480    |
+  | description | My test chassis                         |
+  | extra       | {u'location': u'dogo', u'env': u'test'} |
+  +-------------+-----------------------------------------+
+  ironic chassis-list
+  +--------------------------------------+-------------------+
+  | UUID                                 | Description       |
+  +--------------------------------------+-------------------+
+  | 1eb3951f-2406-4cf1-b4a1-115e90a65480 | My test chassis   |
+  +--------------------------------------+-------------------+
 
 A chassis is a logical composition of baremetal servers and you can define and 
 assign some variables to it. As we know the infrastruture is working properly,
@@ -256,11 +252,10 @@ Create images to use *pxe_ipmitool*
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The image creation process can be fully automated by using ``disk-image-create``
-from Image building tools for OpenStack  https://github.com/openstack/diskimage-builder:
+from ``Image building tools for OpenStack <https://github.com/openstack/diskimage-builder>``_::
 
-.. code-block:: sh
-   # Create the image to deploy on disk (with Config-Drive support)
-   DIB_CLOUD_INIT_DATASOURCES="ConfigDrive, OpenStack" disk-image-create ubuntu baremetal dhcp-all-interfaces -o ubuntu
+  # Create the image to deploy on disk (with Config-Drive support)
+  DIB_CLOUD_INIT_DATASOURCES="ConfigDrive, OpenStack" disk-image-create ubuntu baremetal dhcp-all-interfaces -o ubuntu
 
 Note the variable *DIB_CLOUD_INIT_DATASOURCES* which issues ``disk-image-create``
 to include the Config-Drive provider of Cloud-Init. Also, note all the 
@@ -273,10 +268,9 @@ Ironic needs to boot the image once it is installed, so 3 files will appear
 after run the command: the image ``ubuntu.qcow2``, the kernel ``ubuntu.vmlinuz`` 
 and the ramdisk ``ubuntu.initrd``.
 
-In the same way, it is needed to create a deploy ramdisk image:
+In the same way, it is needed to create a deploy ramdisk image::
 
-.. code-block:: sh
-   ramdisk-image-create ubuntu deploy-ironic -o ubuntu-deploy-ramdisk
+  ramdisk-image-create ubuntu deploy-ironic -o ubuntu-deploy-ramdisk
 
 It will create a ramdisk image ``ubuntu-deploy-ramdisk.initramfs`` and a kernel 
 ``ubuntu-deploy-ramdisk.kernel``.
@@ -289,98 +283,96 @@ Operation
 ---------
  
 Let's see how to use the *pxe_ipmitool* driver by defining a new baremetal 
-server:
+server::
 
-.. code-block:: sh
-   # UUID of the chassis defined above
-   CHASSIS=1eb3951f-2406-4cf1-b4a1-115e90a65480
-   # Name of the new server
-   NAME=test1
-   # MAC address for PXE
-   MAC=00:25:90:8f:51:a0
-   # IPMI ip with (ADMIN/ADMIN as user/password)
-   IPMI=10.0.0.2
-   # Define the new server on the chassis using the driver pxe_ipmitool
-   ironic node-create -c $CHASSIS -n $NAME -d pxe_ipmitool -i ipmi_address=$IPMI -i ipmi_username=ADMIN -i ipmi_password=ADMIN -i deploy_kernel=file:///var/lib/ironic/images/ubuntu-deploy-ramdisk.kernel" -i deploy_ramdisk=file:///var/lib/ironic/images/ubuntu-deploy-ramdisk.initramfs
-   +--------------+-----------------------------------------------------------------------------------+
-   | Property     | Value                                                                             |
-   +--------------+-----------------------------------------------------------------------------------+
-   | uuid         | 7cefe9c2-031e-4160-b42e-6a7035a7873b                                              |
-   | driver_info  | {u'deploy_kernel': u'file:///var/lib/ironic/images/ubuntu-deploy-ramdisk.kernel', |
-   |              | u'ipmi_address': u'10.0.0.2', u'ipmi_username': u'ADMIN',                         |
-   |              | u'ipmi_password': u'******', u'deploy_ramdisk': u'file:///var/lib/ironic          |
-   |              | /images/ubuntu-deploy-ramdisk.initramfs'}                                         |
-   | extra        | {}                                                                                |
-   | driver       | pxe_ipmitool                                                                      |
-   | chassis_uuid | 1eb3951f-2406-4cf1-b4a1-115e90a65480                                              |
-   | properties   | {}                                                                                |
-   | name         | test1                                                                             |
-   +--------------+-----------------------------------------------------------------------------------+
-   # Get the UUID of the new node
-   UUID=$(ironic node-list | awk "/$NAME/ { print \$2 }")
-   # Define the port: the link between the MAC and the server
-   ironic port-create -n $UUID -a $MAC
-   +-----------+--------------------------------------+
-   | Property  | Value                                |
-   +-----------+--------------------------------------+
-   | node_uuid | 7cefe9c2-031e-4160-b42e-6a7035a7873b |
-   | extra     | {}                                   |
-   | uuid      | 324a4602-8cec-47d7-b496-241c081cbcee |
-   | address   | 00:25:90:8f:51:a0                    |
-   +-----------+--------------------------------------+
+  # UUID of the chassis defined above
+  CHASSIS=1eb3951f-2406-4cf1-b4a1-115e90a65480
+  # Name of the new server
+  NAME=test1
+  # MAC address for PXE
+  MAC=00:25:90:8f:51:a0
+  # IPMI ip with (ADMIN/ADMIN as user/password)
+  IPMI=10.0.0.2
+  # Define the new server on the chassis using the driver pxe_ipmitool
+  ironic node-create -c $CHASSIS -n $NAME -d pxe_ipmitool -i ipmi_address=$IPMI -i ipmi_username=ADMIN -i ipmi_password=ADMIN -i deploy_kernel=file:///var/lib/ironic/images/ubuntu-deploy-ramdisk.kernel" -i deploy_ramdisk=file:///var/lib/ironic/images/ubuntu-deploy-ramdisk.initramfs
+  +--------------+-----------------------------------------------------------------------------------+
+  | Property     | Value                                                                             |
+  +--------------+-----------------------------------------------------------------------------------+
+  | uuid         | 7cefe9c2-031e-4160-b42e-6a7035a7873b                                              |
+  | driver_info  | {u'deploy_kernel': u'file:///var/lib/ironic/images/ubuntu-deploy-ramdisk.kernel', |
+  |              | u'ipmi_address': u'10.0.0.2', u'ipmi_username': u'ADMIN',                         |
+  |              | u'ipmi_password': u'******', u'deploy_ramdisk': u'file:///var/lib/ironic          |
+  |              | /images/ubuntu-deploy-ramdisk.initramfs'}                                         |
+  | extra        | {}                                                                                |
+  | driver       | pxe_ipmitool                                                                      |
+  | chassis_uuid | 1eb3951f-2406-4cf1-b4a1-115e90a65480                                              |
+  | properties   | {}                                                                                |
+  | name         | test1                                                                             |
+  +--------------+-----------------------------------------------------------------------------------+
+  # Get the UUID of the new node
+  UUID=$(ironic node-list | awk "/$NAME/ { print \$2 }")
+  # Define the port: the link between the MAC and the server
+  ironic port-create -n $UUID -a $MAC
+  +-----------+--------------------------------------+
+  | Property  | Value                                |
+  +-----------+--------------------------------------+
+  | node_uuid | 7cefe9c2-031e-4160-b42e-6a7035a7873b |
+  | extra     | {}                                   |
+  | uuid      | 324a4602-8cec-47d7-b496-241c081cbcee |
+  | address   | 00:25:90:8f:51:a0                    |
+  +-----------+--------------------------------------+
 
 
-Now it's time to define the final image to install on the baremetal server:
+Now it's time to define the final image to install on the baremetal server::
 
-.. code-block:: sh
-   # Ironic needs the checksum of the image
-   MD5=$(md5sum /var/lib/ironic/images/ubuntu.qcow2 | cut -d' ' -f 1)
-   # Define the image to install on the server
-   ironic node-update $UUID add instance_info/image_source=file:///var/lib/ironic/images/ubuntu.qcow2 instance_info/kernel=file:///var/lib/ironic/images/ubuntu.vmlinuz instance_info/ramdisk=file:///var/lib/ironic/images/ubuntu.initrd instance_info/root_gb=10 instance_info/image_checksum=$MD5
-   +------------------------+------------------------------------------------------------------------+
-   | Property               | Value                                                                  |
-   +------------------------+------------------------------------------------------------------------+
-   | target_power_state     | None                                                                   |
-   | extra                  | {}                                                                     |
-   | last_error             | None                                                                   |
-   | updated_at             | 2015-05-28T12:53:23+00:00                                              |
-   | maintenance_reason     | None                                                                   |
-   | provision_state        | available                                                              |
-   | uuid                   | 7cefe9c2-031e-4160-b42e-6a7035a7873b                                   |
-   | console_enabled        | False                                                                  |
-   | target_provision_state | None                                                                   |
-   | maintenance            | False                                                                  |
-   | inspection_started_at  | None                                                                   |
-   | inspection_finished_at | None                                                                   |
-   | power_state            | power off                                                              |
-   | driver                 | pxe_ipmitool                                                           |
-   | reservation            | None                                                                   |
-   | properties             | {}                                                                     |
-   | instance_uuid          | None                                                                   |
-   | name                   | test1                                                                  |
-   | driver_info            | {u'ipmi_password': u'******', u'ipmi_address': u'10.0.0.2',            |
-   |                        | u'ipmi_username': u'ADMIN', u'deploy_kernel': u'file:///var/lib/ironic |
-   |                        | /images/ubuntu-deploy-ramdisk.kernel', u'deploy_ramdisk': u'file:///va |
-   |                        | r/lib/ironic/images/ubuntu-deploy-ramdisk.initramfs'}                  |
-   | created_at             | 2015-05-28T12:52:23+00:00                                              |
-   | driver_internal_info   | {}                                                                     |
-   | chassis_uuid           | 1eb3951f-2406-4cf1-b4a1-115e90a65480                                   |
-   | instance_info          | {u'ramdisk': u'file:///var/lib/ironic/images/ubuntu.initrd',           |
-   |                        | u'kernel': u'file:///var/lib/ironic/images/ubuntu.vmlinuz',            |
-   |                        | u'root_gb': 10, u'image_source': u'file:///var/lib/ironic/images/      |
-   |                        | ubuntu.qcow2', u'image_checksum': u'a2b651231f7cdd5fc45a3ce961b2b2da'} |
-   +------------------------+------------------------------------------------------------------------+
-   # Validate the node parameters
-   ironic node-validate $UUID
-   +------------+--------+---------------------------------------------------------------+
-   | Interface  | Result | Reason                                                        |
-   +------------+--------+---------------------------------------------------------------+
-   | console    | False  | Missing 'ipmi_terminal_port' parameter in node's driver_info. |
-   | deploy     | True   |                                                               |
-   | inspect    | None   | not supported                                                 |
-   | management | True   |                                                               |
-   | power      | True   |                                                               |
-   +------------+--------+---------------------------------------------------------------+
+  # Ironic needs the checksum of the image
+  MD5=$(md5sum /var/lib/ironic/images/ubuntu.qcow2 | cut -d' ' -f 1)
+  # Define the image to install on the server
+  ironic node-update $UUID add instance_info/image_source=file:///var/lib/ironic/images/ubuntu.qcow2 instance_info/kernel=file:///var/lib/ironic/images/ubuntu.vmlinuz instance_info/ramdisk=file:///var/lib/ironic/images/ubuntu.initrd instance_info/root_gb=10 instance_info/image_checksum=$MD5
+  +------------------------+------------------------------------------------------------------------+
+  | Property               | Value                                                                  |
+  +------------------------+------------------------------------------------------------------------+
+  | target_power_state     | None                                                                   |
+  | extra                  | {}                                                                     |
+  | last_error             | None                                                                   |
+  | updated_at             | 2015-05-28T12:53:23+00:00                                              |
+  | maintenance_reason     | None                                                                   |
+  | provision_state        | available                                                              |
+  | uuid                   | 7cefe9c2-031e-4160-b42e-6a7035a7873b                                   |
+  | console_enabled        | False                                                                  |
+  | target_provision_state | None                                                                   |
+  | maintenance            | False                                                                  |
+  | inspection_started_at  | None                                                                   |
+  | inspection_finished_at | None                                                                   |
+  | power_state            | power off                                                              |
+  | driver                 | pxe_ipmitool                                                           |
+  | reservation            | None                                                                   |
+  | properties             | {}                                                                     |
+  | instance_uuid          | None                                                                   |
+  | name                   | test1                                                                  |
+  | driver_info            | {u'ipmi_password': u'******', u'ipmi_address': u'10.0.0.2',            |
+  |                        | u'ipmi_username': u'ADMIN', u'deploy_kernel': u'file:///var/lib/ironic |
+  |                        | /images/ubuntu-deploy-ramdisk.kernel', u'deploy_ramdisk': u'file:///va |
+  |                        | r/lib/ironic/images/ubuntu-deploy-ramdisk.initramfs'}                  |
+  | created_at             | 2015-05-28T12:52:23+00:00                                              |
+  | driver_internal_info   | {}                                                                     |
+  | chassis_uuid           | 1eb3951f-2406-4cf1-b4a1-115e90a65480                                   |
+  | instance_info          | {u'ramdisk': u'file:///var/lib/ironic/images/ubuntu.initrd',           |
+  |                        | u'kernel': u'file:///var/lib/ironic/images/ubuntu.vmlinuz',            |
+  |                        | u'root_gb': 10, u'image_source': u'file:///var/lib/ironic/images/      |
+  |                        | ubuntu.qcow2', u'image_checksum': u'a2b651231f7cdd5fc45a3ce961b2b2da'} |
+  +------------------------+------------------------------------------------------------------------+
+  # Validate the node parameters
+  ironic node-validate $UUID
+  +------------+--------+---------------------------------------------------------------+
+  | Interface  | Result | Reason                                                        |
+  +------------+--------+---------------------------------------------------------------+
+  | console    | False  | Missing 'ipmi_terminal_port' parameter in node's driver_info. |
+  | deploy     | True   |                                                               |
+  | inspect    | None   | not supported                                                 |
+  | management | True   |                                                               |
+  | power      | True   |                                                               |
+  +------------+--------+---------------------------------------------------------------+
 
 Remember you can define more parameters on the node: swap space, ephemeral
 size and format, etc. In this example, the console is failing because the 
@@ -396,16 +388,14 @@ The Ironic client needs a parameter pointing to a folder with all Cloud-Drive
 structure, then it will pack those files and write them in the step 5 (after 
 creating the partitions and dump the final image on the baremetal server).
 More information about Cloud-Drive on OpenStack here: 
-Let's create manually those configuration files:
+Let's create manually those configuration files::
 
-.. code-block:: sh
-   # Create a temp folder structure
-   mkdir -p /tmp/$NAME/latest /tmp/$NAME/content /tmp/$NAME/latest
-   # Create the main file
-   cat EOF >> /tmp/$NAME/latest
-   EOF
-   cp /tmp/$NAME/latest /tmp/$NAME/latest
-
+  # Create a temp folder structure
+  mkdir -p /tmp/$NAME/latest /tmp/$NAME/content /tmp/$NAME/latest
+  # Create the main file
+  cat EOF >> /tmp/$NAME/latest
+  EOF
+  cp /tmp/$NAME/latest /tmp/$NAME/latest
 
 Currently the community is working on a way to define the network information
 (and much more) in an agnostic way, not depending on the distribution:
