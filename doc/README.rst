@@ -404,11 +404,45 @@ More information about Cloud-Drive on OpenStack here:
 Let's create manually those configuration files::
 
   # Create a temp folder structure
-  mkdir -p /tmp/$NAME/latest /tmp/$NAME/content /tmp/$NAME/latest
+  mkdir -p /tmp/$NAME/openstack/latest /tmp/$NAME/openstack/content /tmp/$NAME/openstack/2012-08-10
   # Create the main file
-  cat EOF >> /tmp/$NAME/latest
+  cat <<EOF > "/tmp/$NAME/openstack/latest/meta_data.json"
+  {
+    "availability_zone": "",
+    "files": [
+        {
+            "content_path": "/content/0000",
+            "path": "/etc/network/interfaces"
+        }
+    ],
+    "hostname": "test1.your-domain.com",
+    "name": "test1",
+    "meta": {},
+    "public_keys": {
+        "mykey": "ssh-rsa PUT-HERE-YOUR-SSH-PUBLIC-KEY ubuntu@pe-test-ironic-01"
+    },
+    "uuid": "$UUID"
+  }
   EOF
-  cp /tmp/$NAME/latest /tmp/$NAME/latest
+  # Copy the same file to both locations ...
+  cp /tmp/$NAME/openstack/latest/meta_data.json /tmp/$NAME/openstack/2012-08-10
+  # Create the interfaces network file to
+  cat <<EOF > "/tmp/$NAME/openstack/content/0000"
+  auto lo
+  iface lo inet loopback
+
+  auto eth0
+  iface eth0 inet static
+  address 10.0.100.10        # < FINAL IP of the node
+  netmask 255.255.255.0
+  gateway 10.0.100.1
+  EOF
+
+As you can see the Cloud-Init configuration is not difficult to understand, it 
+is a ``meta_data.json`` which references other files to inject, in this example 
+the ``/etc/network/interfaces`` file. You can add more files in the same way.
+Note that is really specific Ubuntu configuration, to avoid that, the community 
+is working on an abstraction layer.
 
 Currently the community is working on a way to define the network information
 (and much more) in an agnostic way, not depending on the distribution:
