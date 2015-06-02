@@ -3,11 +3,11 @@ Ironic for dumies
 
 This guide is focused on Ironic as standalone service to deploy baremetal 
 servers. It describes how it works and if you think that something is 
-incomplete or incorrect, please feel free to create a PR (pull request) with 
-your changes.
+incomplete or incorrect, please feel free to create a PR (Pull Request) with 
+your updates.
 
+Also, you can have a look at the Ironic user guide at 
 http://docs.openstack.org/developer/ironic/deploy/user-guide.html
-
 
 
 Ironic Components
@@ -25,14 +25,14 @@ Ironic-API
 
 Ironic-Conductor
   Ironic Conductor service does the bulk of the work. You can see it as a worker
-  for the *ironic-api*. It is advisable to place the conductor service on an 
+  for the **ironic-api**. It is advisable to place the conductor service on an 
   isolated host, since it is the only service that requires access to both the 
   data plane and IPMI control plane. There can be multiple instances of the 
   conductor service to support various class of drivers and also to manage fail 
   over. Instances of the conductor service should be on separate nodes. Each 
   conductor can itself run many drivers to operate heterogeneous hardware. The
-  commond drivers to use are *pxe_ipmitool* and the new and promissing 
-  *agent_ipmitool*.
+  commond drivers to use are **pxe_ipmitool** and the new and promissing 
+  **agent_ipmitool**.
 
 RabbitMQ
   All the OpenStack components need a messaging queue. AMQP is the messaging 
@@ -51,23 +51,24 @@ MySQL
   just for testing purposes, it is hight advisable to setup an database server 
   as MySQL.
 
-http://docs.openstack.org/developer/ironic/_images/deployment_architecture_2.png
+.. image:: deployment_architecture.png
 
-Ironic can make use of other OpenStack components like *keystone* to control 
-authority of the clients and allow/deny the use of the API, *glance* (or *swift* 
--object storage-) to store the images to use and deploy by the Conductor, 
-*neutron* to setup the network (for example the ports on the switchs) ... 
-This implementation does not make use of those componentes because:
+Ironic can make use of other OpenStack components like *keystone* (Identity) 
+to control authority of the clients and allow/deny the use of the API, 
+*glance* (Image storage) (or *swift* -object storage-) to store the images to 
+use and deploy by the Conductor, *neutron* (Network component) to setup the 
+network (for example the ports on the switchs) ...  This implementation does 
+not make use of those componentes because:
 
- - All clients are allowed to enroll/deploy/decomission servers. The admin user
- just need to know the URL of the Ironic-api and provide an empty token.
- - The network is plain, there was no need of controlling switches and ports.
- The Ironic server and client are connected directly to the PXE network using
- one NIC. The same applies for the IPMI network, it is possible to setup another
- NIC to access that network. 
- - The images are saved on the Ironic server, on local disk, and are available to
- other servers by HTTP when using Ironic Python Agent driver (IPA) or by TFTP 
- when using PXE with the default driver (by Ironic-conductor).
+* All clients are allowed to enroll/deploy/decommission servers. The admin user
+  just need to know the URL of the Ironic-Api and provide an empty token.
+* The network is plain, there was no need of controlling switches and ports.
+  The Ironic server and client are connected directly to the PXE network using
+  one NIC. The same applies for the IPMI network, it is possible to setup another
+  NIC to access that network. 
+* The images are saved on the Ironic server, on local disk, and are available to
+  other servers by HTTP when using Ironic Python Agent driver (IPA) or by TFTP 
+  when using PXE with the default driver (by Ironic-Conductor).
 
 
 
@@ -76,8 +77,9 @@ Ansible implementation
 
 The implementation was made in Ansible as a set of roles that are located in 
 this repository. Ansible is just the way to put some glue between all the
-components. The code is following the convention described in --- . These
-are the roles which have been created:
+components. The code is following the convention described in the
+`Readme <https://github.com/jriguera/ansible-ironic-standalone/blob/master/roles/README.md>`_
+file. These are the roles which have been created:
 
  - ``roles/mysql`` to setup a MySQL server and create the databases.
  - ``roles/rabbitmq`` to setup a message queue using RabbitMQ.
@@ -94,7 +96,7 @@ Nginx (HTTP server). Monit is just in charge of controling the processes, so you
 can also skip it. 
 
 It is important to explain that this implementation is not ready to use iPXE 
-protocol, Nginx is here because the driver *agent_ipmitool* needs an HTTP server 
+protocol, Nginx is here because the driver **agent_ipmitool** needs an HTTP server 
 for the IPA (Ironic Python Agent). Of course, setup iPXE should not be 
 difficult, feel free to create a PR and if you do not want to use the driver 
 *agent_ipmitool* you can skip the Ngnix role and its parameters.
@@ -109,17 +111,17 @@ HTTP serve of the images will be listening.
 The aim of this implementation is to provide a cobbler substitute using 
 OpenStack components:
 
-  - Deterministic. Using the same deploy image and with the optional Cloud-Init 
-  configuration, the user always will get the same result by re-deploying a 
-  server.
-  - IPMI Control. The Ironic-Conductor drivers support IPMI/ILO/... protocols so
-  it is possible to control the hardware states and even get metrics.
-  - Agnostic deploys. Ironic is able to deploy all Linux distros, even Windows
-  servers since Cloud-Init is also supported on them.
-  - Future integration with OpenStack infrastructure. In the future you can 
-  reuse the same Database and Messaging Queue than the Openstack infrastructure. 
-  Eventually you can implement a full integration within OpenStack by also using
-  Identity, Glance, Swift ...
+ * Deterministic. Using the same deploy image and with the optional Cloud-Init 
+   configuration, the user always will get the same result by re-deploying a 
+   server.
+ * IPMI Control. The Ironic-Conductor drivers support IPMI/ILO/... protocols so
+   it is possible to control the hardware states and even get metrics.
+ * Agnostic deploys. Ironic is able to deploy all Linux distros, even Windows
+   servers since Cloud-Init is also supported on them.
+ * Future integration with OpenStack infrastructure. In the future you can 
+   reuse the same Database and Messaging Queue than the Openstack infrastructure. 
+   Eventually you can implement a full integration within OpenStack by also using
+   Identity, Glance, Swift ...
 
 
 Using Ironic
@@ -143,11 +145,11 @@ export IRONIC_URL=http://localhost:6385/
 export OS_AUTH_TOKEN=" "
 
 Because there is no Identity service running (*keystone*) the variable 
-*OS_AUTH_TOKEN* contains a fake token to allow ironic client to operate.
+**OS_AUTH_TOKEN** contains a fake token to allow ironic client to operate.
 
 Let's list the available drivers::
 
-# ironic driver-list
+ironic driver-list
 +---------------------+----------------+
 | Supported driver(s) | Active host(s) |
 +---------------------+----------------+
@@ -159,7 +161,7 @@ Let's list the available drivers::
 There are two available drivers which are explained below, but first let's see 
 how to create a chassis::
 
-# ironic chassis-create -d "My test chassis" -e location=dogo -e env=test
+ironic chassis-create -d "My test chassis" -e location=dogo -e env=test
 +-------------+-----------------------------------------+
 | Property    | Value                                   |
 +-------------+-----------------------------------------+
@@ -167,20 +169,18 @@ how to create a chassis::
 | description | My test chassis                         |
 | extra       | {u'location': u'dogo', u'env': u'test'} |
 +-------------+-----------------------------------------+
-# ironic chassis-list
+ironic chassis-list
 +--------------------------------------+-------------------+
 | UUID                                 | Description       |
 +--------------------------------------+-------------------+
 | 1eb3951f-2406-4cf1-b4a1-115e90a65480 | My test chassis   |
 +--------------------------------------+-------------------+
 
-A chassis is a logical agregation of baremetal servers and you can define and 
-assign some variables to it. Now we know the infrastruture is working properly
-so its time to review the Ironic object model:
+A chassis is a logical composition of baremetal servers and you can define and 
+assign some variables to it. As we know the infrastruture is working properly,
+it is time to review the Ironic object model:
 
-
-
-
+.. image:: ironic-model.jpg
 
 There are Chassis, Nodes, Drivers and Ports. Nodes can be part of one Chassis,
 a Node has Drivers and Ports. A port is an object to associate one or more
@@ -191,16 +191,16 @@ Ironic-Conductor drivers
 ------------------------
 
 In this implementation, assuming the default settings defined in the playbook, 
-two Ironic-Conductor drivers are enabled: *pxe_ipmitool* and *agent_ipmitool*. 
-Both drivers use two kind of images: a *deploy_ramdisk* image as first image to 
+two Ironic-Conductor drivers are enabled: **pxe_ipmitool** and **agent_ipmitool**. 
+Both drivers use two kind of images: a **deploy_ramdisk** image as first image to 
 boot the baremetal server and a final *image* to install the operating system 
 on it. Ironic issues the baremetal server to boot with the deploy_ramdisk image 
 and it is in charge of installing the final image on the server. The difference 
-between those drivers is in the way they use the ramdisk image, let's see ...
+between those drivers is in the way they use the ramdisk image ...
 
 
 Driver: *pxe_ipmitool*
-----------------------
+^^^^^^^^^^^^^^^^^^^^^^
 
 This is the default driver. It uses IPMI to control the power state of the 
 baremetal server, first of all, it issues the baremetal server to re-boot
@@ -208,48 +208,48 @@ using PXE network. Then it creates the PXE configuration for the PXE server (in
 this case for Dnsmasq) on --- . After those steps Ironic keeps waiting for
 the server to boot up and run the ramdisk image. To sum up:
 
-   1. Ironic reboots the server by issuing ipmi commands (using ipmitool) 
+1. Ironic reboots the server by issuing ipmi commands (using ipmitool) 
    to boot from the network using PXE.
-   2. It creates the PXE boot configuration for the target baremetal server on 
+2. It creates the PXE boot configuration for the target baremetal server on 
    the Ironic-Conductor host: ramdisk, kernel and other boot parameters, using 
    the *deploy_ramdisk* and *deploy_kernel* images.
-   3. Ironic-Conductor keeps waiting for the ramdisk operating system to boot.
-   4. When the ramdisk kernel is running, it notifies Ironic and also exposes 
+3. Ironic-Conductor keeps waiting for the ramdisk operating system to boot.
+4. When the ramdisk kernel is running, it notifies Ironic and also exposes 
    the first hardisk (---) using the TGT iSCSI framework to the 
    Ironic-Conductor.
-   5. Using local commands on the iSCSI target attached to the Ironic-Conductor
+5. Using local commands on the iSCSI target attached to the Ironic-Conductor
    host, the driver creates de partition schema and dumps the image on the 
    disk target. Also, if a Config-Drive was provided, Ironic will create another
    partition with a especial label to save that information.
-   6. When the dump is done, it notifies the ramdisk/kernel operating system
+6. When the dump is done, it notifies the ramdisk/kernel operating system
    to run grub (only if it was a whole disk image) and to reboot the server. 
-   7. Ironic-Conductor changes the PXE boot configuration on the hosts to boot 
+7. Ironic-Conductor changes the PXE boot configuration on the hosts to boot 
    the baremetal server using the kernel/ramdisk provided (if it not a whole
    disk image) or to boot directly for the first disk (using ``local`` 
    parameter).
-   8. When the local operating system boots on the node, due to the use of
+8. When the local operating system boots on the node, due to the use of
    Cloud-Init with Config-Drive support, it scans all the partitions to try
    to find and apply its configuration.
 
 The diagram below ilustrates the process:
    
-
+.. image:: deployment_process.jpg
 
 There are some limitations on that way:
 
-  - It is not able to create complex disk partitions. The partition scheme is 
+* It is not able to create complex disk partitions. The partition scheme is 
   hardcoded in the driver. There are some parameters to control the size or
   which partitions to create (for example, ephemeral partitions). It is not 
   possible to setup LVM/SofwareRAID, though that is out of the Ironic scope.
-  - It has problems to deploy whole image files on the baremetal server. For
+* It has problems to deploy whole image files on the baremetal server. For
   example, if the image is for a whole disk, it cannot find out the UUID of
   the root device to setup PXE to boot from that device. 
-  - The host running Ironic-Conductor has to have installed all the needed 
+* The host running Ironic-Conductor has to have installed all the needed 
   programs: issci, parted, dd, ... to operate directly on the target disk.
 
 
 Create images to use *pxe_ipmitool*
------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The image creation process can be fully automated by using ``disk-image-create``
 from Image building tools for OpenStack  https://github.com/openstack/diskimage-builder::
