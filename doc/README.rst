@@ -233,7 +233,7 @@ the server to boot up and run the ramdisk image. To sum up:
 
 The diagram below ilustrates the process:
    
-.. image:: deployment_process.jpg
+.. image:: ironic-sequence-pxe-deploy.png
 
 There are some limitations on that way:
 
@@ -413,7 +413,7 @@ use the ``agent_ipmitool`` driver.
 
 
 
-
+.. image:: ironic-sequence-ipa-deploy.png
 
 
 
@@ -421,3 +421,4 @@ use the ``agent_ipmitool`` driver.
 
 
 Thanks to: http://www.slideshare.net/enigmadragon/ironic
+https://journal.paul.querna.org/articles/2014/07/02/putting-teeth-in-our-public-cloud/
