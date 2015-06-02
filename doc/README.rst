@@ -257,7 +257,8 @@ from `Image building tools for OpenStack <https://github.com/openstack/diskimage
 For example, to create a new Ubuntu image with Config-Drive support, just type::
 
   # Create the image to deploy on disk (with Config-Drive support)
-  DIB_CLOUD_INIT_DATASOURCES="ConfigDrive, OpenStack" disk-image-create ubuntu baremetal dhcp-all-interfaces -o ubuntu
+  DIB_CLOUD_INIT_DATASOURCES="ConfigDrive, OpenStack" \
+     disk-image-create ubuntu baremetal dhcp-all-interfaces -o ubuntu
 
 Note the variable *DIB_CLOUD_INIT_DATASOURCES* which issues ``disk-image-create``
 to include the Config-Drive provider of Cloud-Init. Also, note all the 
@@ -278,8 +279,8 @@ It will create a ramdisk image file ``ubuntu-deploy-ramdisk.initramfs`` and a
 kernel ``ubuntu-deploy-ramdisk.kernel``.
 
 To operate with those images, copy all the generated files to the folder 
-``/var/lib/ironic/images/`` (``ironic/ironic_pxe_images_path``) on the Ironic 
-server.
+``/var/lib/ironic/images/`` (have a look at ``ironic/ironic_pxe_images_path``) 
+on the Ironic server.
 
 
 Operation
@@ -298,7 +299,10 @@ defining the IPMI settings::
   # IPMI ip with (ADMIN/ADMIN as user/password)
   IPMI=10.0.0.2
   # Define the new server on the chassis using the driver pxe_ipmitool
-  ironic node-create -c $CHASSIS -n $NAME -d pxe_ipmitool -i ipmi_address=$IPMI -i ipmi_username=ADMIN -i ipmi_password=ADMIN -i deploy_kernel=file:///var/lib/ironic/images/ubuntu-deploy-ramdisk.kernel" -i deploy_ramdisk=file:///var/lib/ironic/images/ubuntu-deploy-ramdisk.initramfs
+  ironic node-create -c $CHASSIS -n $NAME -d pxe_ipmitool \
+    -i ipmi_address=$IPMI -i ipmi_username=ADMIN -i ipmi_password=ADMIN \
+    -i deploy_kernel=file:///var/lib/ironic/images/ubuntu-deploy-ramdisk.kernel" \
+    -i deploy_ramdisk=file:///var/lib/ironic/images/ubuntu-deploy-ramdisk.initramfs
   +--------------+-----------------------------------------------------------------------------------+
   | Property     | Value                                                                             |
   +--------------+-----------------------------------------------------------------------------------+
@@ -332,7 +336,12 @@ Now it's time to define the final image to install on the baremetal server::
   # Ironic needs the checksum of the image
   MD5=$(md5sum /var/lib/ironic/images/ubuntu.qcow2 | cut -d' ' -f 1)
   # Define the image to install on the server
-  ironic node-update $UUID add instance_info/image_source=file:///var/lib/ironic/images/ubuntu.qcow2 instance_info/kernel=file:///var/lib/ironic/images/ubuntu.vmlinuz instance_info/ramdisk=file:///var/lib/ironic/images/ubuntu.initrd instance_info/root_gb=10 instance_info/image_checksum=$MD5
+  ironic node-update $UUID add \
+    instance_info/image_source=file:///var/lib/ironic/images/ubuntu.qcow2 \
+    instance_info/kernel=file:///var/lib/ironic/images/ubuntu.vmlinuz \
+    instance_info/ramdisk=file:///var/lib/ironic/images/ubuntu.initrd \
+    instance_info/root_gb=10 \
+    instance_info/image_checksum=$MD5
   +------------------------+------------------------------------------------------------------------+
   | Property               | Value                                                                  |
   +------------------------+------------------------------------------------------------------------+
