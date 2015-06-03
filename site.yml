@@ -45,6 +45,10 @@
           range: [10.0.0.100, 10.0.0.200, infinite]
           ignore_names: true
           generate_names: true
+          option:
+            - "option:router,10.0.0.1"
+            - "option:ntp-server,0.0.0.0"
+            - "option:dns-server,8.8.8.8"  
           boot: ["{{ ironic_pxe_bootfile_name }}"]
           tftp: "{{ ironic_pxe_tftp_root }}"
 
@@ -107,12 +111,14 @@
     - name: Download IPA Coreos ramdisk
       get_url:
         url: http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem.cpio.gz
-        dest: "{{ ironic_pxe_images_path }}/"
+        dest: "{{ ironic_pxe_images_path }}/coreos_production_pxe_image-oem.cpio.gz"
+        force: no
 
     - name: Download IPA Coreos kernel
       get_url:
         url: http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe.vmlinuz
-        dest: "{{ ironic_pxe_images_path }}/"
+        dest: "{{ ironic_pxe_images_path }}/coreos_production_pxe.vmlinuz"
+        force: no
   
 #   - name: Display all variables/facts known for a host
 #     debug: var=hostvars[inventory_hostname]
