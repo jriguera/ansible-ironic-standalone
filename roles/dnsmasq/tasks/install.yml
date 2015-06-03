@@ -75,7 +75,7 @@
     ansible_os_family == 'Debian' and
     dnsmasq_init_system != "upstart"
   notify: stop dnsmasq
-  tags: ["debian"]
+  tags: ["debian", "ubuntu"]
 
 - name: Debian - Delete init.d configuration
   file:
@@ -85,7 +85,7 @@
     ansible_os_family == 'Debian' and
     dnsmasq_init_system != "initd"
   notify: stop dnsmasq
-  tags: ["debian"]
+  tags: ["debian", "ubuntu"]
 
 # Flush all notify stop handlers, to be sure that they are done!
 # The reason is because of upstart service
