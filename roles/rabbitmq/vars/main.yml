@@ -1,6 +1,6 @@
 ---
 # Take the package given by the OS/distrib
-rabbitmq_os_packages: true
+rabbitmq_os_packages: false
 
 rabbitmq_daemon: rabbitmq-server
 rabbitmq_user: rabbitmq
