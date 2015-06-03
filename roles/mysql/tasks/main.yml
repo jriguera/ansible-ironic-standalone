@@ -4,9 +4,20 @@
   tags: ["distribution", "packages", "service", "mysql"]
 
 - include: install.yml
+  tags: ["mysql", "install"]
+
 - include: configure.yml
+  tags: ["mysql", "configure"]
+
 - include: secure.yml
+  tags: ["mysql", "secure"]
+
 - include: databases.yml
+  tags: ["mysql", "databases"]
+
 - include: users.yml
+  tags: ["mysql", "users"]
+
 - include: replication.yml
+  tags: ["mysql", "replication"]
 

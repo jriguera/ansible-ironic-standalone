@@ -8,5 +8,4 @@
     state: present
   with_items: mysql_user_list
   when: mysql_user_list is defined
-  tags: ["mysql", "users"]
 

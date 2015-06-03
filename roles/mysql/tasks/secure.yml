@@ -3,7 +3,6 @@
   command: mysql -NBe 'SELECT Host FROM mysql.user WHERE User="{{ mysql_root_username }}" ORDER BY (Host="localhost") ASC'
   register: mysql_root_hosts
   changed_when: false
-  tags: ["mysql", "secure"]
 
 # 'localhost' needs to be last for idempotency
 - name: Update MySQL root password for localhost root account
@@ -12,7 +11,6 @@
     host: "{{ item }}"
     password: "{{ mysql_root_password }}"
   with_items: mysql_root_hosts.stdout_lines
-  tags: ["mysql", "secure"]
 
 # Has to be after the root password assignment, for idempotency
 - name: Create file with root password credentials
@@ -22,13 +20,11 @@
     owner: "{{ mysql_root_username }}"
     group: "{{ mysql_root_username }}"
     mode: 0600
-  tags: ["mysql", "secure"]
 
 - name: Get list of hosts for the anonymous user
   command: mysql -NBe 'SELECT Host FROM mysql.user WHERE User = ""'
   register: mysql_anonymous_hosts
   changed_when: false
-  tags: ["mysql", "secure"]
 
 - name: Remove anonymous MySQL users
   mysql_user:
@@ -36,9 +32,7 @@
      host: "{{ item }}"
      state: absent
   with_items: mysql_anonymous_hosts.stdout_lines
-  tags: ["mysql", "secure"]
 
 - name: Remove MySQL test database
   mysql_db: name="test" state=absent
-  tags: ["mysql", "secure"]
 

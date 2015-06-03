@@ -10,7 +10,6 @@
     (mysql_replication_role == 'master')
     and mysql_replication_user is defined
     and (mysql_replication_master | trim != '')
-  tags: ["mysql", "replication"]
 
 - name: Check slave replication status if slave
   mysql_replication: mode=getslave
@@ -19,7 +18,6 @@
   when: >
     mysql_replication_role == 'slave'
     and (mysql_replication_master | trim != '')
-  tags: ["mysql", "replication"]
 
 - name: Check master replication status
   mysql_replication: mode=getmaster
@@ -29,7 +27,6 @@
     _mysql_slave|failed
     and (mysql_replication_role == 'slave')
     and (mysql_replication_master | trim != '')
-  tags: ["mysql", "replication"]
 
 - name: Configure replication if slave
   mysql_replication:
@@ -45,7 +42,6 @@
     and (mysql_replication_role == 'slave')
     and (mysql_replication_master | trim != '')
     and mysql_replication_user is defined
-  tags: ["mysql", "replication"]
 
 - name: Start replication if slave
   mysql_replication: mode=startslave
@@ -53,6 +49,4 @@
     _mysql_slave|failed
     and (mysql_replication_role == 'slave')
     and (mysql_replication_master | trim != '')
-  tags: ["mysql", "replication"]
-
 
