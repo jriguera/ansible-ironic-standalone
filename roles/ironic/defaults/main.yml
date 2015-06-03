@@ -1,4 +1,9 @@
 ---
+# Enable Ironic-Conductor?
+ironic_conductor: True
+# Enable Ironic-API?
+ironic_api: True
+
 ironic_enabled_on_startup: true
 ironic_debug: false
 ironic_trace: false

@@ -1,0 +1,69 @@
+---
+- name: RedHat - Install Ironic-Conductor required packages
+  yum:
+    name: "{{ item.key }}{{ '-' + item.version | default('*') }}"
+    state: "{{ item.state | default('present') }}"
+  with_dict: ironic_conductor_packages
+  when: ansible_os_family == 'RedHat'
+  register: __ironic_conductor_installed
+  tags: ["redhat"]
+
+- name: Debian - Install Ironic-Conductor required packages
+  apt: 
+    name: "{{ item.key }}{{ '=' + item.version | default('*') }}"
+    state: "{{ item.state | default('present') }}"
+    install_recommends: "{{ ironic_packages_install_recommends }}"
+  with_dict: ironic_conductor_packages
+  when: ansible_os_family == 'Debian'
+  register: __ironic_conductor_installed
+  tags: ["debian"]
+
+- name: Check if packages were installed
+  set_fact: _ironic_conductor_reinstalled="{{ __ironic_conductor_installed.changed }}"
+
+- name: RedHat - Install Ironic-Conductor auxiliary packages
+  yum:
+    name: "{{ item.key }}{{ '-' + item.version | default('*') }}"
+    state: "{{ item.state | default('present') }}"
+  with_dict: ironic_conductor_packages_aux
+  when: ansible_os_family == 'RedHat'
+  tags: ["redhat", "aux"]
+
+- name: Debian - Install Ironic-Conductor auxiliary packages
+  apt: 
+    name: "{{ item.key }}{{ '=' + item.version | default('*') }}"
+    state: "{{ item.state | default('present') }}"
+    install_recommends: "{{ ironic_packages_install_recommends }}"
+  with_dict: ironic_conductor_packages_aux
+  when: ansible_os_family == 'Debian'
+  tags: ["debian", "aux"]
+
+# Because Ubuntu starts ironic daemons as part of the install process, 
+# we need to stop it
+- name: Stop Ironic-Conductor daemon after initial install
+  service: name="{{ ironic_conductor_service_name }}" state=stopped enabled=no
+  ignore_errors: yes
+  when: _ironic_conductor_reinstalled
+
+- name: Debian - Delete Ironic-Conductor upstart configuration
+  file:
+    path: "/etc/init/{{ ironic_conductor_service_name }}.conf"
+    state: absent
+  when: >
+    ansible_os_family == 'Debian' and
+    ironic_init_system != "upstart"
+  notify: stop conductor
+
+- name: Debian - Delete Ironic-Conductor init.d configuration
+  file:
+    path: "/etc/init.d/{{ ironic_conductor_service_name }}"
+    state: absent 
+  when: >
+    ansible_os_family == 'Debian' and
+    ironic_init_system != "initd"
+  notify: stop conductor
+
+# Flush all notify stop handlers, to be sure that they are done!
+# The reason is because of upstart service
+- meta: flush_handlers
+
