@@ -1,4 +1,4 @@
-About those roles
+About these roles
 =================
 
 A set of roles to setup an OpenStack Ironic node in standalone mode, 
@@ -27,14 +27,11 @@ to reuse the code, I have followed those conventions:
 
  * Divide the tasks in groups and use tags with the same name as the
    tasks file:
-
    * Install: in charge of installing the distro packages and after
    that the service should be stopped (unless if no configuration is 
    needed).
-
    * Configure: in charge of creating the configuration settings and
    make sure that the service is enabled.
-
    * Plugins, Cluster ... : in charge of additional setups.
 
  * Use `vars` for specific distribution parameters of your service, 
