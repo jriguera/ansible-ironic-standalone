@@ -36,6 +36,7 @@
     ansible_os_family == 'Debian' and
     ironic_init_system != "upstart"
   notify: stop api
+  tags: ["debian", "ubuntu"]
 
 - name: Debian - Delete Ironic-API init.d configuration
   file:
@@ -45,6 +46,7 @@
     ansible_os_family == 'Debian' and
     ironic_init_system != "initd"
   notify: stop api
+  tags: ["debian", "ubuntu"]
 
 # Flush all notify stop handlers, to be sure that they are done!
 # The reason is because of upstart service
