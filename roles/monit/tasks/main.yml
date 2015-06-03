@@ -4,6 +4,11 @@
   tags: ["distribution", "packages", "service", "monit"]
 
 - include: install.yml
+  tags: ["monit", "install"]
+
 - include: configure.yml
+  tags: ["monit", "configure"]
+
 - include: monitor.yml
+  tags: ["monit", "monitor"]
 

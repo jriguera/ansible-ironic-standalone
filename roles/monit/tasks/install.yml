@@ -7,7 +7,7 @@
     not monit_os_repo_key is none and
     monit_os_repo_key | search("http://.*")
   ignore_errors: yes
-  tags: ["monit", "install"]
+  tags: ["debian"]
 
 - name: Debian - Add repository package
   apt: name="{{ monit_os_repo_key }}" state=latest
@@ -16,21 +16,21 @@
     not monit_os_packages and
     not monit_os_repo_key is none and
     not monit_os_repo_key | search("http://.*")
-  tags: ["monit", "install"]
+  tags: ["debian"]
 
 - name: Debian - Add repository url
   apt_repository: repo="{{ monit_os_repo_url }}" state=present
   when: >
     ansible_os_family == 'Debian' 
     and not monit_os_packages
-  tags: ["monit", "install"]
+  tags: ["debian"]
 
 - name: RedHat - Add repository
   yum: name="{{ monit_os_repo_url }}" state=present
   when: >
     ansible_os_family == 'RedHat' and 
     not monit_os_packages
-  tags: ["monit", "install"]
+  tags: ["redhat"]
 
 - name: RedHat - Import repository key
   rpm_key: key="{{ monit_os_repo_key }}" state=present
@@ -38,16 +38,14 @@
     ansible_os_family == 'RedHat' and 
     not monit_os_packages and 
     not monit_os_repo_key is none
-  tags: ["monit", "install"]
+  tags: ["redhat"]
 
 - name: Check if configuration exists
   stat: path="{{ monit_config_file }}"
   register: __monit_conf
-  tags: ["monit"]
 
 - name: Setup configuration fact
   set_fact: _monit_previous="{{ __monit_conf.stat.exists }}"
-  tags: ["monit"]
 
 - name: RedHat - Install the required packages
   yum:
@@ -56,7 +54,7 @@
   with_dict: monit_packages
   when: ansible_os_family == 'RedHat'
   register: __monit_installed
-  tags: ["monit", "install"]
+  tags: ["redhat"]
 
 - name: Debian - Install the required packages
   apt: 
@@ -66,17 +64,15 @@
   with_dict: monit_packages
   when: ansible_os_family == 'Debian'
   register: __monit_installed
-  tags: ["monit", "install"]
+  tags: ["debian"]
 
 - name: Check if packages were installed
   set_fact: _monit_reinstalled="{{ __monit_installed.changed }}"
-  tags: ["monit"]
 
 - name: Ensure monit is stopped after initial install
   service: name={{ monit_daemon }} state=stopped enabled=no
   ignore_errors: yes
   when: _monit_reinstalled
-  tags: ["monit", "install"]
 
 - name: Debian - Delete upstart configuration
   file:
@@ -86,7 +82,7 @@
     ansible_os_family == 'Debian' and
     monit_init_system != "upstart"
   notify: stop monit
-  tags: ["monit", "install"]
+  tags: ["debian"]
 
 - name: Debian - Delete init.d configuration
   file:
@@ -96,7 +92,7 @@
     ansible_os_family == 'Debian' and
     monit_init_system != "initd"
   notify: stop monit
-  tags: ["monit", "install"]
+  tags: ["debian"]
 
 # Flush all notify stop handlers, to be sure that they are done!
 # The reason is because of upstart service

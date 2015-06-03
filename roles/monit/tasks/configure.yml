@@ -11,7 +11,6 @@
     - "{{ monit_idfile | dirname }}"
     - "{{ monit_statefile | dirname }}"
     - "{{ monit_event_dir | dirname }}"
-  tags: ["monit", "configure"]
 
 - name: Copy ssl certificate
   copy:
@@ -23,7 +22,7 @@
   when: >
     monit_https_cert is defined and
     not monit_https_cert is none    
-  tags: ["monit", "configure", "ssl"]
+  tags: ["ssl"]
 
 - name: Copy ssl client certificate
   copy:
@@ -35,7 +34,7 @@
   when: >
     monit_https_client is defined and
     not monit_https_client is none    
-  tags: ["monit", "configure", "ssl"]
+  tags: ["ssl"]
 
 - name: Create global monit configuration
   template:
@@ -46,13 +45,10 @@
     mode: 0600
   notify: restart monit
   register: __monit_updated
-  tags: ["monit", "configure"]
 
 - name: Check if configuration was updated
   set_fact: _monit_updated="{{ __monit_updated.changed }}"
-  tags: ["monit", "configure"]
 
 - name: Ensure monit is started and enabled on boot
   service: name={{ monit_daemon }} state=started enabled={{ monit_enabled_on_startup | ternary('yes', 'no') }}
-  tags: ["monit", "configure"]
 

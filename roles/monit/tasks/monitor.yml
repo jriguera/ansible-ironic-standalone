@@ -9,7 +9,6 @@
     not monit_monitoring_list is none and
     (item.delete is defined and item.delete)
   notify: reload monit
-  tags: ["monit", "monitor"]
 
 - name: Add monitors
   template:
@@ -24,6 +23,4 @@
     not monit_monitoring_list is none and
     not (item.delete is defined and item.delete)
   notify: reload monit
-  tags: ["monit", "monitor"]
-
 
