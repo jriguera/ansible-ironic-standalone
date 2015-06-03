@@ -12,7 +12,24 @@
   tags: ["distribution", "packages", "service", "ironic"]
 
 - include: install.yml
+  tags: ["ironic", "install"]
+
+- include: install_api.yml
+  when: ironic_api
+  tags: ["ironic", "api", "install"]
+
+- include: install_conductor.yml
+  when: ironic_conductor
+  tags: ["ironic", "conductor", "install"]
+
 - include: configure.yml
+  tags: ["ironic", "configure"]
+
 - include: setup_console.yml
+  when: ironic_conductor
+  tags: ["ironic", "conductor", "setup", "console"]
+
 - include: setup_pxe.yml
+  when: ironic_conductor
+  tags: ["ironic", "conductor", "setup", "configure", "pxe"]
 

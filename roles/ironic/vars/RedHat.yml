@@ -1,16 +1,20 @@
 ---
-ironic_os_repo_url: http://rdo.fedorapeople.org/openstack-kilo/rdo-release-kilo.rpm
+ironic_os_repo_url: "http://rdo.fedorapeople.org/openstack-{{ ironic_release }}/rdo-release-{{ ironic_release }}.rpm"
 ironic_os_repo_key:
 
-ironic_packages:
+ironic_api_packages:
   openstack-selinux:
     state: latest
   ironic-api:
     state: latest
+
+ironic_conductor_packages:
+  openstack-selinux:
+    state: latest
   ironic-conductor:
     state: latest
 
-ironic_packages_aux:
+ironic_conductor_packages_aux:
   syslinux-tftpboot:
     state: latest
   ipmitool:
@@ -26,7 +30,7 @@ ironic_packages_aux:
   util-linux-ng:
     state: latest
 
-ironic_packages_console:
+ironic_conductor_packages_console:
   openssl:
     state: latest
   shellinabox:

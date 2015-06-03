@@ -1,4 +1,15 @@
 ---
+- name: Create deploy file images folder
+  file:
+    path: "{{ item }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    mode: 0755
+    state: directory
+  with_items:
+    - "{{ ironic_pxe_images_path }}"
+    - "{{ ironic_pxe_instance_master_path }}"
+  
 - name: Create PXE root folders
   file:
     path: "{{ item }}"
@@ -12,7 +23,6 @@
   when: >
     ironic_pxe_tftp_root is defined and 
     not ironic_pxe_tftp_root is none
-  tags: ["ironic", "configure", "pxe"]
 
 - name: Create HTTP root folder for iPXE if enabled
   file:
@@ -26,7 +36,6 @@
     not ironic_pxe_http_root is none and
     ironic_pxe_http_url is defined and
     not ironic_pxe_http_url is none
-  tags: ["ironic", "configure", "pxe"]
 
 - name: Copy isolinux config template if defined
   copy:
@@ -39,7 +48,6 @@
     ironic_isolinux_config_template is defined and
     not ironic_isolinux_config_template is none
   register: __ironic_isolinux_template
-  tags: ["ironic", "configure", "pxe"]
 
 - name: Copy grub config template if defined
   copy:
@@ -52,7 +60,6 @@
     ironic_grub_config_template is defined and
     not ironic_grub_config_template is none
   register: __ironic_grub_template
-  tags: ["ironic", "configure", "pxe"]
 
 - name: Copy agent PXE config template if defined
   copy:
@@ -65,7 +72,6 @@
     ironic_agent_pxe_config_template is defined and
     not ironic_agent_pxe_config_template is none
   register: __ironic_agent_pxe_template
-  tags: ["ironic", "configure", "pxe"]
 
 - name: Copy PXE config template if defined
   copy:
@@ -78,7 +84,6 @@
     ironic_pxe_config_template is defined and
     not ironic_pxe_config_template is none
   register: __ironic_pxe_template
-  tags: ["ironic", "configure", "pxe"]
 
 - name: Copy PXE UEFI config template if defined
   copy:
@@ -91,7 +96,6 @@
     ironic_pxe_uefi_pxe_config_template is defined and
     not ironic_pxe_uefi_pxe_config_template is none
   register: __ironic_pxe_uefi_template
-  tags: ["ironic", "configure", "pxe"]
 
 - name: Copy iPXE config template if defined
   copy:
@@ -104,7 +108,6 @@
     ironic_pxe_ipxe_boot_script is defined and
     not ironic_pxe_ipxe_boot_script is none
   register: __ironic_ipxe_template
-  tags: ["ironic", "configure", "pxe"]
 
 - name: Generate map-file for DHCP daemon
   template:
@@ -116,7 +119,6 @@
   when: >
     ironic_pxe_tftp_root is defined and
     not ironic_pxe_tftp_root is none
-  tags: ["ironic", "configure", "pxe"]
 
 - name: Copy PXE boot files for TFTP
   command: cp "{{ item }}" "{{ ironic_pxe_tftp_root }}"
@@ -129,7 +131,6 @@
     - /usr/lib/syslinux/chain.c32
 #   - /usr/lib/syslinux/modules/*/ldlinux.*
   ignore_errors: yes
-  tags: ["ironic", "configure", "pxe"]
 
 - name: Check if elilo is needed for UEFI
   stat: path="{{ ironic_pxe_tftp_root }}/{{ ironic_pxe_uefi_pxe_bootfile_name }}"
@@ -139,7 +140,7 @@
     ironic_pxe_uefi_pxe_bootfile_name is defined and
     ironic_pxe_uefi_pxe_bootfile_name == "elilo.efi"
   register: __ironic_uefi_elilo
-  tags: ["ironic", "configure", "pxe", "elilo"]
+  tags: ["elilo"]
 
 - name: Get elilo tarball if UEFI is enabled
   get_url:
@@ -151,7 +152,7 @@
     ironic_pxe_uefi_pxe_bootfile_name is defined and
     ironic_pxe_uefi_pxe_bootfile_name == "elilo.efi" and
     not __ironic_uefi_elilo.stat.exists
-  tags: ["ironic", "configure", "pxe", "elilo"]
+  tags: ["elilo"]
 
 - name: Unarchive elilo tarball
   unarchive:
@@ -164,7 +165,7 @@
     ironic_pxe_uefi_pxe_bootfile_name is defined and
     ironic_pxe_uefi_pxe_bootfile_name == "elilo.efi" and
     not __ironic_uefi_elilo.stat.exists
-  tags: ["ironic", "configure", "pxe", "elilo"]
+  tags: ["elilo"]
 
 - name: Install elilo in tftpboot
   shell: cp /tmp/elilo-*.*-x86_64.efi "{{ ironic_pxe_tftp_root }}/elilo.efi"
@@ -174,7 +175,7 @@
     ironic_pxe_uefi_pxe_bootfile_name is defined and
     ironic_pxe_uefi_pxe_bootfile_name == "elilo.efi" and
     not __ironic_uefi_elilo.stat.exists
-  tags: ["ironic", "configure", "pxe", "elilo"]
+  tags: ["elilo"]
 
 - name: Check files permissions on PXE root folder
   file:
@@ -187,13 +188,9 @@
   when: >
     ironic_pxe_tftp_root is defined and 
     not ironic_pxe_tftp_root is none
-  tags: ["ironic", "configure", "pxe"]
 
 - name: Reload Ironic daemons
-  service: name={{ item }} state=reloaded
-  with_items:
-    - "{{ ironic_conductor_service_name }}"
-    - "{{ ironic_api_service_name }}"
+  service: name="{{ ironic_conductor_service_name }}" state=reloaded
   when: >
     __ironic_isolinux_template | changed or
     __ironic_grub_template | changed or
@@ -201,5 +198,4 @@
     __ironic_pxe_template | changed or
     __ironic_pxe_uefi_template | changed or
     __ironic_ipxe_template | changed
-  tags: ["ironic", "configure", "pxe"]
 

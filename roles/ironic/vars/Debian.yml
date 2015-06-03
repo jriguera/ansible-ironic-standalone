@@ -1,16 +1,18 @@
 ---
-ironic_os_repo_url: "deb http://ubuntu-cloud.archive.canonical.com/ubuntu trusty-updates/kilo main"
+ironic_os_repo_url: "deb http://ubuntu-cloud.archive.canonical.com/ubuntu {{ ansible_distribution_release }}-updates/{{ ironic_release }} main"
 ironic_os_repo_key: "ubuntu-cloud-keyring"
 ironic_packages_install_recommends: true
 ironic_init_system: "upstart"
 
-ironic_packages:
+ironic_api_packages:
   ironic-api:
     state: latest
+    
+ironic_conductor_packages:
   ironic-conductor: 
     state: latest
 
-ironic_packages_aux:
+ironic_conductor_packages_aux:
   syslinux: 
     state: latest
   ipmitool:
@@ -28,7 +30,7 @@ ironic_packages_aux:
   bsdmainutils:
     state: latest
 
-ironic_packages_console:
+ironic_conductor_packages_console:
   openssl:
     state: latest
   shellinabox:
