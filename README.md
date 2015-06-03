@@ -4,6 +4,10 @@ Ironic-standalone
 A set of roles to setup an OpenStack Ironic node in standalone mode, 
 just to be able to deploy servers like cobbler but based on images ...
 
+Have a look at the wiki to know more about this setup: 
+https://github.com/jriguera/ansible-ironic-standalone/wiki
+
+
 Requirements
 ------------
 
@@ -33,8 +37,8 @@ not part on this setup because it is just the client part.
 Howto run this thing
 --------------------
 
-Just type: `vagrant up` to run all the setup (playbook and roles), after that just launch
-`vagrant ssh ironic` to have a look at the configuration.
+Just type: `vagrant up` to run all the setup (playbook and roles: `site.yml`), 
+after that just launch `vagrant ssh ironic` to have a look at the configuration.
 
 When vagrant will be finished, you will have those ports available:
 
@@ -70,7 +74,8 @@ export OS_AUTH_TOKEN=" "
 export IRONIC_URL=http://localhost:6385/
  
 # Define the new server using the pxe_ipmitool driver
-ironic node-create -n $NAME -d pxe_ipmitool \
+ironic node-create -n $NAME \
+       -d pxe_ipmitool \
        -i ipmi_address=$IPMI \
        -i ipmi_username=ADMIN \
        -i ipmi_password=ADMIN \
@@ -134,10 +139,8 @@ Monit is optional, if you do not need it, just remove the role.
 
 License
 -------
-
 GPLv3
 
 Author Information
 ------------------
-
 José Riguera López <jose.riguera@springer.com>
