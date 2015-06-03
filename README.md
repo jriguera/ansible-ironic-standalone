@@ -20,7 +20,7 @@ Roles used:
  * `roles/ironic` to setup the OpenStack Ironic daemons.
  * `roles/dnsmasq` to setup a PXE server to use with Ironic.
  * `roles/nginx` (optional) to setup HTTP image repo server (for IPA).
- * 
+
 Note that those roles have no dependecies between each other, so you 
 can reuse them in other projects, they have more functionalities than 
 the required for this setup. Also, they were created/adapted following 
