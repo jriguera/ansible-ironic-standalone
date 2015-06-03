@@ -25,7 +25,7 @@ Ironic-API
 
 Ironic-Conductor
   Ironic Conductor service does the bulk of the work. You can see it as a worker
-  for the **ironic-api**. It is advisable to place the conductor service on an 
+  for the **Ironic-API**. It is advisable to place the conductor service on an 
   isolated host, since it is the only service that requires access to both the 
   data plane and IPMI control plane. There can be multiple instances of the 
   conductor service to support various class of drivers and also to manage fail 
@@ -55,17 +55,17 @@ MySQL
 
 Ironic can make use of other OpenStack components like *keystone* (Identity) 
 to control authority of the clients and allow/deny the use of the API, 
-*glance* (Image storage) (or *swift* -object storage-) to store the images to 
-use and deploy by the Conductor, *neutron* (Network component) to setup the 
-network (for example the ports on the switchs) ...  This implementation does 
-not make use of those componentes because:
+*glance* (Image storage) or *swift* (Object storage) to store the images to 
+use and deploy by the Conductor, *neutron* (Network) to setup the network 
+(for example the ports on the switchs) ...  This implementation does 
+not make use of those componentes because, it assumes:
 
-* All clients are allowed to enroll/deploy/decommission servers. The admin user
-  just need to know the URL of the Ironic-Api and provide an empty token.
-* The network is plain, there was no need of controlling switches and ports.
-  The Ironic server and client are connected directly to the PXE network using
-  one NIC. The same applies for the IPMI network, it is possible to setup another
-  NIC to access that network. 
+* All clients are allowed to enroll/deploy/decommission servers. The user
+  just need to know the URL of the Ironic-Api and provide an empty (fake) token.
+* The network is plain, there is no need of controlling switches and ports.
+  The Ironic server and baremetal clients are connected directly to the PXE 
+  network using one NIC. The same applies for the IPMI network, it is possible 
+  to setup another NIC to access that network. 
 * The images are saved on the Ironic server, on local disk, and are available to
   other servers by HTTP when using Ironic Python Agent driver (IPA) or by TFTP 
   when using PXE with the default driver (by Ironic-Conductor).
@@ -127,27 +127,26 @@ OpenStack components:
 Using Ironic
 ============
 
-The following section shows howto use Ironic from a client prespective, using 
-the Ironic command line client and a server deployed by using the Ansible 
-playbook provided. If you want to run the Ironic client on the server, you
-should install the latest python-ironicclient package -use at least version 0.5.0-.
-At the time of this writing it is not availabe on the official repo, so you
+The following section shows howto use Ironic from a client prespective, by using 
+the Ironic command line client and the server deployed using the Ansible 
+playbook/roles provided. If you want to run the Ironic client on the server,
+please install the latest python-ironicclient package (use at least version 0.5.0).
+At the time of this writing, it is not availabe on the official repo, so you
 have to install it using pip::
 
   sudo apt-get install python-pip
   sudo pip install python-ironicclient
 
 Now we can see how the client works, but first we have to define the URL of the 
-Ironic-API where the client needs connect to, the best way is define some
-environmet variables::
+Ironic-API server where the client needs connect to, the best way is do it by
+using environmet variables::
 
   export IRONIC_URL=http://localhost:6385/
   export OS_AUTH_TOKEN=" "
 
 Because there is no Identity service running (*keystone*) the variable 
-**OS_AUTH_TOKEN** contains a fake token to allow ironic client to operate.
-
-Let's list the available drivers::
+*OS_AUTH_TOKEN* contains a fake token to allow ironic client to operate,
+so let's list the available drivers::
 
   ironic driver-list
   +---------------------+----------------+
@@ -177,8 +176,8 @@ how to create a chassis::
   +--------------------------------------+-------------------+
 
 A chassis is a logical composition of baremetal servers and you can define and 
-assign some variables to it. As we know the infrastruture is working properly,
-it is time to review the Ironic object model:
+assign some variables to it. As we know now that the infrastruture is working 
+properly, it is time to review the Ironic object model:
 
 .. image:: ironic-model.jpg
 
@@ -192,10 +191,10 @@ Ironic-Conductor drivers
 
 In this implementation, assuming the default settings defined in the playbook, 
 two Ironic-Conductor drivers are enabled: **pxe_ipmitool** and **agent_ipmitool**. 
-Both drivers use two kind of images: a **deploy_ramdisk** image as first image to 
+Both drivers use two kind of images: a *deploy_ramdisk* image as first image to 
 boot the baremetal server and a final *image* to install the operating system 
-on it. Ironic issues the baremetal server to boot with the deploy_ramdisk image 
-and it is in charge of installing the final image on the server. The difference 
+on it. Ironic issues the baremetal server to boot with the *deploy_ramdisk* image 
+and it is in charge of installing the final *image* on the server. The difference 
 between those drivers is in the way they use the ramdisk image ...
 
 
@@ -205,8 +204,9 @@ Driver: *pxe_ipmitool*
 This is the default driver. It uses IPMI to control the power state of the 
 baremetal server, first of all, it issues the baremetal server to re-boot
 using PXE network. Then it creates the PXE configuration for the PXE server (in
-this case for Dnsmasq) on --- . After those steps Ironic keeps waiting for
-the server to boot up and run the ramdisk image. To sum up:
+this case for Dnsmasq) on *ironic_pxe_tftp_root* folder. After those steps 
+Ironic keeps waiting for the server to boot up and run the ramdisk image ...
+To sum up:
 
 1. Ironic reboots the server by issuing ipmi commands (using ipmitool) 
    to boot from the network using PXE.
@@ -215,8 +215,8 @@ the server to boot up and run the ramdisk image. To sum up:
    the *deploy_ramdisk* and *deploy_kernel* images.
 3. Ironic-Conductor keeps waiting for the ramdisk operating system to boot.
 4. When the ramdisk kernel is running, it notifies Ironic and also exposes 
-   the first hardisk (---) using the TGT iSCSI framework to the 
-   Ironic-Conductor.
+   the first hardisk (``ironic/ironic_pxe_disk_devices``) using the TGT iSCSI 
+   framework to the Ironic-Conductor.
 5. Using local commands on the iSCSI target attached to the Ironic-Conductor
    host, the driver creates de partition schema and dumps the image on the 
    disk target. Also, if a Config-Drive was provided, Ironic will create another
@@ -235,12 +235,13 @@ The diagram below ilustrates the process:
    
 .. image:: ironic-sequence-pxe-deploy.png
 
+
 There are some limitations on that way:
 
 * It is not able to create complex disk partitions. The partition scheme is 
   hardcoded in the driver. There are some parameters to control the size or
   which partitions to create (for example, ephemeral partitions). It is not 
-  possible to setup LVM/SofwareRAID, though that is out of the Ironic scope.
+  possible to setup LVM/Sofware-RAID, although that is out of the Ironic scope.
 * It has problems to deploy whole image files on the baremetal server. For
   example, if the image is for a whole disk, it cannot find out the UUID of
   the root device to setup PXE to boot from that device. 
@@ -252,10 +253,12 @@ Create images to use *pxe_ipmitool*
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The image creation process can be fully automated by using ``disk-image-create``
-from ``Image building tools for OpenStack <https://github.com/openstack/diskimage-builder>``_::
+from `Image building tools for OpenStack <https://github.com/openstack/diskimage-builder>`_;
+For example, to create a new Ubuntu image with Config-Drive support, just type::
 
   # Create the image to deploy on disk (with Config-Drive support)
-  DIB_CLOUD_INIT_DATASOURCES="ConfigDrive, OpenStack" disk-image-create ubuntu baremetal dhcp-all-interfaces -o ubuntu
+  DIB_CLOUD_INIT_DATASOURCES="ConfigDrive, OpenStack" \
+     disk-image-create ubuntu baremetal dhcp-all-interfaces -o ubuntu
 
 Note the variable *DIB_CLOUD_INIT_DATASOURCES* which issues ``disk-image-create``
 to include the Config-Drive provider of Cloud-Init. Also, note all the 
@@ -268,22 +271,24 @@ Ironic needs to boot the image once it is installed, so 3 files will appear
 after run the command: the image ``ubuntu.qcow2``, the kernel ``ubuntu.vmlinuz`` 
 and the ramdisk ``ubuntu.initrd``.
 
-In the same way, it is needed to create a deploy ramdisk image::
+In the same way, to create a deploy ramdisk image, just type::
 
   ramdisk-image-create ubuntu deploy-ironic -o ubuntu-deploy-ramdisk
 
-It will create a ramdisk image ``ubuntu-deploy-ramdisk.initramfs`` and a kernel 
-``ubuntu-deploy-ramdisk.kernel``.
+It will create a ramdisk image file ``ubuntu-deploy-ramdisk.initramfs`` and a 
+kernel ``ubuntu-deploy-ramdisk.kernel``.
 
 To operate with those images, copy all the generated files to the folder 
-``/var/lib/ironic/images/`` on the Ironic server.
+``/var/lib/ironic/images/`` (have a look at ``ironic/ironic_pxe_images_path``) 
+on the Ironic server.
 
 
 Operation
 ---------
  
-Let's see how to use the *pxe_ipmitool* driver by defining a new baremetal 
-server::
+Let's see how to use the *pxe_ipmitool* driver to deploy a new baremetal
+server. First of all, we have to define it by choosing a name and by
+defining the IPMI settings::
 
   # UUID of the chassis defined above
   CHASSIS=1eb3951f-2406-4cf1-b4a1-115e90a65480
@@ -294,7 +299,10 @@ server::
   # IPMI ip with (ADMIN/ADMIN as user/password)
   IPMI=10.0.0.2
   # Define the new server on the chassis using the driver pxe_ipmitool
-  ironic node-create -c $CHASSIS -n $NAME -d pxe_ipmitool -i ipmi_address=$IPMI -i ipmi_username=ADMIN -i ipmi_password=ADMIN -i deploy_kernel=file:///var/lib/ironic/images/ubuntu-deploy-ramdisk.kernel" -i deploy_ramdisk=file:///var/lib/ironic/images/ubuntu-deploy-ramdisk.initramfs
+  ironic node-create -c $CHASSIS -n $NAME -d pxe_ipmitool \
+    -i ipmi_address=$IPMI -i ipmi_username=ADMIN -i ipmi_password=ADMIN \
+    -i deploy_kernel=file:///var/lib/ironic/images/ubuntu-deploy-ramdisk.kernel" \
+    -i deploy_ramdisk=file:///var/lib/ironic/images/ubuntu-deploy-ramdisk.initramfs
   +--------------+-----------------------------------------------------------------------------------+
   | Property     | Value                                                                             |
   +--------------+-----------------------------------------------------------------------------------+
@@ -328,7 +336,12 @@ Now it's time to define the final image to install on the baremetal server::
   # Ironic needs the checksum of the image
   MD5=$(md5sum /var/lib/ironic/images/ubuntu.qcow2 | cut -d' ' -f 1)
   # Define the image to install on the server
-  ironic node-update $UUID add instance_info/image_source=file:///var/lib/ironic/images/ubuntu.qcow2 instance_info/kernel=file:///var/lib/ironic/images/ubuntu.vmlinuz instance_info/ramdisk=file:///var/lib/ironic/images/ubuntu.initrd instance_info/root_gb=10 instance_info/image_checksum=$MD5
+  ironic node-update $UUID add \
+    instance_info/image_source=file:///var/lib/ironic/images/ubuntu.qcow2 \
+    instance_info/kernel=file:///var/lib/ironic/images/ubuntu.vmlinuz \
+    instance_info/ramdisk=file:///var/lib/ironic/images/ubuntu.initrd \
+    instance_info/root_gb=10 \
+    instance_info/image_checksum=$MD5
   +------------------------+------------------------------------------------------------------------+
   | Property               | Value                                                                  |
   +------------------------+------------------------------------------------------------------------+
@@ -391,15 +404,57 @@ More information about Cloud-Drive on OpenStack here:
 Let's create manually those configuration files::
 
   # Create a temp folder structure
-  mkdir -p /tmp/$NAME/latest /tmp/$NAME/content /tmp/$NAME/latest
+  mkdir -p /tmp/$NAME/openstack/latest /tmp/$NAME/openstack/content /tmp/$NAME/openstack/2012-08-10
   # Create the main file
-  cat EOF >> /tmp/$NAME/latest
+  cat <<EOF > "/tmp/$NAME/openstack/latest/meta_data.json"
+  {
+    "availability_zone": "",
+    "files": [
+        {
+            "content_path": "/content/0000",
+            "path": "/etc/network/interfaces"
+        }
+    ],
+    "hostname": "test1.your-domain.com",
+    "name": "test1",
+    "meta": {},
+    "public_keys": {
+        "mykey": "ssh-rsa PUT-HERE-YOUR-SSH-PUBLIC-KEY ubuntu@pe-test-ironic-01"
+    },
+    "uuid": "$UUID"
+  }
   EOF
-  cp /tmp/$NAME/latest /tmp/$NAME/latest
+  # Copy the same file to both locations ...
+  cp /tmp/$NAME/openstack/latest/meta_data.json /tmp/$NAME/openstack/2012-08-10
+  # Create the interfaces network file to
+  cat <<EOF > "/tmp/$NAME/openstack/content/0000"
+  auto lo
+  iface lo inet loopback
+
+  auto eth0
+  iface eth0 inet static
+  address 10.0.100.10        # < FINAL IP of the node
+  netmask 255.255.255.0
+  gateway 10.0.100.1
+  EOF
+
+As you can see the Cloud-Init configuration is not difficult to understand, it 
+is a ``meta_data.json`` which references other files to inject, in this example 
+the ``/etc/network/interfaces`` file. You can add more files in the same way.
+Note that is really specific Ubuntu configuration, to avoid that, the community 
+is working on an abstraction layer.
 
 Currently the community is working on a way to define the network information
 (and much more) in an agnostic way, not depending on the distribution:
 
+Another interesting point is you can create a ``user_data`` file (next to 
+``meta_data.json``, in both folders) and define a complete Cloud-Init 
+configuration by using:
+
+ * Shell script (starts with #!)
+ * `Cloud config file <http://cloudinit.readthedocs.org/en/latest/topics/examples.html>`_ (starts with #cloud-config)
+
+More information about Cloud-Init here: http://cloudinit.readthedocs.org/en/latest/
 
 
 Ironic will assume that the image is not a whole disk image 
