@@ -19,7 +19,8 @@ Roles used:
  * `roles/monit` (optional) to setup processes control with Monit.
  * `roles/ironic` to setup the OpenStack Ironic daemons.
  * `roles/dnsmasq` to setup a PXE server to use with Ironic.
-
+ * `roles/nginx` (optional) to setup HTTP image repo server (for IPA).
+ * 
 Note that those roles have no dependecies between each other, so you 
 can reuse them in other projects, they have more functionalities than 
 the required for this setup. Also, they were created/adapted following 
@@ -29,15 +30,15 @@ The Ironic client is not updated to the latest version (Kilo) on the
 Ubuntu Cloud repository, you have to build it from source, but it is 
 not part on this setup because it is just the client part.
 
-Howto Run
----------
+Howto run this thing
+--------------------
 
-Just type: `vagrant up` to run all the setup, after that just type
-`vagrant ssh ironic` to have a look at the settings.
+Just type: `vagrant up` to run all the setup (playbook and roles), after that just launch
+`vagrant ssh ironic` to have a look at the configuration.
 
 When vagrant will be finished, you will have those ports available:
 
- * http:/127.0.0.1:15672 - RabbitMQ (ironic:rabbitmq)
+ * http://127.0.0.1:15672 - RabbitMQ (ironic:rabbitmq)
  * mysql://127.0.0.1:3306 - MySQL (ironic:mysql)
  * http://127.0.0.1:6385 - Ironic API
  * http://127.0.0.1:8080 - Nginx http image repository
