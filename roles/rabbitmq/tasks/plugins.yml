@@ -10,7 +10,6 @@
   when: >
     rabbitmq_plugins_dict is defined and
     not rabbitmq_plugins_dict is none
-  tags: ["rabbitmq", "plugins"]
 
 - name: Enable plugins
   rabbitmq_plugin:
@@ -20,14 +19,12 @@
     rabbitmq_plugins_dict is defined and
     not rabbitmq_plugins_dict is none
   notify: restart rabbitmq
-  tags: ["rabbitmq", "plugins"]
 
 - name: List of active plugins to disable
   command: rabbitmq-plugins list -e -m
   register: __plugins_result
   when: >
     not (rabbitmq_plugins_dict is defined and not rabbitmq_plugins_dict is none)
-  tags: ["rabbitmq", "plugins"]
 
 - name: Disable plugins if none added
   rabbitmq_plugin:
@@ -37,5 +34,4 @@
   when: >
     not (rabbitmq_plugins_dict is defined and not rabbitmq_plugins_dict is none)
   notify: restart rabbitmq
-  tags: ["rabbitmq", "plugins"]
 

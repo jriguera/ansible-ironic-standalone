@@ -4,9 +4,18 @@
   tags: ["distribution", "packages", "service", "rabbitmq"]
 
 - include: install.yml
+  tags: ["rabbitmq", "install"]
+
 - include: configure.yml
+  tags: ["rabbitmq", "configure"]
+
 - include: plugins.yml
+  tags: ["rabbitmq", "plugins"]
+
 - include: vhost.yml
+  tags: ["rabbitmq", "vhost"]
+
 - include: federate.yml
   when: rabbitmq_federate
+  tags: ["rabbitmq", "federate"]
 

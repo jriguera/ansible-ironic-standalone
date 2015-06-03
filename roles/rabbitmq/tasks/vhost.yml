@@ -8,7 +8,7 @@
   register: __rabbitmq_rm_guest_hostname
   when: rabbitmq_secure
   ignore_errors: true
-  tags: ["rabbitmq", "vhost", "secure"]
+  tags: ["secure"]
 
 - name: Remove guest user (default)
   rabbitmq_user:
@@ -16,7 +16,7 @@
     vhost: /
     state: absent
   when: rabbitmq_secure and __rabbitmq_rm_guest_hostname|failed
-  tags: ["rabbitmq", "vhost", "secure"]
+  tags: ["secure"]
 
 - name: Add vhosts
   rabbitmq_vhost:
@@ -26,7 +26,6 @@
     state: present
   with_items: rabbitmq_vhost_definition_list
   when: rabbitmq_vhost_definition_list is defined
-  tags: ["rabbitmq", "vhost"]
 
 - name: Add users and setup priveleges
   rabbitmq_user:
@@ -42,6 +41,5 @@
     force: "{{ item.force|default('yes') }}"
   with_items: rabbitmq_users_definition_list
   when: rabbitmq_users_definition_list is defined
-  tags: ["rabbitmq", "vhost"]
 
 

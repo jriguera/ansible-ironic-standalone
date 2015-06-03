@@ -7,7 +7,7 @@
     not rabbitmq_os_repo_key is none and
     rabbitmq_os_repo_key | search("http://.*")
   ignore_errors: yes
-  tags: ["rabbitmq", "install", "debian"]
+  tags: ["debian"]
 
 - name: Debian - Add repository package
   apt: name="{{ rabbitmq_os_repo_key }}" state=latest
@@ -16,21 +16,21 @@
     not rabbitmq_os_packages and
     not rabbitmq_os_repo_key is none and
     not rabbitmq_os_repo_key | search("http://.*")
-  tags: ["rabbitmq", "install", "debian"]
+  tags: ["debian"]
 
 - name: Debian - Add repository url
   apt_repository: repo="{{ rabbitmq_os_repo_url }}" state=present
   when: >
     ansible_os_family == 'Debian' 
     and not rabbitmq_os_packages
-  tags: ["rabbitmq", "install", "debian"]
+  tags: ["debian"]
 
 - name: RedHat - Add repository
   yum: name="{{ rabbitmq_os_repo_url }}" state=present
   when: >
     ansible_os_family == 'RedHat' and 
     not rabbitmq_os_packages
-  tags: ["rabbitmq", "install", "redhat"]
+  tags: ["redhat"]
 
 - name: RedHat - Import repository key
   rpm_key: key="{{ rabbitmq_os_repo_key }}" state=present
@@ -38,16 +38,14 @@
     ansible_os_family == 'RedHat' and 
     not rabbitmq_os_packages and 
     not rabbitmq_os_repo_key is none
-  tags: ["rabbitmq", "install", "redhat"]
+  tags: ["redhat"]
 
 - name: Check if configuration exists
   stat: path="{{ rabbitmq_config }}"
   register: __rabbitmq_conf
-  tags: ["rabbitmq"]
 
 - name: Setup configuration fact
   set_fact: _rabbitmq_previous="{{ __rabbitmq_conf.stat.exists }}"
-  tags: ["rabbitmq"]
 
 - name: RedHat - Install required packages
   yum:
@@ -56,7 +54,7 @@
   with_dict: rabbitmq_packages
   when: ansible_os_family == 'RedHat'
   register: __rabbitmq_installed
-  tags: ["rabbitmq", "install", "redhat"]
+  tags: ["redhat"]
 
 - name: Debian - Install required packages
   apt: 
@@ -66,18 +64,16 @@
   with_dict: rabbitmq_packages
   when: ansible_os_family == 'Debian'
   register: __rabbitmq_installed
-  tags: ["rabbitmq", "install", "debian"]
+  tags: ["debian"]
 
 - name: Check if packages were installed
   set_fact: _rabbitmq_reinstalled="{{ __rabbitmq_installed.changed }}"
-  tags: ["rabbitmq"]
 
 # Because Ubuntu starts RabbitMQ as part of the install process, we need to stop it
 - name: Ensure RabbitMQ is stopped after initial install
   service: name={{ rabbitmq_daemon }} state=stopped enabled=no
   when: _rabbitmq_reinstalled
   ignore_errors: yes
-  tags: ["rabbitmq", "install"]
 
 - name: Debian - Delete upstart configuration
   file:
@@ -87,7 +83,7 @@
     ansible_os_family == 'Debian' and
     rabbitmq_init_system != "upstart"
   notify: stop rabbitmq
-  tags: ["rabbitmq", "install"]
+  tags: ["debian", "ubuntu"]
 
 - name: Debian - Delete init.d configuration
   file:
@@ -97,7 +93,7 @@
     ansible_os_family == 'Debian' and
     rabbitmq_init_system != "initd"
   notify: stop rabbitmq
-  tags: ["rabbitmq", "install"]
+  tags: ["debian", "ubuntu"]
 
 # Flush all notify stop handlers, to be sure that they are done!
 # The reason is because of upstart service
