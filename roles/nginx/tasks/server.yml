@@ -5,7 +5,6 @@
     state: absent
   when: nginx_remove_default_server
   notify: reload nginx
-  tags: ["nginx", "server"]
 
 - name: Delete vhost servers
   file:
@@ -17,7 +16,6 @@
     not nginx_server_list is none and
     (item.delete is defined and item.delete)
   notify: reload nginx
-  tags: ["nginx", "server"]
 
 - name: Add vhost servers
   template:
@@ -32,5 +30,4 @@
     not nginx_server_list is none and
     not (item.delete is defined and item.delete)
   notify: reload nginx
-  tags: ["nginx", "server"]
 

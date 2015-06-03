@@ -12,6 +12,11 @@
   tags: ["distribution", "packages", "service", "nginx"]
 
 - include: install.yml
+  tags: ["nginx", "install"]
+
 - include: configure.yml
+  tags: ["nginx", "configure"]
+
 - include: server.yml
+  tags: ["nginx", "server"]
 

@@ -9,7 +9,6 @@
   with_items:
     - "{{ nginx_ssl_dir }}"
     - "{{ nginx_sites_path }}"
-  tags: ["nginx", "configure"]
 
 - name: Create proxy cache path
   file:
@@ -21,7 +20,6 @@
   when: >
     nginx_proxy_cache_path is defined and
     not nginx_proxy_cache_path is none
-  tags: ["nginx", "configure"]
   
 - name: Create proxy temp path
   file:
@@ -33,7 +31,6 @@
   when: >
     nginx_proxy_temp_path is defined and
     not nginx_proxy_temp_path is none
-  tags: ["nginx", "configure"]
 
 - name: Create global nginx configuration
   template:
@@ -45,7 +42,6 @@
     validate: 'nginx -t -c %s'
   notify: reload nginx
   register: __nginx_updated_global
-  tags: ["nginx", "configure"]
 
 - name: Copy ssl certificate
   copy:
@@ -57,7 +53,7 @@
   when: >
     nginx_ssl_certificate is defined and
     not nginx_ssl_certificate is none  
-  tags: ["nginx", "configure", "ssl"]
+  tags: ["ssl"]
 
 - name: Copy ssl certificate key
   copy:
@@ -69,14 +65,12 @@
   when: >
     nginx_ssl_certificate_key is defined and
     not nginx_ssl_certificate_key is none  
-  tags: ["nginx", "configure", "ssl"]
+  tags: ["ssl"]
 
 - name: Checking if configuration was updated
   set_fact: >
     _nginx_updated="{{ __nginx_updated_global.changed }}"
-  tags: ["nginx", "configure"]
 
 - name: Ensure nginx is started and enabled on boot
   service: name="{{ nginx_daemon }}" state=started enabled="{{ nginx_enabled_on_startup | ternary('yes', 'no') }}"
-  tags: ["nginx", "configure"]
 
