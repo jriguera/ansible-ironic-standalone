@@ -7,5 +7,4 @@
     group: root
     mode: 0644
   notify: reload dnsmasq
-  tags: ["dnsmasq", "resolvconf"]
  

@@ -13,6 +13,11 @@
 
 - include: resolvconf.yml
   when: dnsmasq_resolvconf
+  tags: ["dnsmasq", "resolvconf"]
+
 - include: install.yml
+  tags: ["dnsmasq", "install"]
+
 - include: configure.yml
+  tags: ["dnsmasq", "configure"]
 
