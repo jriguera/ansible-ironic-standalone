@@ -34,8 +34,8 @@ The Ironic client is not updated to the latest version (Kilo) on the
 Ubuntu Cloud repository, you have to build it from source, but it is 
 not part on this setup because it is just the client part.
 
-Howto run this thing
---------------------
+How to run this thing
+---------------------
 
 Just type: `vagrant up` to run all the setup (playbook and roles: `site.yml`), 
 after that just launch `vagrant ssh ironic` to have a look at the configuration.
