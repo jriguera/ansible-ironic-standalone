@@ -1,5 +1,5 @@
-Ironic-standalone
-=================
+Ansible-Ironic-Standalone
+=========================
 
 A set of roles to setup an OpenStack Ironic node in standalone mode, 
 just to be able to deploy servers like cobbler but based on images ...
