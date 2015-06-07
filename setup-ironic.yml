@@ -4,95 +4,28 @@
   sudo: true
   roles:
     - role: mysql
-      mysql_database_list:
-        - name: "ironic"
-      mysql_user_list:
-        - name: "ironic"
-          password: "mysql"
-          priv: "ironic.*:ALL"
     - role: monit
-      monit_monitoring_list:
-        - name: "mysql"
-          type: process
-          target: "{{ mysql_pidfile }}"
-          start: { script: "/etc/init.d/mysql start", timeout: 60 }
-          stop: { script: "/etc/init.d/mysql stop" }
-          rules:
-            - "if failed port {{ mysql_port }} protocol mysql then restart"
-            - "if 3 restarts within 3 cycles then timeout"
-
 
 # RabbitMQ server
 - hosts: messaging
   sudo: true
   roles:
     - role: rabbitmq
-      rabbitmq_vhost_definition_list:
-        - name: "ironic"
-      rabbitmq_users_definition_list:
-        - user: "ironic"
-          password: "rabbitmq"
-          vhost: "ironic"
-          tags: [ "administrator", "management" ]
     - role: monit
-      monit_monitoring_list:
-        - name: "rabbitmq"
-          type: process
-          target: "{{ rabbitmq_pidfile }}"
-          start: { script: "/etc/init.d/rabbitmq-server start" }
-          stop: { script: "/etc/init.d/rabbitmq-server stop" }
-          rules:
-            - "if failed port {{rabbitmq_tcp_port}} type tcp then restart"
-            - "if 3 restarts within 3 cycles then timeout"
 
-
-# Ironic server
-- hosts: provisioning
+# Ironic API server
+- hosts: ironic-api
   sudo: true
   roles:
     - role: ironic
-      ironic_my_ip: "{{ ansible_eth0.ipv4.address }}"
-      ironic_conductor_api_url: "http://{{ ironic_my_ip }}:6385/"
-      ironic_pxe_tftp_server: "{{ ironic_my_ip }}"
-      ironic_oslo_messaging_rabbit_host: "localhost"
-      ironic_oslo_messaging_rabbit_userid: "ironic"
-      ironic_oslo_messaging_rabbit_password: "rabbitmq"
-      ironic_oslo_messaging_rabbit_virtual_host: "ironic"
-      ironic_database_mysql_host: "localhost"
-      ironic_database_mysql_userid: "ironic"
-      ironic_database_mysql_password: "mysql"
-      ironic_database_mysql_db: "ironic"
-    - role: dnsmasq
-      dnsmasq_conf_domain: "pxe.pe.springer-sbm.com"
-      dnsmasq_conf_dhcp:
-        eth0:
-          range: ["10.230.44.160", "10.230.44.179", "infinite"]
-          ignore_names: true
-          generate_names: true
-          boot: [ "{{ ironic_pxe_bootfile_name }}" ]
-          tftp: "{{ ironic_pxe_tftp_root }}"
     - role: monit
-      monit_monitoring_list:
-        - name: "dnsmasq"
-          type: process
-          target: "{{ dnsmasq_pidfile }}"
-          start: { script: "/etc/init.d/dnsmasq start" }
-          stop: { script: "/etc/init.d/dnsmasq stop" }
-          rules:
-            - "if failed port 53 type tcp protocol dns then restart"
-            - "if 3 restarts within 3 cycles then timeout"
-        - name: "ironic-api"
-          type: process
-          target: "{{ ironic_api_pidfile }}"
-          start: { script: "service start ironic-api" }
-          stop: { script: "service stop ironic-api" }
-          rules:
-            - "if failed port 6385 type tcp then restart"
-            - "if 3 restarts within 3 cycles then timeout"
-        - name: "ironic-conductor"
-          type: process
-          target: "{{ ironic_conductor_pidfile }}"
-          start: { script: "service start ironic-conductor" }
-          stop: { script: "service stop ironic-conductor" }
-          rules:
-            - "if 3 restarts within 3 cycles then timeout"
+
+# Ironic Conductor with http repo
+# HTTP can be centralized on the API if you use IPA
+- hosts: ironic-conductor
+  sudo: true
+  roles:
+    - role: ironic
+    - role: dnsmasq
+    - role: nginx
+    - role: monit
