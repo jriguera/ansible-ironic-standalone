@@ -356,7 +356,10 @@ pe-prod-ironic-01          : ok=36   changed=19   unreachable=0    failed=0
  
  * `del-baremetal.yml`
 ```
-$ ansible-playbook -i hosts/production -e baremetal_mac=00:25:90:8f:51:a0 -e baremetal_name=compute-11 del-baremetal.yml 
+$ ansible-playbook -i hosts/production \
+  -e baremetal_mac=00:25:90:8f:51:a0 \
+  -e baremetal_name=compute-11 \
+  del-baremetal.yml 
 
 PLAY [Poweroff and delete servers using Ironic] ******************************* 
 
