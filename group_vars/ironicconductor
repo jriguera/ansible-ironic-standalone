@@ -1,0 +1,30 @@
+---
+nginx_server_list:
+  - name: "image-server"
+    root: "{{ ironic_pxe_images_path }}"
+    access_log: "/var/log/nginx/ironic-image-server_access.log"
+    location_list:
+      - name: "/"
+        autoindex: "on"
+
+monit_monitoring_list:
+  - name: ironic-conductor
+    type: process
+    target: "{{ ironic_conductor_pidfile }}"
+    start:
+      script: "service start ironic-conductor"
+    stop:
+      script: "service stop ironic-conductor"
+    rules:
+      - "if 3 restarts within 3 cycles then timeout"
+  - name: nginx
+    type: process
+    target: "{{ nginx_pidfile }}"
+    start:
+      script: "/etc/init.d/nginx start"
+    stop:
+      script: "/etc/init.d/nginx stop"
+    rules:
+      - "if failed port 80 type tcp then restart"
+      - "if 3 restarts within 3 cycles then timeout"
+

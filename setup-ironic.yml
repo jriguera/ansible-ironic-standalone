@@ -29,9 +29,16 @@
           tags: [ "administrator", "management" ]
     - role: monit
 
+# Ironic API server
+- hosts: ironic-api
+  sudo: true
+  roles:
+    - role: ironic
+    - role: monit
 
-# Ironic server
-- hosts: provisioning
+# Ironic Conductor with http repo
+# HTTP can be centralized on the API if you use IPA
+- hosts: ironic-conductor
   sudo: true
   roles:
     - role: ironic
@@ -71,4 +78,3 @@
             - name: "/"
               autoindex: "on"
     - role: monit
-
