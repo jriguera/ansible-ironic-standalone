@@ -29,6 +29,10 @@ ironic_conductor_packages_aux:
     state: latest
   util-linux-ng:
     state: latest
+  genisoimage:
+    state: latest
+  gzip:
+    state: latest
 
 ironic_conductor_packages_console:
   openssl:
