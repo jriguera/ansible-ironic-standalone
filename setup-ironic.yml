@@ -29,16 +29,8 @@
           tags: [ "administrator", "management" ]
     - role: monit
 
-# Ironic API server
-- hosts: ironic-api
-  sudo: true
-  roles:
-    - role: ironic
-    - role: monit
-
-# Ironic Conductor with http repo
-# HTTP can be centralized on the API if you use IPA
-- hosts: ironic-conductor
+# Ironic API server and Ironic Conductor with http repo
+- hosts: provisioning
   sudo: true
   roles:
     - role: ironic
@@ -78,3 +70,28 @@
             - name: "/"
               autoindex: "on"
     - role: monit
+
+  tasks:
+    - name: Create configdrive metadata folders
+      file:
+        path: "{{ baremetal_server_images_path }}/{{ item }}"
+        mode: 0755
+        recurse: yes
+        state: directory
+      with_items:
+        - "deploy"
+        - "metadata"
+        - "images"
+
+    - name: Download IPA Coreos ramdisk
+      get_url:
+        url: http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem.cpio.gz
+        dest: "{{ baremetal_server_images_path }}/deploy/coreos_production_pxe_image-oem.cpio.gz"
+        force: no
+
+    - name: Download IPA Coreos kernel
+      get_url:
+        url: http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe.vmlinuz
+        dest: "{{ baremetal_server_images_path }}/deploy/coreos_production_pxe.vmlinuz"
+        force: no
+
