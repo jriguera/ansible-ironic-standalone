@@ -1,0 +1,70 @@
+---
+# Define the name based on the fqdn
+
+- name: Define the server domain
+  set_fact: baremetal_domain="{{ baremetal_fqdn.split('.', 1) | last }}"
+  when: not baremetal_domain is defined and baremetal_fqdn
+  
+- name: Define the server name
+  set_fact: baremetal_name="{{ baremetal_fqdn.split('.') | first }}"
+  when: not baremetal_name is defined and baremetal_fqdn
+
+- name: Define the server name as MAC
+  set_fact: baremetal_name="{{ baremetal_mac | regex_replace(':', '-') }}"
+  when: not baremetal_name is defined
+
+
+# Define date for metadata purposes
+
+- name: Get the current date
+  command: date '+%FT%T%z'
+  register: _baremetal_datetime 
+
+- name: Define the date
+  set_fact: baremetal_datetime="{{ _baremetal_datetime.stdout }}"
+
+
+# Assign network definitions for configdrive depending on the variables
+# defined on the network vars file
+
+- name: Assign network parameters
+  set_fact: baremetal_network_device_list="{{ baremetal_network_list }}"
+  when: >
+    (baremetal_ip is defined and baremetal_ip|trim != '') and
+    baremetal_network_list is defined
+
+- name: Assign network parameters with DHCP
+  set_fact: baremetal_network_device_list="{{ baremetal_network_dhcp_list }}"
+  when: >
+    (not baremetal_ip is defined or baremetal_ip|trim == '') and
+    baremetal_network_dhcp_list is defined
+
+- name: Check if the network needs an IP address for the server
+  fail: msg="IP address not defined on the provided network!"
+  when: >
+    (not baremetal_ip is defined or baremetal_ip|trim == '') and
+    not baremetal_network_dhcp_list is defined and
+    baremetal_network is defined and 
+    baremetal_network|trim != ''
+
+
+# Check the length of the MAC, IPMI ip ...
+
+- name: Checking if MAC address is correct
+  fail: msg="MAC address incorrect!"
+  when: >
+    baremetal_mac | length != 17 and
+    baremetal_mac is defined
+
+- name: Checking if IPMI address is defined
+  fail: msg="IPMI address incorrect!"
+  when: >
+    baremetal_ipmi_ip is not defined or
+    baremetal_ipmi_ip|trim == ''
+
+- name: Checking if md5 image checksum is defined
+  fail: msg="MD5 checksum not defined!"
+  when: >
+    baremetal_image_checksum is not defined or 
+    baremetal_image_checksum is none
+

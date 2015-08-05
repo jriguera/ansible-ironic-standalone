@@ -1,0 +1,55 @@
+---
+# Workout the MD5 checksum for the image
+# If checksum is not defined, it does those things, it will try to load a file 
+# with the checksum next to the baremetal_image, but with the '.md5' extension.
+# if it does not found such file, it will workout the md5 checksum.
+############################################################################
+
+- name: Define the MD5 checksum URI if needed
+  set_fact: _baremetal_image_checksum_path="{{ baremetal_image | regex_replace('^(.*)\.(.*)$', '\\1.md5') }}"
+
+- name: Get the url image MD5 checksum if needed
+  command: curl -qs "{{ _baremetal_image_checksum_path }}"
+  register: _baremetal_image_checksum
+  ignore_errors: yes
+  when: baremetal_image | search("http://.*")
+
+- name: Load the previous MD5 checksum
+  set_fact: baremetal_image_checksum="{{ _baremetal_image_checksum.stdout.split() | first }}"
+  when: _baremetal_image_checksum|success
+
+- name: Workout the checksum with the image url if needed
+  shell: curl -qs "{{ _baremetal_image_checksum_path }}" | md5sum
+  register: _baremetal_image_checksum
+  ignore_errors: yes
+  when: >
+    baremetal_image | search("http://.*") and
+    not _baremetal_image_checksum|success
+
+- name: Load the previous MD5 checksum
+  set_fact: baremetal_image_checksum="{{ _baremetal_image_checksum.stdout.split() | first }}"
+  when: _baremetal_image_checksum|success
+
+- name: Get the file image MD5 checksum if needed
+  command: cat "{{ _baremetal_image_checksum_path }}"
+  register: _baremetal_image_checksum
+  ignore_errors: yes
+  when: not baremetal_image | search("http://.*")
+
+- name: Load the url MD5 checksum is needed
+  set_fact: baremetal_image_checksum="{{ _baremetal_image_checksum.stdout.split() | first }}"
+  when: _baremetal_image_checksum|success
+
+- name: Workout the checksum with the image if needed
+  command: md5sum "{{ _baremetal_image_checksum_path }}"
+  register: _baremetal_image_checksum
+  ignore_errors: yes
+  when: >
+    not baremetal_image | search("http://.*") and
+    not _baremetal_image_checksum|success
+
+- name: Load the url MD5 checksum is needed
+  set_fact: baremetal_image_checksum="{{ _baremetal_image_checksum.stdout.split() | first }}"
+  when: _baremetal_image_checksum|success
+
+

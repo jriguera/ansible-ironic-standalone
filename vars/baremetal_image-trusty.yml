@@ -1,0 +1,14 @@
+---
+baremetal_driver: "agent_ipmitool"
+
+# Folder relative to the servers
+baremetal_deploy_kernel: "file:///var/lib/ironic/http/deploy/coreos_production_pxe.vmlinuz"
+baremetal_deploy_ramdisk: "file:///var/lib/ironic/http/deploy/coreos_production_pxe_image-oem.cpio.gz"
+
+# Depends on the image
+baremetal_image_type: "Debian"
+baremetal_image: "http://{{ baremetal_ironic_server }}/images/trusty.qcow2"
+baremetal_image_checksum:
+baremetal_image_kernel:
+baremetal_image_ramdisk:
+baremetal_image_rootsize:

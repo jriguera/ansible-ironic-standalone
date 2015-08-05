@@ -1,0 +1,58 @@
+---
+- name: Poweroff and delete servers using Ironic
+  hosts: provisioning
+  sudo: true
+  gather_facts: False
+  vars_files:
+    - vars/baremetal.yml
+
+  vars_prompt:
+    - name: "baremetal_mac"
+      prompt: "Server PXE MAC address?"
+      private: no
+    - name: "baremetal_name"
+      prompt: "Server name?"
+      private: no
+
+  tasks:
+
+    - name: List the defined servers
+      shell: >
+        ironic
+        --os-auth-token="{{ baremetal_ironic_token }}"
+        --ironic-url="{{ baremetal_ironic_url }}"
+        node-list | awk -F '|' "/{{ baremetal_name }}/ { print \$2,\$5 }"
+      register: __baremetal_new
+      ignore_errors: yes
+      delegate_to: "{{ groups.client[0] }}"
+
+    - name: Checking if server name exists
+      fail: msg="Server name '{{ baremetal_name }}' does not exist!"
+      when: __baremetal_new.stdout|trim  == ''
+
+    - name: Power off the server
+      command: >
+        ironic
+        --os-auth-token="{{ baremetal_ironic_token }}"
+        --ironic-url="{{ baremetal_ironic_url }}"
+        node-set-power-state "{{ baremetal_name }}" off
+      when: __baremetal_new.stdout.split() | last | trim  == 'on'
+      delegate_to: "{{ groups.client[0] }}"
+
+    - name: Pause 1 minute
+      pause: minutes=1
+      when: __baremetal_new.stdout.split() | last | trim == 'on'
+      delegate_to: "{{ groups.client[0] }}"
+
+    - name: Delete the server
+      command: >
+        ironic
+        --os-auth-token="{{ baremetal_ironic_token }}"
+        --ironic-url="{{ baremetal_ironic_url }}"
+        node-delete "{{ baremetal_name }}"
+      delegate_to: "{{ groups.client[0] }}"
+
+    - name: Delete config-drive
+      shell: rm -rf "{{ baremetal_configdrive_dir }}/{{ __baremetal_new.stdout.split() | first | trim }}"*
+
+
