@@ -2,6 +2,31 @@
 database
 messaging
 provisioning
+client
+
+[ironic:vars]
+# Server side variables
+baremetal_server_database_rootpass=root
+baremetal_server_database_name=ironic
+baremetal_server_database_user=ironic
+baremetal_server_database_pass=mysql
+baremetal_server_msg_vhost=ironic
+baremetal_server_msg_user=ironic
+baremetal_server_msg_pass=rabbitmq
+baremetal_server_dhcp_params=["10.0.1.100", "10.0.1.200", "infinite"]
+baremetal_server_dhcp_domain=pxe.local
+baremetal_server_images_path=/var/lib/ironic/http
+
+# Client variables
+baremetal_ironic_token=" "
+baremetal_ironic_server=10.230.44.247
+baremetal_ironic_url="http://{{ baremetal_ironic_server }}:6385"
+baremetal_domain=springer-sbm.com
+baremetal_nameservers=[ "8.8.8.8" ]
+baremetal_ssh_key="ssh-rsa AAAAB3NzaC1yc2EAAAADAQAB...tion"
+
+[client]
+localhost ansible_connection=local
 
 [database]
 database ansible_ssh_host=127.0.0.1 ansible_ssh_port=2222
@@ -11,10 +36,4 @@ messaging ansible_ssh_host=127.0.0.1 ansible_ssh_port=2222
 
 [provisioning]
 provisioning ansible_ssh_host=127.0.0.1 ansible_ssh_port=2222
-
-[database:vars]
-
-[messaging:vars]
-
-[provisioning:vars]
 
