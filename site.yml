@@ -1,25 +1,37 @@
 ---
 - hosts: all
   sudo: true
+  vars:
+    baremetal_server_database_rootpass: root
+    baremetal_server_database_name: ironic
+    baremetal_server_database_user: ironic
+    baremetal_server_database_pass: mysql
+    baremetal_server_msg_vhost: ironic
+    baremetal_server_msg_user: ironic
+    baremetal_server_msg_pass: rabbitmq
+    baremetal_server_dhcp_params: ["10.0.1.100", "10.0.1.200", "infinite"]
+    baremetal_server_dhcp_domain: pxe.local
+    baremetal_server_images_path: /var/lib/ironic/http
+
   roles:
     - role: mysql
+      mysql_root_password: "{{ baremetal_server_database_rootpass }}"
       mysql_database_list:
-        - name: "ironic"
+        - name: "{{ baremetal_server_database_name }}"
       mysql_user_list:
-        - name: "ironic"
-          password: "mysql"
-          priv: "ironic.*:ALL"
+        - name: "{{ baremetal_server_database_user }}"
+          password: "{{ baremetal_server_database_pass }}"
+          priv: "{{ baremetal_server_database_name }}.*:ALL"
+          host: "%"
 
     - role: rabbitmq
       rabbitmq_vhost_definition_list:
-        - name: "ironic"
+        - name: "{{ baremetal_server_msg_vhost }}"
       rabbitmq_users_definition_list:
-        - user: "ironic"
-          password: "rabbitmq"
-          vhost: "ironic"
-          tags: 
-            - "administrator"
-            - "management"
+        - user: "{{ baremetal_server_msg_user }}"
+          password: "{{ baremetal_server_msg_pass }}"
+          vhost: "{{ baremetal_server_msg_vhost }}"
+          tags: [ "administrator", "management" ]
 
     - role: ironic
       ironic_debug: true
@@ -27,36 +39,36 @@
       ironic_conductor_api_url: "http://{{ ironic_my_ip }}:6385/"
       ironic_pxe_tftp_server: "{{ ansible_eth1.ipv4.address }}"
       ironic_oslo_messaging_rabbit_host: "localhost"
-      ironic_oslo_messaging_rabbit_userid: "ironic"
-      ironic_oslo_messaging_rabbit_password: "rabbitmq"
-      ironic_oslo_messaging_rabbit_virtual_host: "ironic"
+      ironic_oslo_messaging_rabbit_userid: "{{ baremetal_server_msg_user }}"
+      ironic_oslo_messaging_rabbit_password: "{{ baremetal_server_msg_pass }}"
+      ironic_oslo_messaging_rabbit_virtual_host: "{{ baremetal_server_msg_vhost }}"
       ironic_database_mysql_host: "localhost"
-      ironic_database_mysql_userid: "ironic"
-      ironic_database_mysql_password: "mysql"
-      ironic_database_mysql_db: "ironic"
-      ironic_enabled_drivers: 
-        - "pxe_ipmitool"
-        - "agent_ipmitool"
-      
+      ironic_database_mysql_userid: "{{ baremetal_server_database_user }}"
+      ironic_database_mysql_password: "{{ baremetal_server_database_pass }}"
+      ironic_database_mysql_db: "{{ baremetal_server_database_name }}"
+      ironic_pxe_images_path: "{{ baremetal_server_images_path }}"
+      ironic_agent_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
+      ironic_agent_erase_devices_priority: 0
+      ironic_enabled_drivers: ["pxe_ipmitool", "agent_ipmitool"]
+
     - role: dnsmasq
-      dnsmasq_conf_domain: "pxe.local"
+      dnsmasq_conf_domain: "{{ baremetal_server_dhcp_domain }}"
       dnsmasq_conf_dhcp:
-        eth1:
-          range: [10.0.0.100, 10.0.0.200, infinite]
+        eth0:
+          range: "{{ baremetal_server_dhcp_params }}"
           ignore_names: true
           generate_names: true
           option:
-            - "option:router,10.0.0.1"
-            - "option:ntp-server,0.0.0.0"
-            - "option:dns-server,8.8.8.8"  
-          boot: ["{{ ironic_pxe_bootfile_name }}"]
+            - "option:router,{{ ansible_default_ipv4.gateway }}"
+            - "option:dns-server,{{ ansible_eth0.ipv4.address }}"
+          boot: [ "{{ ironic_pxe_bootfile_name }}" ]
           tftp: "{{ ironic_pxe_tftp_root }}"
 
     - role: nginx
       nginx_server_list:
-        - name: "image-server"
-          root: "{{ ironic_pxe_images_path }}"
-          access_log: "/var/log/nginx/ironic-image-server_access.log"
+        - name: "{{ ansible_hostname }}"
+          root: "{{ baremetal_server_images_path }}"
+          access_log: "/var/log/nginx/{{ ansible_hostname }}-server_access.log"
           location_list:
             - name: "/"
               autoindex: "on"
@@ -108,16 +120,28 @@
             script: "/etc/init.d/nginx stop"
 
   tasks:
+
+    - name: Create configdrive metadata folders
+      file:
+        path: "{{ baremetal_server_images_path }}/{{ item }}"
+        mode: 0755
+        recurse: yes
+        state: directory
+      with_items:
+        - "deploy"
+        - "metadata"
+        - "images"
+
     - name: Download IPA Coreos ramdisk
       get_url:
         url: http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem.cpio.gz
-        dest: "{{ ironic_pxe_images_path }}/coreos_production_pxe_image-oem.cpio.gz"
+        dest: "{{ baremetal_server_images_path }}/deploy/coreos_production_pxe_image-oem.cpio.gz"
         force: no
 
     - name: Download IPA Coreos kernel
       get_url:
         url: http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe.vmlinuz
-        dest: "{{ ironic_pxe_images_path }}/coreos_production_pxe.vmlinuz"
+        dest: "{{ baremetal_server_images_path }}/deploy/coreos_production_pxe.vmlinuz"
         force: no
   
 #   - name: Display all variables/facts known for a host
