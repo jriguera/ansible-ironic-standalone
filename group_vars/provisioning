@@ -23,4 +23,12 @@ monit_monitoring_list:
     stop: { script: "service stop ironic-conductor" }
     rules:
       - "if 3 restarts within 3 cycles then timeout"
+  - name: nginx
+    type: process
+    target: "{{ nginx_pidfile }}"
+    start: { script: "/etc/init.d/nginx start" }
+    stop: { script: "/etc/init.d/nginx stop" }
+    rules:
+      - "if failed port 80 type tcp then restart"
+      - "if 3 restarts within 3 cycles then timeout" 
 
