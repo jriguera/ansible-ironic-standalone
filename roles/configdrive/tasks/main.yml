@@ -1,0 +1,44 @@
+---
+- name: Include OS specific variables
+  include_vars: "{{ configdrive_os_family }}.yml"
+  tags: ["distribution"]
+
+- name: Setup configdrive instance folder
+  set_fact: configdrive_instance_dir="{{ configdrive_uuid }}"
+  when: not configdrive_instance_dir is defined or configdrive_instance_dir is none
+
+- name: Create configdrive metadata folders
+  file:
+    path: "{{ configdrive_config_dir }}/{{ configdrive_instance_dir }}/{{ item }}"
+    owner: "{{ configdrive_user | default(omit) }}"
+    group: "{{ configdrive_group  | default(omit) }}"
+    mode: 0755
+    recurse: yes
+    state: directory
+  with_items:
+    - "openstack/2012-08-10"
+    - "openstack/latest"
+    - "openstack/content"
+    - "openstack/{{ configdrive_content_tmproot_dir }}"
+
+- name: Setup temporary folder for include files
+  set_fact: _configdrive_content_path="{{ configdrive_config_dir }}/{{ configdrive_instance_dir }}/openstack/{{ configdrive_content_tmproot_dir }}"
+
+- include: configdrive.yml
+  tags: ["configdrive", "core"]
+
+- name: Cleanup temporary folder for include files
+  file: 
+    state: absent 
+    force: yes 
+    name: "{{ _configdrive_content_path }}"
+
+- name: Cleanup instance configdrive folder
+  file: 
+    state: absent
+    force: yes 
+    name: "{{ configdrive_config_dir }}/{{ configdrive_instance_dir }}"
+  when: >
+    configdrive_config_dir_delete is defined 
+    and configdrive_config_dir_delete
+

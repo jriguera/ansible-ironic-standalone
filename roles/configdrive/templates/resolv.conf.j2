@@ -1,0 +1,12 @@
+#jinja2: trim_blocks: "true", lstrip_blocks: "true"
+
+{% if configdrive_resolv['domain'] is defined -%}
+domain {{ configdrive_resolv['domain'] }}
+{% endif -%}
+{% if configdrive_resolv['search'] is defined -%}
+search {{ configdrive_resolv['search'] }}
+{% endif -%}
+{% for ns in configdrive_resolv['dns'] -%}
+nameserver {{ ns }}
+{% endfor %}
+

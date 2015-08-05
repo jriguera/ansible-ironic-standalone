@@ -1,0 +1,23 @@
+# {{ ansible_managed }}
+# Network configuration
+
+USERCTL=no
+IPV6INIT=no
+IPV6_AUTOCONF=no
+NM_CONTROLLED=no
+DEVICE={{ item }}
+BOOTPROTO=none
+ONBOOT=yes
+HOTPLUG=no
+{% for dev in configdrive_network_device_list -%}
+{% if dev["type"] is defined and dev["backend"] is defined and item in dev["backend"] -%}
+{% if dev["type"] == 'bond' -%}
+MASTER={{ item }}
+SLAVE=yes
+{% elif dev["type"] == 'bridge' %}
+TYPE=Ethernet
+BRIDGE={{ item }}
+{% endif %}
+{% endif %}
+{% endfor %}
+

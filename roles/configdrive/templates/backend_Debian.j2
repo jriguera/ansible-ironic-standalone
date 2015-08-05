@@ -1,0 +1,23 @@
+# {{ ansible_managed }}
+# Network configuration
+
+auto {{ item }}
+iface {{ item }} inet manual
+{% for dev in configdrive_network_device_list -%}
+{% if dev["type"] is defined and dev["backend"] is defined and item in dev["backend"] -%}
+{% if dev["type"] == 'bond' %}
+        up ifconfig {{ item }} 0.0.0.0 up
+        bond-master {{ dev["device"] }}
+{% if not dev["bond_mode"] is defined -%} 
+{% if item == dev["backend"][0] %}
+        bond-primary {{ item }}
+{% endif %}        
+{% else %}
+{% if (dev["bond_mode"] == 'active-backup' or dev["bond_mode"] == '1') and item == dev["backend"][0] %}        
+        bond-primary {{ item }}
+{% endif %}
+{% endif %}
+{% endif %}
+{% endif %}
+{% endfor %}
+

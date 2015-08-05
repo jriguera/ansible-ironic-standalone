@@ -1,0 +1,67 @@
+#jinja2: trim_blocks: False
+{
+{%- set backend_list=configdrive_network_device_list | selectattr("backend", "defined") | map(attribute='backend') | list | unique %}
+{%- set device_list=configdrive_network_device_list | map(attribute='device') | list %}
+    "links": [
+{%- for dev in configdrive_network_device_list %}
+        {
+            "id": "{{ dev.device }}",
+            "type": "{{ dev.type | default('phy') }}",
+{%- if dev.mac is defined %}
+            "ethernet_mac_address": "{{ dev.mac }}",
+{%- endif %}
+            "mtu": "{{ dev.mtu | default(1500) }}"
+        }{% if not loop.last %},{% endif %}
+{%- endfor %}
+    ],
+    "networks": [
+{%- for dev in configdrive_network_device_list %}
+    {
+        "id": "{{ dev.type | default('phy') }}-{{ dev.device }}",
+        "type": "ipv4",
+        "link": "{{ dev.device }}",
+{%- if dev.address is defined %}
+        "ip_address": "{{ dev.address }}",
+{%- endif %}
+{%- if dev.netmask is defined %}
+        "netmask": "{{ dev.netmask }}",
+{%- endif %}
+{%- if dev.nameservers is defined %}
+        "dns_nameservers": [
+{%- for d in dev.nameservers %}
+            "{{ d }}"{% if not loop.last %},{% endif %}
+{%- endfor %}
+        ],
+{%- endif %}
+        "routes": [
+{%- if dev.route is defined %}
+{%- for i in dev.route %}
+            {
+                "network": "{{ i.network }}",
+                "netmask": "{{ i.netmask}}",
+                "gateway": "{{ i.gateway }}"
+            },
+{%- endfor %}
+{%- endif %}     
+            {
+                "network": "0.0.0.0",
+                "netmask": "0.0.0.0"{% if dev.gateway is defined %},
+                "gateway": "{{ dev.gateway }}"
+{%- endif %}
+            }            
+        ]
+    }{% if not loop.last %},{% endif %}
+{%- endfor %}
+    ],
+    "services": [
+{%- if configdrive_resolv is defined and configdrive_resolv.dns is defined %}
+{%- for d in configdrive_resolv.dns %}
+        {
+            "type": "dns",
+            "address": "{{ d }}"
+        }{% if not loop.last %},{% endif %}
+{%- endfor %}
+{%- endif %}
+    ]
+}
+

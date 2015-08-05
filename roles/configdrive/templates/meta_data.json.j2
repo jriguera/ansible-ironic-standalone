@@ -1,0 +1,29 @@
+#jinja2: trim_blocks: False
+{
+    "availability_zone": "{{ configdrive_availability_zone | default('') }}",
+{%- if _configdrive_content_files is defined and _configdrive_content_files %}
+    "files": [
+{%- for file in _configdrive_content_files.split('\n') %}
+        {
+            "content_path": "/content/{{ '%04d' % loop.index0 }}",
+            "path": "{{ file }}"
+        }{% if not loop.last %},{% endif %}
+{%- endfor %}
+    ],
+{%- endif %}
+    "hostname": "{{ configdrive_fqdn }}",
+    "name": "{{ configdrive_name }}",
+    "meta": {
+{%- for (key, value) in configdrive_meta.iteritems() %}
+        "{{ key }}": "{{ value }}"{% if not loop.last %},{% endif %}
+{%- endfor %} 
+    },
+{%- if configdrive_ssh_public_key is defined and configdrive_ssh_public_key %}
+    "public_keys": {
+{%- for key in configdrive_ssh_public_key.split('\n') %}
+        "key{{ '%02d' % loop.index }}": "{{ key }}"{% if not loop.last %},{% endif %}
+{%- endfor %}
+    },
+{%- endif %}
+    "uuid": "{{ configdrive_uuid }}"
+}

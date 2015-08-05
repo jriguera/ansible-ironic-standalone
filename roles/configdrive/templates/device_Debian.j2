@@ -1,0 +1,70 @@
+# {{ ansible_managed }}
+# Network configuration
+
+{% if item.mode is defined -%}
+{% if item.mode -%}
+auto {{ item.device }}
+{% endif %}
+{% else %}
+auto {{ item.device }}
+{% endif %}
+
+{% if item.bootproto is defined and item.bootproto == 'dhcp' -%}
+iface {{ item.device }} inet dhcp
+{% elif not item.bootproto is defined or item.bootproto == 'static' %}
+iface {{ item.device }} inet static
+{% if item.address is defined %}
+        address {{ item.address }}
+{% endif %}
+{% if item.netmask is defined %}
+        netmask {{ item.netmask }}
+{% endif %}
+{% if item.gateway is defined %}
+        gateway {{ item.gateway }}
+{% endif %}
+{% endif %}
+{% if item.nameservers is defined %}
+        dns-nameservers {{ item.nameservers | join(' ') }}
+{% endif %}
+{% if item.domain is defined %}
+        dns-search {{ item.domain }}
+{% endif %}
+{% if item.type is defined -%}
+{% if item.type == 'vlan' -%}
+{% if item.backend is defined %}
+        vlan-raw-device {{ item.backend[0] }}
+{% endif %}
+{% elif item.type == 'bridge' %}
+        bridge_maxwait {{ item.wait | default('10') }}
+{%- if item.backend is defined %}        
+        bridge_ports {{ item.backend | join(' ') }}
+{% else %}
+        bridge_ports all
+{% endif %}
+{% if item.stp is defined %}
+        bridge_stp {{ item.stp | ternary('on', 'off') }}
+{% endif %}
+{% elif item.type == 'bond' %}
+        bond-mode {{ item.bond_mode | default('active-backup') }}
+        bond-miimon {{ item.bond_miimon | default(100) }}
+{%- if item.backend is defined and item.bond_mode is defined and (item.bond_mode == 'active-backup' or item.bond_mode == '1') %}        
+        bond-slaves none
+{% elif item.backend is defined and not item.bond_mode is defined %} 
+        bond-slaves none
+{% elif item.backend is defined and (item.bond_mode == '802.3ad' or item.bond_mode == '4') %}        
+        bond-slaves {{ item.backend | join(' ') }}
+        bond-xmit-hash-policy {{ item.bond_hash | default('layer3+4') }}
+        bond-lacp-rate 1
+{% else %}
+        bond-slaves {{ item.backend | join(' ') }}
+{% endif %}
+        bond-min-links 1
+{% endif %}
+{% endif %}
+{% if item.route is defined %}
+{% for i in item.route %}
+        up route add -net {{ i.network }}  netmask {{ i.netmask }} gw {{ i.gateway }} dev {{ item.device }}
+{% endfor %}
+{% endif %}
+
+

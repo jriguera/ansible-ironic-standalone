@@ -1,0 +1,10 @@
+#jinja2: trim_blocks: "true", lstrip_blocks: "true"
+# interfaces(5) file used by ifup(8) and ifdown(8)
+
+# Loopback network interface
+auto lo
+iface lo inet loopback
+
+# Load the configuration from the folder
+source /etc/network/interfaces.d/*
+

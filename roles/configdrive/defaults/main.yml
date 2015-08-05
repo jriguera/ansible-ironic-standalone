@@ -1,0 +1,55 @@
+---
+# You should overwrite those role variables!
+configdrive_os_family: "Debian"
+configdrive_uuid: "uuid-test-01"
+configdrive_fqdn: "test.example.com"
+configdrive_name: "test"
+configdrive_ssh_public_key:
+configdrive_availability_zone: ""
+configdrive_network_info: True
+configdrive_config_dir: "/var/lib/ironic/images/"
+configdrive_volume_path: "/var/lib/ironic/images/"
+
+# Path to ssh public key file
+configdrive_ssh_public_key_path:
+# Path to cloud-config file
+configdrive_config_user_data_path:
+
+# Automatically assigned with uuid
+#configdrive_instance_dir:
+# Delete the instace dir folder after creation
+configdrive_config_dir_delete: False
+
+# Populate the /etc/resolv.conf
+#configdrive_resolv:
+#    domain: "example.com"
+#    search: "hola.example.com"
+#    dns: ['8.8.8.8']
+
+# Populate the /etc/hosts
+#configdrive_hosts:
+#  - ['127.0.1.1', 'host1.domain.com']
+#  - ['127.0.1.2', 'host3.domain.com']
+
+# Definition list of devices
+#configdrive_network_device_list:
+#  - device: "eth1"
+#    bootproto: "dhcp"
+#  - device: "eth2"
+#    bootproto: "dhcp"
+#    type: "phy"
+#  - device: "eth0.500"
+#    type: "vlan"
+#    address: "10.1.1.10"
+#    netmask: "255.255.255.0"
+#    gateway: "10.1.1.1"
+#    nameservers: 
+#      - 8.8.8.8
+#      - 9.9.9.9
+#    domain: "hola.com"
+#    backend: ["eth0"]
+
+# User/group for created files
+#configdrive_user:
+#configdrive_group:
+

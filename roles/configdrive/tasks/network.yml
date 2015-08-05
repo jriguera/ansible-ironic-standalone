@@ -1,0 +1,88 @@
+---
+- name: List the backend devices
+  set_fact: __configdrive_network_backend_item="{{ item }}"
+  with_items: configdrive_network_device_list | selectattr("backend", "defined") | map(attribute='backend') | list
+  register: __configdrive_network_backend_list
+
+- name: Create network_info.json if needed
+  template:
+    src: network_info.json.j2
+    dest: "{{ configdrive_config_dir }}/{{ configdrive_instance_dir }}/{{ item }}/network_info.json"
+    owner: "{{ configdrive_user | default(omit) }}"
+    group: "{{ configdrive_group | default(omit) }}"
+    mode: 0644
+  with_items:
+    - "openstack/2012-08-10"
+    - "openstack/latest"
+  when: configdrive_network_info
+
+- name: Create the network configuration folders
+  file:
+    path: "{{ _configdrive_content_path }}{{ item }}"
+    owner: "{{ configdrive_user | default(omit) }}"
+    group: "{{ configdrive_group | default(omit) }}"
+    mode: 0755
+    state: directory
+    recurse: yes
+  with_items:
+    - "{{ configdrive_os_network_path }}"
+
+- name: Setup resolver file resolv.conf 
+  template:
+    src: "resolv.conf.j2"
+    dest: "{{ _configdrive_content_path }}/etc/resolv.conf"
+    owner: "{{ configdrive_user | default(omit) }}"
+    group: "{{ configdrive_group | default(omit) }}"
+    mode: 0644
+  when: configdrive_resolv is defined and configdrive_resolv
+
+- name: Setup static hosts file
+  template:
+    src: "hosts.j2"
+    dest: "{{ _configdrive_content_path }}/etc/hosts"
+    owner: "{{ configdrive_user | default(omit) }}"
+    group: "{{ configdrive_group | default(omit) }}"
+    mode: 0644
+  when: configdrive_hosts is defined and configdrive_hosts
+
+- name: Setup network/interfaces for Debian
+  template: 
+    src: "interfaces.j2"
+    dest: "{{ _configdrive_content_path }}/etc/network/interfaces"
+    owner: "{{ configdrive_user | default(omit) }}"
+    group: "{{ configdrive_group | default(omit) }}"
+    mode: 0644
+  when: configdrive_os_family == 'Debian'
+
+- name: Setup undefined backend devices
+  template:
+    src: "backend_{{ configdrive_os_family }}.j2"
+    dest: "{{ _configdrive_content_path }}/{{ configdrive_os_network_path }}/ifcfg-{{ item }}"
+    owner: "{{ configdrive_user | default(omit) }}"
+    group: "{{ configdrive_group | default(omit) }}"
+    mode: 0644
+  when: >
+    __configdrive_network_backend_list.results is defined and
+    not item in configdrive_network_device_list | map(attribute='device') | list 
+  with_items: __configdrive_network_backend_list.results | map(attribute='item') | list | unique
+
+- name: Setup all defined devices
+  template:
+    src: "device_{{ configdrive_os_family }}.j2"
+    dest: "{{ _configdrive_content_path }}/{{ configdrive_os_network_path }}/ifcfg-{{ item.device }}"
+    owner: "{{ configdrive_user | default(omit) }}"
+    group: "{{ configdrive_group | default(omit) }}"
+    mode: 0644
+  with_items: configdrive_network_device_list
+
+- name: Setup route configuration for RedHat
+  template: 
+    src: "route_{{ ansible_os_family }}.j2"
+    dest: "{{ _configdrive_content_path }}/{{ configdrive_os_network_path }}/route-{{ item.device }}"
+    owner: "{{ configdrive_user | default(omit) }}"
+    group: "{{ configdrive_group | default(omit) }}"
+    mode: 0644
+  with_items: configdrive_network_device_list
+  when: item.route is defined and configdrive_os_family == 'RedHat'
+
+
