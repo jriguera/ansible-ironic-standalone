@@ -1,6 +1,7 @@
 ---
 # Take the package given by the OS/distrib
 rabbitmq_os_packages: false
+rabbitmq_repo_release: "kilo"
 
 rabbitmq_daemon: rabbitmq-server
 rabbitmq_user: rabbitmq

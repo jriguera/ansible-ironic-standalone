@@ -1,5 +1,5 @@
 ---
-rabbitmq_os_repo_url: "http://rdo.fedorapeople.org/openstack-{{ ironic_release }}/rdo-release-{{ ironic_release }}.rpm"
+rabbitmq_os_repo_url: "http://rdo.fedorapeople.org/openstack-{{ rabbitmq_repo_release }}/rdo-release-{{ rabbitmq_repo_release }}.rpm"
 rabbitmq_os_repo_key:
 #rabbitmq_os_repo_url: "http://download.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
 #rabbitmq_os_repo_key: "/etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-{{ ansible_distribution_major_version }}"
