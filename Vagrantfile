@@ -48,10 +48,9 @@ Vagrant.configure(2) do |config|
     # Enable provisioning with a shell script. Additional provisioners such as
     # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
     # documentation for more information about their specific syntax and use.
-    # master.vm.provision "shell", inline: <<-SHELL
-    #   sudo apt-get update
-    #   sudo apt-get install -y apache2
-    # SHELL
+    master.vm.provision "shell", inline: <<-SHELL
+        sudo apt-get update
+    SHELL
     master.vm.provision "ansible" do |ansible|
   	ansible.playbook = "site.yml"
         #ansible.verbose = "vvv"
