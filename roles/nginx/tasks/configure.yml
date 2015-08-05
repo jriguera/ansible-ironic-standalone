@@ -8,7 +8,7 @@
     state: directory
   with_items:
     - "{{ nginx_ssl_dir }}"
-    - "{{ nginx_sites_path }}"
+    - "{{ nginx_sites_dir }}"
 
 - name: Create proxy cache path
   file:
