@@ -111,8 +111,15 @@ CONFIG_DRIVE=/path/to/folder
 ironic node-set-provision-state --config-drive $CONFIG_DRIVE $UUID active
 ```
 
-To build the images, you will need `ramdisk-image-create` and `disk-image-create` 
-(install them from the repo: https://github.com/openstack/diskimage-builder ):
+Images
+------
+
+If you want to create images easily, have a look to:
+https://github.com/jriguera/packer-ironic-images
+
+Otherwise, you can also build images using the Openstack tools 
+`ramdisk-image-create` and  `disk-image-create` (install them from the 
+repo: https://github.com/openstack/diskimage-builder ):
 
 ```
 # Create the initial ramdkisk
@@ -128,6 +135,7 @@ disk-image-create ubuntu baremetal dhcp-all-interfaces -o my-image
 Copy `my-image.*` (image, ramdisk and kernel) to `/var/lib/ironic/http/images/`
 on the Ironic server, and the deploy ramdisk kernel and image to 
 `/var/lib/ironic/http/deploy/` (Create those folders if they do not exist).
+
 
 Ironic Client Playbooks
 -----------------------
