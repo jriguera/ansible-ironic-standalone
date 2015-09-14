@@ -95,7 +95,7 @@
   when: ironic_api and _ironic_updated
 
 - name: Restart Ironic-Conductor daemon for the new configuration
-  service: name="{{ ironic_api_service_name }}" state=restarted 
+  service: name="{{ ironic_conductor_service_name }}" state=restarted 
   when: ironic_conductor and _ironic_updated
 
 - name: Ensure Ironic-API daemon is started and enabled on boot
