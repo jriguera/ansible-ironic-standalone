@@ -62,12 +62,6 @@
     baremetal_ipmi_ip is not defined or
     baremetal_ipmi_ip|trim == ''
 
-- name: Checking if md5 image checksum is defined
-  fail: msg="MD5 checksum not defined!"
-  when: >
-    baremetal_image_checksum is not defined or 
-    baremetal_image_checksum is none
-
 - name: Define the IPMI console port
   set_fact: baremetal_console_port="{{ baremetal_ipmi_ip.split('.')[-1]|int + 10000 }}"
   when: >
