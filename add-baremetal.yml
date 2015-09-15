@@ -87,6 +87,7 @@
         -i ipmi_address="{{ baremetal_ipmi_ip }}"
         -i ipmi_username="{{ baremetal_ipmi_user }}"
         -i ipmi_password="{{ baremetal_ipmi_pass }}"
+        -i ipmi_terminal_port="{{ baremetal_console_port }}"
         -i deploy_kernel="{{ baremetal_deploy_kernel }}"
         -i deploy_ramdisk="{{ baremetal_deploy_ramdisk }}"
         | awk "/ uuid / { print \$4 }"
