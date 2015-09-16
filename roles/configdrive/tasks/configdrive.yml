@@ -13,9 +13,15 @@
 - name: Get the include files on temporary folder
   set_fact: _configdrive_content_files="{{ __configdrive_content_files.stdout }}"
 
-- name: Copy files to content from temporary folder
-  command: cp -av "{{ _configdrive_content_path }}/{{ item.1 }}" "{{ configdrive_config_dir }}/{{ configdrive_instance_dir }}/openstack/content/{{ '%04d' % item.0|int }}"
+- name: Move files to destination from temporary folder
+  command: mv "{{ _configdrive_content_path }}/{{ item.1 }}" "{{ configdrive_config_dir }}/{{ configdrive_instance_dir }}/openstack/content/{{ '%04d' % item.0|int }}"
   with_indexed_items: "{{ __configdrive_content_files.stdout_lines }}"
+
+- name: Cleanup temporary folder
+  file:
+    state: absent
+    force: yes
+    name: "{{ _configdrive_content_path }}"
 
 - name: Create meta_data.json
   template:
