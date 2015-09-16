@@ -39,8 +39,8 @@
       when: __baremetal_new.stdout.split() | last | trim  == 'on'
       delegate_to: "{{ groups.client[0] }}"
 
-    - name: Pause 1 minute
-      pause: minutes=1
+    - name: Pause half a minute
+      pause: seconds=30 prompt="Giving some time to stop the server ..."
       when: __baremetal_new.stdout.split() | last | trim == 'on'
       delegate_to: "{{ groups.client[0] }}"
 
