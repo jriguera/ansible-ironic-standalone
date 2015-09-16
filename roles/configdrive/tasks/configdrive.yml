@@ -1,4 +1,18 @@
 ---
+- name: Create configdrive temporary metadata folder
+  file:
+    path: "{{ configdrive_config_dir }}/{{ configdrive_instance_dir }}/{{ item }}"
+    owner: "{{ configdrive_user | default(omit) }}"
+    group: "{{ configdrive_group  | default(omit) }}"
+    mode: 0755
+    recurse: yes
+    state: directory
+  with_items:
+    - "openstack/{{ configdrive_content_tmproot_dir }}"
+
+- name: Setup temporary folder for include files
+  set_fact: _configdrive_content_path="{{ configdrive_config_dir }}/{{ configdrive_instance_dir }}/openstack/{{ configdrive_content_tmproot_dir }}"
+
 - include: ssh_public_key.yml
   when: not configdrive_ssh_public_key is defined or configdrive_ssh_public_key is none
   tags: ["configdrive", "ssh"]

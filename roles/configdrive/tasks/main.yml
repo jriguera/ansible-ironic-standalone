@@ -19,10 +19,6 @@
     - "openstack/2012-08-10"
     - "openstack/latest"
     - "openstack/content"
-    - "openstack/{{ configdrive_content_tmproot_dir }}"
-
-- name: Setup temporary folder for include files
-  set_fact: _configdrive_content_path="{{ configdrive_config_dir }}/{{ configdrive_instance_dir }}/openstack/{{ configdrive_content_tmproot_dir }}"
 
 - include: configdrive.yml
   tags: ["configdrive", "core"]
