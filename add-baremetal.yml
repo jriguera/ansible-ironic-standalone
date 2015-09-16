@@ -161,6 +161,14 @@
       when: baremetal_configdrive
       delegate_to: "{{ groups.client[0] }}"
 
+    - name: Set PXE boot for the next boot
+      command: >
+        ironic
+        --os-auth-token="{{ baremetal_ironic_token }}"
+        --ironic-url="{{ baremetal_ironic_url }}"
+        node-set-boot-device "{{ baremetal_uuid }}" pxe
+      delegate_to: "{{ groups.client[0] }}"
+
     - name: Active and deploy the server
       command: >
         ironic
