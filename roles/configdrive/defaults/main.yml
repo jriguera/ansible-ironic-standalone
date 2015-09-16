@@ -1,5 +1,7 @@
 ---
 # You should overwrite those role variables!
+# It will generate the network configuration based
+# on the family!
 configdrive_os_family: "Debian"
 configdrive_uuid: "uuid-test-01"
 configdrive_fqdn: "test.example.com"
@@ -9,6 +11,9 @@ configdrive_availability_zone: ""
 configdrive_network_info: True
 configdrive_config_dir: "/var/lib/ironic/images/"
 configdrive_volume_path: "/var/lib/ironic/images/"
+
+# Metadata
+configdrive_meta: {}
 
 # Path to ssh public key file
 configdrive_ssh_public_key_path:
