@@ -12,11 +12,11 @@ HOTPLUG=no
 {% for dev in configdrive_network_device_list -%}
 {% if dev["type"] is defined and dev["backend"] is defined and item in dev["backend"] -%}
 {% if dev["type"] == 'bond' -%}
-MASTER={{ item }}
+MASTER={{ dev["device"] }}
 SLAVE=yes
 {% elif dev["type"] == 'bridge' %}
 TYPE=Ethernet
-BRIDGE={{ item }}
+BRIDGE={{ dev["device"] }}
 {% endif %}
 {% endif %}
 {% endfor %}
