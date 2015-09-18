@@ -5,6 +5,7 @@ USERCTL=no
 IPV6INIT=no
 IPV6_AUTOCONF=no
 NM_CONTROLLED=no
+ARPCHECK={{ item.ipcheck | default('no') }}
 {% if item.bootproto is defined and item.bootproto == 'dhcp' -%}
 DEVICE={{ item.device }}
 BOOTPROTO=dhcp
