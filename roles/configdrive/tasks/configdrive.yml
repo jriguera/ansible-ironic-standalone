@@ -50,7 +50,7 @@
 
 - name: Copy user_data if defined
   copy:
-    src: "{{ configdrive_config_user_data }}"
+    src: "{{ configdrive_config_user_data_path }}"
     dest: "{{ configdrive_config_dir }}/{{ configdrive_instance_dir }}/{{ item }}/user_data"
     owner: "{{ configdrive_user | default(omit) }}"
     group: "{{ configdrive_group | default(omit) }}"
@@ -58,7 +58,7 @@
   with_items:
     - "openstack/2012-08-10"
     - "openstack/latest"
-  when: configdrive_config_user_data is defined
+  when: configdrive_config_user_data_path is defined
 
 - name: Create config-2 volume
   shell: > 
