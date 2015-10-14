@@ -1,4 +1,9 @@
 ---
+
+# This is just an example using command module, a better way will
+# be available in ansible 2.0 will be easy with the cloud modules
+# http://docs.ansible.com/ansible/os_ironic_module.html
+
 - name: Poweroff and delete servers using Ironic
   hosts: provisioning
   sudo: true
@@ -7,15 +12,17 @@
     - vars/baremetal.yml
 
   vars_prompt:
-    - name: "baremetal_mac"
-      prompt: "Server PXE MAC address?"
+    - name: "id"
+      prompt: "Server Name"
       private: no
-    - name: "baremetal_name"
-      prompt: "Server name?"
-      private: no
+
+  pre_tasks:
+    - name: Include network definitions
+      include_vars: "servers/{{ id }}.yml"
+
+    - include: tasks/baremetal_prepare.yml
 
   tasks:
-
     - name: List the defined servers
       shell: >
         ironic
@@ -54,5 +61,4 @@
 
     - name: Delete config-drive
       shell: rm -rf "{{ baremetal_configdrive_dir }}/{{ __baremetal_new.stdout.split() | first | trim }}"*
-
 

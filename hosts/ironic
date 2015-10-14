@@ -19,9 +19,9 @@ baremetal_server_images_path=/var/lib/ironic/http
 
 # Client variables
 baremetal_ironic_token=" "
-baremetal_ironic_server=10.230.44.247
+baremetal_ironic_server=127.0.0.1
 baremetal_ironic_url="http://{{ baremetal_ironic_server }}:6385"
-baremetal_domain=springer-sbm.com
+baremetal_domain=example.com
 baremetal_nameservers=[ "8.8.8.8" ]
 baremetal_ssh_key="ssh-rsa AAAAB3NzaC1yc2EAAAADAQAB...tion"
 

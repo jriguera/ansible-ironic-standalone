@@ -1,4 +1,9 @@
 ---
+
+# This is just an example using command module, a better way will
+# be available in ansible 2.0 will be easy with the cloud modules
+# http://docs.ansible.com/ansible/os_ironic_module.html
+
 - name: Define and deploy physical servers using Ironic
   hosts: provisioning
   sudo: true
@@ -21,46 +26,35 @@
 
 
   vars_prompt:
-    - name: "baremetal_ipmi_ip"
-      prompt: "Server IPMI hostname or IP?"
-      private: no
-    - name: "baremetal_ipmi_user"
-      prompt: "IPMI user?"
-      default: "ADMIN"
-      private: no
-    - name: "baremetal_ipmi_pass"
-      prompt: "IPMI password?"
-      default: "ADMIN"
-      private: no
-    - name: "baremetal_mac"
-      prompt: "Server PXE MAC address?"
-      private: no
-    - name: "baremetal_network"
-      prompt: "Main network? (optional, default=pxe)"
-      private: no
-    - name: "baremetal_fqdn"
-      prompt: "Server FQDN hostname? (optional, default=MAC)"
-      private: no
-    - name: "baremetal_ip"
-      prompt: "Server IP address CIDR? (optional, default=dhcp)"
-      private: no
-    - name: "baremetal_os"
-      prompt: "Image to deploy?"
-      default: "trusty"
+    - name: "id"
+      prompt: "Server Name"
       private: no
 
   pre_tasks:
+    - name: Include network definitions
+      include_vars: "servers/{{ id }}.yml"
+
     - name: Include image definitions
       include_vars: "vars/baremetal_image-{{ baremetal_os }}.yml"
-
-    - name: Include network definitions
-      include_vars: "vars/baremetal_network-{{ baremetal_network }}.yml"
-      when: baremetal_network is defined and baremetal_network|trim != ''
     
     - include: tasks/baremetal_md5.yml
       when: >
         baremetal_image_checksum is not defined or 
         baremetal_image_checksum is none
+
+    - name: Check if servername configdrive exists
+      local_action: stat path="servers/{{ id }}.cloudconfig"
+      register: _configdrive_config_user_data_path
+      when: >
+        baremetal_configdrive and
+        not configdrive_config_user_data_path 
+
+    - name: Load servername configdrive
+      set_fact: configdrive_config_user_data_path="{{ _configdrive_config_user_data_path.stat.path }}"
+      when: >
+        baremetal_configdrive and
+        not configdrive_config_user_data_path and
+        _configdrive_config_user_data_path.stat.exists
 
     - include: tasks/baremetal_prepare.yml
     
@@ -176,5 +170,4 @@
         --ironic-url="{{ baremetal_ironic_url }}"
         node-set-provision-state {{ _baremetal_configdrive_param }} "{{ baremetal_uuid }}" active
       delegate_to: "{{ groups.client[0] }}"
-
 
