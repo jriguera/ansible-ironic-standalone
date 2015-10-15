@@ -35,8 +35,8 @@
   roles:
     - role: ironic
       ironic_my_ip: "{{ ansible_eth0.ipv4.address }}"
-      ironic_conductor_api_url: "http://{{ ironic_my_ip }}:6385/"
-      ironic_pxe_tftp_server: "{{ ironic_my_ip }}"
+      ironic_conductor_api_url: "http://{{ ansible_eth0.ipv4.address }}:6385/"
+      ironic_pxe_tftp_server: "{{ ansible_eth0.ipv4.address }}"
       ironic_oslo_messaging_rabbit_host: "{{ hostvars[groups['messaging'][0]]['ansible_eth0']['ipv4']['address'] }}"
       ironic_oslo_messaging_rabbit_userid: "{{ baremetal_server_msg_user }}"
       ironic_oslo_messaging_rabbit_password: "{{ baremetal_server_msg_pass }}"
@@ -46,8 +46,10 @@
       ironic_database_mysql_password: "{{ baremetal_server_database_pass }}"
       ironic_database_mysql_db: "{{ baremetal_server_database_name }}"
       ironic_pxe_images_path: "{{ baremetal_server_images_path }}"
-      ironic_agent_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
-      ironic_agent_erase_devices_priority: 0
+      ironic_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
+      ironic_deploy_http_url: "http://{{ ansible_eth0.ipv4.address }}/deploy"
+      ironic_deploy_http_root: "{{ baremetal_server_images_deploy_path }}"
+      ironic_deploy_erase_devices_priority: 0
       ironic_enabled_drivers: ["pxe_ipmitool", "agent_ipmitool"]
     - role: dnsmasq
       dnsmasq_conf_domain: "{{ baremetal_server_dhcp_domain }}"
@@ -64,24 +66,22 @@
     - role: nginx
       nginx_server_list:
         - name: "{{ ansible_hostname }}"
-          root: "{{ baremetal_server_images_path }}"
+          root: "{{ baremetal_server_http_root_path }}"
           access_log: "/var/log/nginx/{{ ansible_hostname }}-server_access.log"
           location_list:
             - name: "/"
               autoindex: "on"
     - role: monit
 
+
   tasks:
+
     - name: Create configdrive metadata folders
       file:
-        path: "{{ baremetal_server_images_path }}/{{ item }}"
+        path: "{{ baremetal_server_http_root_path }}/metadata"
         mode: 0755
         recurse: yes
         state: directory
-      with_items:
-        - "deploy"
-        - "metadata"
-        - "images"
 
     - name: Download IPA Coreos ramdisk
       get_url:
