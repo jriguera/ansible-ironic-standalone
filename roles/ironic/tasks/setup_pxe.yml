@@ -24,18 +24,18 @@
     ironic_pxe_tftp_root is defined and 
     not ironic_pxe_tftp_root is none
 
-- name: Create HTTP root folder for iPXE if enabled
+- name: Create HTTP root folder
   file:
-    path: "{{ ironic_pxe_http_root }}"
+    path: "{{ ironic_deploy_http_root }}"
     owner: "{{ ironic_user }}"
     group: "{{ ironic_group }}"
     mode: 0755
     state: directory
   when: >
-    ironic_pxe_http_root is defined and 
-    not ironic_pxe_http_root is none and
-    ironic_pxe_http_url is defined and
-    not ironic_pxe_http_url is none
+    ironic_deploy_http_root is defined and 
+    not ironic_deploy_http_root is none and
+    ironic_deploy_http_url is defined and
+    not ironic_deploy_http_url is none
 
 - name: Copy isolinux config template if defined
   copy:
