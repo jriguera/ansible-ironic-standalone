@@ -24,7 +24,7 @@
     ironic_pxe_tftp_root is defined and 
     not ironic_pxe_tftp_root is none
 
-- name: Create HTTP root folder
+- name: Create HTTP root deploy folder
   file:
     path: "{{ ironic_deploy_http_root }}"
     owner: "{{ ironic_user }}"
