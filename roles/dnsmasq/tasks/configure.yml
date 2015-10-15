@@ -15,17 +15,6 @@
     mode: 0755
     state: directory
 
-- name: Create the log folder
-  file:
-    path: "{{ dnsmasq_conf_log | dirname }}"
-    owner: "{{ dnsmasq_user }}"
-    group: "{{ dnsmasq_group }}"
-    mode: 0755
-    state: directory
-  when: >
-    dnsmasq_conf_log is defined and
-    not dnsmasq_conf_log is none
-
 - name: Create DHCP dnsmasq configuration
   template:
     src: dnsmasq.d/dhcp.conf.j2
