@@ -15,7 +15,9 @@ baremetal_server_msg_user=ironic
 baremetal_server_msg_pass=rabbitmq
 baremetal_server_dhcp_params=["10.0.1.100", "10.0.1.200", "infinite"]
 baremetal_server_dhcp_domain=pxe.local
-baremetal_server_images_path=/var/lib/ironic/http
+baremetal_server_http_root_path=/var/lib/ironic/http
+baremetal_server_images_path=/var/lib/ironic/http/images
+baremetal_server_images_deploy_path=/var/lib/ironic/http/deploy
 
 # Client variables
 baremetal_ironic_token=" "

@@ -11,7 +11,9 @@
     baremetal_server_msg_pass: rabbitmq
     baremetal_server_dhcp_params: ["10.0.1.100", "10.0.1.200", "infinite"]
     baremetal_server_dhcp_domain: pxe.local
-    baremetal_server_images_path: /var/lib/ironic/http
+    baremetal_server_http_root_path: /var/lib/ironic/http
+    baremetal_server_images_path: /var/lib/ironic/http/images
+    baremetal_server_images_deploy_path: /var/lib/ironic/http/deploy
 
   roles:
     - role: mysql
@@ -36,7 +38,7 @@
     - role: ironic
       ironic_debug: true
       ironic_my_ip: "{{ ansible_eth0.ipv4.address }}"
-      ironic_conductor_api_url: "http://{{ ironic_my_ip }}:6385/"
+      ironic_conductor_api_url: "http://{{ ansible_eth0.ipv4.address }}:6385/"
       ironic_pxe_tftp_server: "{{ ansible_eth1.ipv4.address }}"
       ironic_oslo_messaging_rabbit_host: "localhost"
       ironic_oslo_messaging_rabbit_userid: "{{ baremetal_server_msg_user }}"
@@ -67,7 +69,7 @@
     - role: nginx
       nginx_server_list:
         - name: "{{ ansible_hostname }}"
-          root: "{{ baremetal_server_images_path }}"
+          root: "{{ baremetal_server_http_root_path }}"
           access_log: "/var/log/nginx/{{ ansible_hostname }}-server_access.log"
           location_list:
             - name: "/"
@@ -101,16 +103,16 @@
           type: process
           target: "{{ ironic_api_pidfile }}"
           start:
-            script: "service start ironic-api"
+            script: "/usr/sbin/service ironic-api start"
           stop:
-            script: "service stop ironic-api"
+            script: "/usr/sbin/service ironic-api stop"
         - name: ironic-conductor
           type: process
           target: "{{ ironic_conductor_pidfile }}"
           start: 
-            script: "service start ironic-conductor"
+            script: "/usr/sbin/service ironic-conductor start"
           stop: 
-            script: "service stop ironic-conductor"
+            script: "/usr/sbin/service ironic-conductor stop"
         - name: nginx
           type: process
           target: "{{ nginx_pidfile }}"
@@ -121,27 +123,30 @@
 
   tasks:
 
-    - name: Create configdrive metadata folders
+    - name: Create configdrive metadata folder
       file:
-        path: "{{ baremetal_server_images_path }}/{{ item }}"
+        path: "{{ baremetal_server_http_root_path }}/metadata"
         mode: 0755
         recurse: yes
         state: directory
-      with_items:
-        - "deploy"
-        - "metadata"
-        - "images"
+
+    - name: Create deploy image folder
+      file:
+        path: "{{ baremetal_server_images_deploy_path }}"
+        mode: 0755
+        recurse: yes
+        state: directory
 
     - name: Download IPA Coreos ramdisk
       get_url:
         url: http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem.cpio.gz
-        dest: "{{ baremetal_server_images_path }}/deploy/coreos_production_pxe_image-oem.cpio.gz"
+        dest: "{{ baremetal_server_images_deploy_path }}/coreos_production_pxe_image-oem.cpio.gz"
         force: no
 
     - name: Download IPA Coreos kernel
       get_url:
         url: http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe.vmlinuz
-        dest: "{{ baremetal_server_images_path }}/deploy/coreos_production_pxe.vmlinuz"
+        dest: "{{ baremetal_server_images_deploy_path }}/coreos_production_pxe.vmlinuz"
         force: no
   
 #   - name: Display all variables/facts known for a host

@@ -1,8 +1,8 @@
 ---
 nginx_server_list:
-  - name: "image-server"
-    root: "{{ ironic_pxe_images_path }}"
-    access_log: "/var/log/nginx/ironic-image-server_access.log"
+  - name: "{{ ansible_hostname }}"
+    root: "/var/lib/ironic/http"
+    access_log: "/var/log/nginx/{{ ansible_hostname }}-server_access.log"
     location_list:
       - name: "/"
         autoindex: "on"
@@ -12,9 +12,9 @@ monit_monitoring_list:
     type: process
     target: "{{ ironic_conductor_pidfile }}"
     start:
-      script: "service start ironic-conductor"
+      script: "/usr/sbin/service ironic-conductor start"
     stop:
-      script: "service stop ironic-conductor"
+      script: "/usr/sbin/service ironic-conductor stop"
     rules:
       - "if 3 restarts within 3 cycles then timeout"
   - name: nginx
@@ -27,4 +27,3 @@ monit_monitoring_list:
     rules:
       - "if failed port 80 type tcp then restart"
       - "if 3 restarts within 3 cycles then timeout"
-
