@@ -6,3 +6,22 @@ baremetal_configdrive_dir: "{{ baremetal_server_images_path }}/metadata/"
 baremetal_configdrive_base_url: "http://{{ baremetal_ironic_server }}/metadata"
 baremetal_configdrive: True
 
+# Default network assigned to the servers if no
+# baremetal_network_list is defined
+baremetal_network_dhcp_list:
+   - device: "em1"
+     bootproto: "dhcp"
+
+# Another example
+#baremetal_network_dhcp_list:
+#  - device: "eth0.507"
+#    type: "vlan"
+#    bootproto: "dhcp"
+#    backend: ["eth0"]
+#  - device: "eth0.500"
+#    type: "vlan"
+#    bootproto: "dhcp"
+#    backend: ["eth0"]  
+#    nameservers: "{{ baremetal_nameservers }}"
+#    domain: "{{ baremetal_domain }}"
+
