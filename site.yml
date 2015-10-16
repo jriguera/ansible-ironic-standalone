@@ -105,16 +105,16 @@
           type: process
           target: "{{ ironic_api_pidfile }}"
           start:
-            script: "/usr/sbin/service start ironic-api"
+            script: "/usr/sbin/service ironic-api start"
           stop:
-            script: "/usr/sbin/service stop ironic-api"
+            script: "/usr/sbin/service ironic-api stop"
         - name: ironic-conductor
           type: process
           target: "{{ ironic_conductor_pidfile }}"
           start: 
-            script: "/usr/sbin/service start ironic-conductor"
+            script: "/usr/sbin/service ironic-conductor start"
           stop: 
-            script: "/usr/sbin/service stop ironic-conductor"
+            script: "/usr/sbin/service ironic-conductor stop"
         - name: nginx
           type: process
           target: "{{ nginx_pidfile }}"

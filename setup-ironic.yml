@@ -64,13 +64,6 @@
           boot: [ "{{ ironic_pxe_bootfile_name }}" ]
           tftp: "{{ ironic_pxe_tftp_root }}"
     - role: nginx
-      nginx_server_list:
-        - name: "{{ ansible_hostname }}"
-          root: "{{ baremetal_server_http_root_path }}"
-          access_log: "/var/log/nginx/{{ ansible_hostname }}-server_access.log"
-          location_list:
-            - name: "/"
-              autoindex: "on"
     - role: monit
 
 
