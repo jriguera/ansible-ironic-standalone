@@ -1,10 +1,12 @@
-[ironic:children]
+[provisioning:children]
 database
 messaging
-provisioning
+ironic
 client
+api
+conductor
 
-[ironic:vars]
+[provisioning:vars]
 # Server side variables
 baremetal_server_database_rootpass=root
 baremetal_server_database_name=ironic
@@ -18,11 +20,9 @@ baremetal_server_dhcp_domain=pxe.local
 baremetal_server_http_root_path=/var/lib/ironic/http
 baremetal_server_images_path=/var/lib/ironic/http/images
 baremetal_server_images_deploy_path=/var/lib/ironic/http/deploy
-
+baremetal_server_configdrive_path="/var/lib/ironic/http/metadata"
 # Client variables
 baremetal_ironic_token=" "
-baremetal_ironic_server=127.0.0.1
-baremetal_ironic_url="http://{{ baremetal_ironic_server }}:6385"
 baremetal_domain=example.com
 baremetal_nameservers=[ "8.8.8.8" ]
 baremetal_ssh_key="ssh-rsa AAAAB3NzaC1yc2EAAAADAQAB...tion"
@@ -36,6 +36,35 @@ database ansible_ssh_host=127.0.0.1 ansible_ssh_port=2222
 [messaging]
 messaging ansible_ssh_host=127.0.0.1 ansible_ssh_port=2222
 
-[provisioning]
-provisioning ansible_ssh_host=127.0.0.1 ansible_ssh_port=2222
+[ironic]
+ironic ansible_ssh_host=127.0.0.1 ansible_ssh_port=2222
 
+[api]
+api ansible_ssh_host=127.0.0.1 ansible_ssh_port=2222
+
+[conductor]
+conductor ansible_ssh_host=127.0.0.1 ansible_ssh_port=2222
+
+
+# Splitting the ironic role functionality between api and conductor, 
+# just use role parameters:
+#
+# - hosts: api
+#   sudo: true
+#   roles:
+#   - role: ironic 
+#     ironic_api: true
+#     ironic_conductor: false
+#     ...
+#
+# - hosts: conductor
+#   sudo: true
+#   roles:
+#   - role: ironic
+#     ironic_api: false
+#     ironic_conductor: true     
+#
+# Then remove api and conductor from provisioning, and add:
+#[ironic:children]
+#api
+#conductor
