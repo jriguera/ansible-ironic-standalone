@@ -1,7 +1,7 @@
 ---
 nginx_server_list:
   - name: "{{ ansible_hostname }}"
-    root: "/var/lib/ironic/http"
+    root: "{{ baremetal_server_http_root_path }}"
     access_log: "/var/log/nginx/{{ ansible_hostname }}-server_access.log"
     location_list:
       - name: "/"
@@ -11,23 +11,30 @@ monit_monitoring_list:
   - name: ironic-conductor
     type: process
     target: "{{ ironic_conductor_pidfile }}"
-    start: { script: "/usr/sbin/service ironic-conductor start" }
-    stop: { script: "/usr/sbin/service ironic-conductor stop" }
+    start:
+      script: "/usr/sbin/service ironic-conductor start"
+    stop:
+      script: "/usr/sbin/service ironic-conductor stop"
     rules:
       - "if 3 restarts within 3 cycles then timeout"
   - name: dnsmasq
     type: process
     target: "{{ dnsmasq_pidfile }}"
-    start: { script: "/etc/init.d/dnsmasq start" }
-    stop: { script: "/etc/init.d/dnsmasq stop" }
+    start:
+      script: "/etc/init.d/dnsmasq start"
+    stop:
+      script: "/etc/init.d/dnsmasq stop"
     rules:
       - "if failed port 53 type tcp protocol dns then restart"
       - "if 3 restarts within 3 cycles then timeout"
   - name: nginx
     type: process
     target: "{{ nginx_pidfile }}"
-    start: { script: "/etc/init.d/nginx start" }
-    stop: { script: "/etc/init.d/nginx stop" }
+    start:
+      script: "/etc/init.d/nginx start"
+    stop:
+      script: "/etc/init.d/nginx stop"
     rules:
       - "if failed port 80 type tcp then restart"
       - "if 3 restarts within 3 cycles then timeout" 
+
