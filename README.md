@@ -7,13 +7,20 @@ just to be able to deploy servers like cobbler but based on images ...
 Have a look at the wiki to know more about this setup: 
 https://github.com/jriguera/ansible-ironic-standalone/wiki
 
+This repository uses tags!
+
+| Tag  | Openstack Release | Ironic version |   Upgrade    |  
+|------|-------------------|----------------|--------------|
+| v1.x | Kilo (2015.4)     | 2015.1.n       | -            |
+| v2.x | Liberty (2015.10) | 4.2.n          | v1.x -> v2.x |
+
 
 Requirements
 ------------
 
 It was tested on Ubuntu Trusty, but all roles run on Centos as well 
 (to be tested!). These roles install all requirements from the 
-distribution repos and the official Kilo Ubuntu-Cloud repository,
+distribution repos and the official Liberty Ubuntu-Cloud repository,
 so no development packages are installed, just official packages!
 
 Roles used:
@@ -30,7 +37,7 @@ can reuse them in other projects, they have more functionalities than
 the required for this setup. Also, they were created/adapted following 
 devops practices.
  
-The Ironic client is not updated to the latest version (Kilo) on the
+The Ironic client package is not updated to the latest version on the
 Ubuntu Cloud repository, you have to build it from source, but it is 
 not part on this setup because it is just the client part.
 
@@ -58,11 +65,11 @@ Also remember you have to copy the images which you create and want to use for
 the baremetal hosts (ramdisk and deploy) to `{{ ironic_pxe_images_path }}` 
 (`/var/lib/ironic/http/deploy/`) in the server and reference them as
 `file:///var/lib/ironic/http/deploy/image.bin` on the client. Let's see an example 
-with a client (at least version 0.5.0) running on the server (installed with 
+with a client running on the server (installed with 
 `pip install python-ironicclient`):
 
 ```
-# This example uses the pxe_ipmitool driver!
+# This example uses the agent_ipmitool driver!
 
 # Define the parameter for the new server
 NAME=test1
@@ -75,12 +82,12 @@ export IRONIC_URL=http://localhost:6385/
  
 # Define the new server using the pxe_ipmitool driver
 ironic node-create -n $NAME \
-       -d pxe_ipmitool \
+       -d agent_ipmitool \
        -i ipmi_address=$IPMI \
        -i ipmi_username=ADMIN \
        -i ipmi_password=ADMIN \
-       -i deploy_kernel=file:///var/lib/ironic/http/deploy/my-deploy-ramdisk.kernel \
-       -i deploy_ramdisk=file:///var/lib/ironic/http/deploy/my-deploy-ramdisk.initramfs
+       -i deploy_kernel=file:///var/lib/ironic/http/deploy/coreos_production_pxe.vmlinuz \
+       -i deploy_ramdisk=file:///var/lib/ironic/http/deploy/coreos_production_pxe_image-oem.cpio.gz
 
 # Get the UUID of the new host
 UUID=$(ironic node-list | awk "/$NAME/ { print \$2 }")
@@ -93,11 +100,9 @@ MD5=$(md5sum /var/lib/ironic/http/images/my-image.qcow2 | cut -d' ' -f 1)
  
 # Define the rest of the parameters, like the final image to
 # install on the baremetal host
+# To create the image: https://github.com/jriguera/packer-ironic-images
 ironic node-update $UUID add \
-       instance_info/image_source=file:///var/lib/ironic/http/images/my-image.qcow2 \
-       instance_info/kernel=file:///var/lib/ironic/http/images/my-image.vmlinuz \
-       instance_info/ramdisk=file:///var/lib/ironic/http/images/my-image.initrd \
-       instance_info/root_gb=10 \
+       instance_info/image_source=http://localhost/images/trusty.qcow2
        instance_info/image_checksum=$MD5
  
 # Validate the node
@@ -122,17 +127,18 @@ Otherwise, you can also build images using the Openstack tools
 repo: https://github.com/openstack/diskimage-builder ):
 
 ```
-# Create the initial ramdkisk
+# Create the initial ramdkisk (not needed with agent_ipmitool driver)
+# Just useful for pxe_ipmitool driver!
 export ELEMENTS_PATH="/home/jriguera/diskimage-builder/elements" 
 ramdisk-image-create ubuntu deploy-ironic grub-install -o my-deploy-ramdisk
  
 # Create the final Ubuntu image to deploy on baremetal host disk 
 # (with ConfigDrive support!!)
 DIB_CLOUD_INIT_DATASOURCES="ConfigDrive, OpenStack" \
-disk-image-create ubuntu baremetal dhcp-all-interfaces -o my-image
+disk-image-create ubuntu baremetal dhcp-all-interfaces -o trusty
 ```
 
-Copy `my-image.*` (image, ramdisk and kernel) to `/var/lib/ironic/http/images/`
+Copy `trusty.*` (image, ramdisk and kernel) to `/var/lib/ironic/http/images/`
 on the Ironic server, and the deploy ramdisk kernel and image to 
 `/var/lib/ironic/http/deploy/` (Create those folders if they do not exist).
 

@@ -7,16 +7,18 @@ ironic_api: True
 ironic_enabled_on_startup: true
 ironic_debug: false
 ironic_trace: false
-ironic_verbose: false
+ironic_verbose: true
 
 # Default options:
 #ironic_my_ip:
 ironic_log: "/var/log/ironic/ironic.log"
+ironic_watch_log_file: true
 ironic_state_path: "{{ ironic_var_dir }}"
 ironic_host: "{{ inventory_hostname }}"
 ironic_publish_errors: true
 ironic_fatal_deprecations: false
-ironic_rpc_thread_pool_size: 64
+ironic_rpc_conn_pool_size: 30
+ironic_executor_thread_pool_size: 64
 #ironic_notification_driver: [ "messaging" ]
 #ironic_notification_topics: "notifications"
 #ironic_control_exchange: "openstack"
@@ -39,6 +41,8 @@ ironic_grub_config_template:
 # Ironic-api options:
 ironic_api_host_ip: "0.0.0.0"
 ironic_api_port: 6385
+# If you are behing a proxy, you can define here the proxy URL
+#ironic_api_public_endpoint:
 
 # Ironic-conductor options:
 ironic_conductor_api_url: "http://127.0.0.1:6385/"
@@ -84,7 +88,6 @@ ironic_oslo_messaging_amqp_container_name:
 ironic_oslo_messaging_amqp_idle_timeout: 0
 ironic_oslo_messaging_rabbit_amqp_durable_queues: false
 ironic_oslo_messaging_rabbit_amqp_auto_delete: false
-ironic_oslo_messaging_rabbit_rpc_conn_pool_size: 30
 ironic_oslo_messaging_rabbit_host: "localhost"
 ironic_oslo_messaging_rabbit_port: 5672
 ironic_oslo_messaging_rabbit_userid: "guest"
@@ -93,16 +96,20 @@ ironic_oslo_messaging_rabbit_login_method: "AMQPLAIN"
 ironic_oslo_messaging_rabbit_virtual_host: "ironic"
 ironic_oslo_messaging_rabbit_max_retries: 0
 ironic_oslo_messaging_rabbit_ha_queues: false
+ironic_oslo_messaging_heartbeat_timeout_threshold: 60
 # If defined, it will copy the file
 ironic_oslo_policy_file:
 
 # Deploy options:
 ironic_deploy_efi_system_partition_size: 200
 ironic_deploy_dd_block_size: "1M"
+#ironic_deploy_http_url: 
+ironic_deploy_http_root: "/var/lib/ironic/httpboot"
+ironic_deploy_erase_devices_priority: 10
 
-# Discoverd options:
-#ironic_discoverd_service_url:
-#ironic_discoverd_status_check_period: 60
+# Inspector options:
+#ironic_inspector_service_url:
+#ironic_inspector_status_check_period: 60
 
 # Glance options:
 #ironic_glance_swift_endpoint_url:
@@ -116,17 +123,18 @@ ironic_console_terminal: "shellinaboxd"
 ironic_console_terminal_pid_dir: "/tmp"
 
 # Agent options:
-ironic_agent_pxe_append_params: ["nofb", "nomodeset", "vga=normal"]
-ironic_agent_pxe_bootfile_name: "pxelinux.0"
-ironic_agent_erase_devices_priority: 10
-ironic_agent_manage_tftp: true
+ironic_agent_manage_boot: true
+ironic_agent_memory_consumed: 0
 ironic_agent_api_version: "v1"
-# If defined, it will copy the template file
-#ironic_agent_pxe_config_template:
 
 # IPMI options:
 ironic_ipmi_retry_timeout: 60
 ironic_ipmi_min_command_interval: 8
+
+# ILO
+#ironic_ilo_clean_priority_erase_devices:
+#ironic_ilo_swift_ilo_container: "ironic_ilo_container"
+ironic_ilo_clean_priority_reset_ilo: 1
 
 # PXE options:
 ironic_pxe_append_params: ["nofb", "nomodeset", "vga=normal"]
@@ -144,9 +152,21 @@ ironic_pxe_uefi_pxe_bootfile_name: "elilo.efi"
 #ironic_pxe_config_template:
 #ironic_pxe_uefi_pxe_config_template:
 
-# Enabling iPXE by defining http server:
-#ironic_pxe_http_url:
-#ironic_pxe_http_root: "/var/lib/ironic/httpboot"
+# Enabling iPXE
+ironic_ipxe: false
 # If defined, it will copy the file
 #ironic_pxe_ipxe_boot_script:
 
+# CORS
+#ironic_cors_allowed_origin: "*"
+ironic_cors_allow_credentials: true
+#ironic_cors_expose_headers: ["Content-Type", "Cache-Control", "Content-Language", "Expires", "Last-Modified", "Pragma"]
+ironic_cors_max_age: 3600
+#ironic_cors_allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+#ironic_cors_allow_headers: ["Content-Type", "Cache-Control", "Content-Language", "Expires", "Last-Modified", "Pragma"]
+
+# CORS subdomains
+#ironic_cors_domains:
+#  ironic_webclient:
+#     allowed_origin: "*"
+#     allow_credentials: True

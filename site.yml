@@ -49,8 +49,10 @@
       ironic_database_mysql_password: "{{ baremetal_server_database_pass }}"
       ironic_database_mysql_db: "{{ baremetal_server_database_name }}"
       ironic_pxe_images_path: "{{ baremetal_server_images_path }}"
-      ironic_agent_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
-      ironic_agent_erase_devices_priority: 0
+      ironic_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
+      ironic_deploy_http_url: "http://{{ ansible_eth1.ipv4.address }}/deploy"
+      ironic_deploy_http_root: "{{ baremetal_server_images_deploy_path }}"
+      ironic_deploy_erase_devices_priority: 0
       ironic_enabled_drivers: ["pxe_ipmitool", "agent_ipmitool"]
 
     - role: dnsmasq
@@ -126,13 +128,6 @@
     - name: Create configdrive metadata folder
       file:
         path: "{{ baremetal_server_http_root_path }}/metadata"
-        mode: 0755
-        recurse: yes
-        state: directory
-
-    - name: Create deploy image folder
-      file:
-        path: "{{ baremetal_server_images_deploy_path }}"
         mode: 0755
         recurse: yes
         state: directory
