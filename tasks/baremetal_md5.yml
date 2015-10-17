@@ -9,7 +9,7 @@
   set_fact: _baremetal_image_checksum_path="{{ baremetal_image | regex_replace('^(.*)\.(.*)$', '\\1.md5') }}"
 
 - name: Get the url image MD5 checksum if needed
-  command: curl -qs "{{ _baremetal_image_checksum_path }}"
+  command: curl -qs -f "{{ _baremetal_image_checksum_path }}"
   register: _baremetal_image_checksum
   ignore_errors: yes
   when: baremetal_image | search("http://.*")

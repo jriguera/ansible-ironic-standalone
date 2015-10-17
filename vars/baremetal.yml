@@ -1,8 +1,30 @@
 ---
 # Main variables file
 
-baremetal_ironic_url: "http://{{ baremetal_ironic_server }}:6385"
-baremetal_configdrive_dir: "{{ baremetal_server_images_path }}/metadata/"
-baremetal_configdrive_base_url: "http://{{ baremetal_ironic_server }}/metadata"
+baremetal_client: "{{ groups.client[0] }}"
+# "{{ hostvars[groups.conductor[0]]['ansible_eth0']['ipv4']['address'] }}"
+baremetal_conductor_server: "{{ hostvars.conductor.ansible_ssh_host }}"
+# "http://{{ hostvars[groups.api[0]]['ansible_eth0']['ipv4']['address'] }}:6385"
+baremetal_ironic_url: "http://{{ hostvars.api.ansible_ssh_host }}:6385"
 baremetal_configdrive: True
+baremetal_configdrive_base_url: "http://{{ baremetal_conductor_server }}/metadata"
+
+# Default network assigned to the servers if no
+# baremetal_network_list is defined
+baremetal_network_dhcp_list:
+   - device: "em1"
+     bootproto: "dhcp"
+
+# Another example
+#baremetal_network_dhcp_list:
+#  - device: "eth0.507"
+#    type: "vlan"
+#    bootproto: "dhcp"
+#    backend: ["eth0"]
+#  - device: "eth0.500"
+#    type: "vlan"
+#    bootproto: "dhcp"
+#    backend: ["eth0"]  
+#    nameservers: "{{ baremetal_nameservers }}"
+#    domain: "{{ baremetal_domain }}"
 

@@ -5,7 +5,7 @@
 # http://docs.ansible.com/ansible/os_ironic_module.html
 
 - name: Poweroff and delete servers using Ironic
-  hosts: provisioning
+  hosts: conductor
   sudo: true
   gather_facts: False
   vars_files:
@@ -31,7 +31,7 @@
         node-list | awk -F '|' "/{{ baremetal_name }}/ { print \$2,\$5 }"
       register: __baremetal_new
       ignore_errors: yes
-      delegate_to: "{{ groups.client[0] }}"
+      delegate_to: "{{ baremetal_client }}"
 
     - name: Checking if server name exists
       fail: msg="Server name '{{ baremetal_name }}' does not exist!"
@@ -44,12 +44,12 @@
         --ironic-url="{{ baremetal_ironic_url }}"
         node-set-power-state "{{ baremetal_name }}" off
       when: __baremetal_new.stdout.split() | last | trim  == 'on'
-      delegate_to: "{{ groups.client[0] }}"
+      delegate_to: "{{ baremetal_client }}"
 
     - name: Pause half a minute
       pause: seconds=30 prompt="Giving some time to stop the server ..."
       when: __baremetal_new.stdout.split() | last | trim == 'on'
-      delegate_to: "{{ groups.client[0] }}"
+      delegate_to: "{{ baremetal_client }}"
 
     - name: Delete the server
       command: >
@@ -57,8 +57,8 @@
         --os-auth-token="{{ baremetal_ironic_token }}"
         --ironic-url="{{ baremetal_ironic_url }}"
         node-delete "{{ baremetal_name }}"
-      delegate_to: "{{ groups.client[0] }}"
+      delegate_to: "{{ baremetal_client }}"
 
     - name: Delete config-drive
-      shell: rm -rf "{{ baremetal_configdrive_dir }}/{{ __baremetal_new.stdout.split() | first | trim }}"*
+      shell: rm -rf "{{ baremetal_server_configdrive_path }}/{{ __baremetal_new.stdout.split() | first | trim }}"*
 
