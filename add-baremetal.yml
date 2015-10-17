@@ -5,7 +5,7 @@
 # http://docs.ansible.com/ansible/os_ironic_module.html
 
 - name: Define and deploy physical servers using Ironic
-  hosts: provisioning
+  hosts: conductor
   sudo: true
   gather_facts: False
   vars_files:
@@ -15,15 +15,14 @@
       configdrive_uuid: "{{ baremetal_uuid }}"
       configdrive_fqdn: "{{ baremetal_name }}.{{ baremetal_domain }}"
       configdrive_name: "{{ baremetal_name }}"
-      configdrive_config_dir: "{{ baremetal_configdrive_dir }}"
-      configdrive_volume_path: "{{ baremetal_configdrive_dir }}"
+      configdrive_config_dir: "{{ baremetal_server_configdrive_path }}"
+      configdrive_volume_path: "{{ baremetal_server_configdrive_path }}"
       configdrive_network_device_list: "{{ baremetal_network_device_list }}"
       configdrive_ssh_public_key: "{{ baremetal_ssh_key }}"
       configdrive_meta:
         deploy_date: "{{ baremetal_datetime }}"
         deploy_host: "{{ inventory_hostname }}"
         deploy_user: "{{ ansible_ssh_user }}"
-
 
   vars_prompt:
     - name: "id"
@@ -66,7 +65,7 @@
         node-list | awk -F '|' "/{{ baremetal_name }}/ { print \$2 }"
       register: __baremetal_new
       ignore_errors: yes
-      delegate_to: "{{ groups.client[0] }}"
+      delegate_to: "{{ baremetal_client }}"
 
     - name: Checking if server name is already used
       fail: msg="Server name '{{ baremetal_name }}' already defined!"
@@ -86,7 +85,7 @@
         -i deploy_ramdisk="{{ baremetal_deploy_ramdisk }}"
         | awk "/ uuid / { print \$4 }"
       register: __baremetal_defined
-      delegate_to: "{{ groups.client[0] }}"
+      delegate_to: "{{ baremetal_client }}"
 
     - name: Get the server UUID
       set_fact: baremetal_uuid="{{ __baremetal_defined.stdout }}"
@@ -110,7 +109,7 @@
             extra/deploy_date="{{ baremetal_datetime }}"
             extra/deploy_host="{{ inventory_hostname }}"
             extra/deploy_user="{{ ansible_ssh_user }}"
-      delegate_to: "{{ groups.client[0] }}"
+      delegate_to: "{{ baremetal_client }}"
       
     - name: Define the kernel and ramdisk for the image
       command: >
@@ -122,7 +121,7 @@
             instance_info/ramdisk="{{ baremetal_image_ramdisk }}"
             instance_info/root_gb="{{ baremetal_image_rootsize }}"
       when: baremetal_image_kernel and baremetal_image_ramdisk
-      delegate_to: "{{ groups.client[0] }}"
+      delegate_to: "{{ baremetal_client }}"
 
     - name: Create the MAC address ports for the new node
       command: > 
@@ -131,7 +130,7 @@
         --ironic-url="{{ baremetal_ironic_url }}"
         port-create -n "{{ baremetal_uuid }}" -a "{{ baremetal_mac }}"
       when: baremetal_mac is defined and baremetal_mac
-      delegate_to: "{{ groups.client[0] }}"
+      delegate_to: "{{ baremetal_client }}"
 
     - name: Add reference to config-drive in metadata info
       command: > 
@@ -144,24 +143,24 @@
         baremetal_configdrive_base_url is defined and
         not baremetal_configdrive_base_url is none and
         baremetal_configdrive
-      delegate_to: "{{ groups.client[0] }}"
+      delegate_to: "{{ baremetal_client }}"
 
     - name: Define the configdrive parameter
       set_fact: _baremetal_configdrive_param=""
-      delegate_to: "{{ groups.client[0] }}"
+      delegate_to: "{{ baremetal_client }}"
 
     - name: Define the configdrive parameter when enabled configdrive
       set_fact: _baremetal_configdrive_param="--config-drive {{ baremetal_configdrive_base_url }}/{{ baremetal_uuid }}.gz"
       when: baremetal_configdrive
-      delegate_to: "{{ groups.client[0] }}"
+      delegate_to: "{{ baremetal_client }}"
 
-    - name: Set PXE boot for the next boot
-      command: >
-        ironic
-        --os-auth-token="{{ baremetal_ironic_token }}"
-        --ironic-url="{{ baremetal_ironic_url }}"
-        node-set-boot-device "{{ baremetal_uuid }}" pxe
-      delegate_to: "{{ groups.client[0] }}"
+#    - name: Set PXE boot for the next boot
+#      command: >
+#        ironic
+#        --os-auth-token="{{ baremetal_ironic_token }}"
+#        --ironic-url="{{ baremetal_ironic_url }}"
+#        node-set-boot-device "{{ baremetal_uuid }}" pxe
+#      delegate_to: "{{ baremetal_client }}"
 
     - name: Active and deploy the server
       command: >
@@ -169,5 +168,5 @@
         --os-auth-token="{{ baremetal_ironic_token }}"
         --ironic-url="{{ baremetal_ironic_url }}"
         node-set-provision-state {{ _baremetal_configdrive_param }} "{{ baremetal_uuid }}" active
-      delegate_to: "{{ groups.client[0] }}"
+      delegate_to: "{{ baremetal_client }}"
 
