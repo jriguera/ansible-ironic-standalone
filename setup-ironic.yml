@@ -30,7 +30,7 @@
     - role: monit
 
 # Ironic API server and Ironic Conductor with http repo
-- hosts: provisioning
+- hosts: ironic
   sudo: true
   roles:
     - role: ironic
@@ -65,13 +65,6 @@
     - role: monit
 
   tasks:
-
-    - name: Create configdrive metadata folder
-      file:
-        path: "{{ baremetal_server_http_root_path }}/metadata"
-        mode: 0755
-        recurse: yes
-        state: directory
 
     - name: Create deploy image folder
       file:
