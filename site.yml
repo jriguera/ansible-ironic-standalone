@@ -6,6 +6,9 @@
     baremetal_server_database_name: ironic
     baremetal_server_database_user: ironic
     baremetal_server_database_pass: mysql
+    baremetal_server_inspector_database_name: inspector
+    baremetal_server_inspector_database_user: inspector
+    baremetal_server_inspector_database_pass: mysql
     baremetal_server_msg_vhost: ironic
     baremetal_server_msg_user: ironic
     baremetal_server_msg_pass: rabbitmq
@@ -20,10 +23,15 @@
       mysql_root_password: "{{ baremetal_server_database_rootpass }}"
       mysql_database_list:
         - name: "{{ baremetal_server_database_name }}"
+        - name: "{{ baremetal_server_inspector_database_name }}"
       mysql_user_list:
         - name: "{{ baremetal_server_database_user }}"
           password: "{{ baremetal_server_database_pass }}"
           priv: "{{ baremetal_server_database_name }}.*:ALL"
+          host: "%"
+        - name: "{{ baremetal_server_inspector_database_user }}"
+          password: "{{ baremetal_server_inspector_database_pass }}"
+          priv: "{{ baremetal_server_inspector_database_name }}.*:ALL"
           host: "%"
 
     - role: rabbitmq
@@ -54,6 +62,13 @@
       ironic_deploy_http_root: "{{ baremetal_server_images_deploy_path }}"
       ironic_deploy_erase_devices_priority: 0
       ironic_enabled_drivers: ["pxe_ipmitool", "agent_ipmitool"]
+
+    - role: ironic-inspector
+      ironic_inspector_ironic_url: "http://{{ ansible_eth0.ipv4.address }}:6385/"
+      ironic_inspector_database_mysql_host: "localhost"
+      ironic_inspector_database_mysql_userid: "{{ baremetal_server_inspector_database_user }}"
+      ironic_inspector_database_mysql_password: "{{ baremetal_server_inspector_database_pass }}"
+      ironic_inspector_database_mysql_db: "{{ baremetal_server_inspector_database_name }}"
 
     - role: dnsmasq
       dnsmasq_conf_domain: "{{ baremetal_server_dhcp_domain }}"
