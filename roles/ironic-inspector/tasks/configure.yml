@@ -67,9 +67,9 @@
     state: restarted 
   when: _ironic_inspector_updated
 
-- name: Ensure Ironic-Inspector daemon is started and enabled on boot
+- name: Ensure Ironic-Inspector is started or stopped as required
   service: 
     name: "{{ ironic_inspector_service_name }}"
-    state: started 
+    state: "{{ ironic_inspector_enabled | ternary('started', 'stopped') }}"
     enabled: "{{ ironic_inspector_enabled_on_startup | ternary('yes', 'no') }}"
 
