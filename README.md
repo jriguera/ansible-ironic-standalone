@@ -29,6 +29,7 @@ Roles used:
  * `roles/rabbitmq` to setup a message queue using RabbitMQ.
  * `roles/monit` (optional) to setup processes control with Monit.
  * `roles/ironic` to setup the OpenStack Ironic daemons.
+ * `roles/ironic-inspector` to setup the Ironic-Inspector daemon.
  * `roles/dnsmasq` to setup a PXE server to use with Ironic.
  * `roles/nginx` (optional) to setup HTTP image repo server (for IPA).
 
