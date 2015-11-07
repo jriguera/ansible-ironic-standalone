@@ -1,4 +1,6 @@
 ---
+# Enable or disable inspector daemon and pxe configuration
+ironic_inspector_enabled: true
 ironic_inspector_enabled_on_startup: true
 
 ironic_inspector_debug: false
@@ -32,7 +34,21 @@ ironic_inspector_ironic_url: "http://127.0.0.1:6385/"
 ironic_inspector_ironic_os_service_type: "baremetal"
 ironic_inspector_ironic_os_endpoint_type: "internalURL"
 
-# 
+# Force download always the IPA ramdisk and kernel
+ironic_inspector_ipa_force_download: false
+ironic_inspector_ipa_ramdisk_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem.cpio.gz"
+ironic_inspector_ipa_kernel_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe.vmlinuz"
+ironic_inspector_ipa_images_path: "/var/lib/ironic/images"
+# Define ipa_kernel and ipa_initramfs to create the $TFTPROOT/pxelinux.cfg/default
+# otherwise they will be donwloaded
+#ironic_inspector_ipa_kernel:
+#ironic_inspector_ipa_ramdisk:
+ironic_inspector_ipa_callback_url: "http://{{ ansible_eth0.ipv4.address }}:{{ ironic_inspector_listen_port | default('5050') }}/v1/continue"
+ironic_inspector_ipa_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
+ironic_inspector_ipa_tftproot: "/var/lib/ironic/tftpboot"
+
+# Define auth_uri to use keystone authentication, otherwise
+# noauth will be assumed
 ironic_inspector_keystone_authtoken_auth_uri:
 ironic_inspector_keystone_authtoken_region_name: "RegionOne"
 ironic_inspector_keystone_authtoken_auth_version: 2
