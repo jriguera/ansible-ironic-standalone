@@ -1,0 +1,75 @@
+---
+- name: Create the ramdisk logs dir
+  file:
+    path: "{{ ironic_inspector_processing_ramdisk_logs_dir }}"
+    owner: "{{ ironic_inspector_user }}"
+    group: "{{ ironic_inspector_group }}"
+    mode: 0755
+    state: directory
+  when: ironic_inspector_processing_ramdisk_logs_dir is defined
+
+- name: Create the logging folder
+  file:
+    path: "{{ ironic_inspector_log | dirname }}"
+    owner: "{{ ironic_inspector_user }}"
+    group: "{{ ironic_inspector_group }}"
+    mode: 0750
+    state: directory
+  when: >
+    ironic_inspector_log is defined and 
+    ironic_inspector_log != 'syslog'
+
+- name: Defining mysql connection
+  set_fact: >
+    ironic_inspector_database_connection="mysql://{{ironic_inspector_database_mysql_userid}}:{{ironic_inspector_database_mysql_password}}@{{ironic_inspector_database_mysql_host}}/{{ironic_inspector_database_mysql_db}}"
+  when: >
+    ironic_inspector_database_mysql_userid is defined and
+    ironic_inspector_database_mysql_password is defined and
+    ironic_inspector_database_mysql_host is defined and
+    ironic_inspector_database_mysql_db is defined
+
+- name: Generate the main configuration file
+  template:
+    src: inspector.conf.j2
+    dest: "{{ ironic_inspector_config_file }}"
+    owner: "{{ ironic_inspector_user }}"
+    group: "{{ ironic_inspector_group }}"
+    mode: 0644
+  register: __ironic_inspector_updated_conf
+
+- name: Checking if configuration was updated
+  set_fact: _ironic_inspector_updated="{{ __ironic_inspector_updated_conf.changed }}"
+
+# Inspector uses 'upgrade' for initial setup
+- name: Create initial database schema
+  command: ironic-inspector-dbsync --config-file "{{ ironic_inspector_config_file }}" upgrade
+  when: >
+    not ironic_inspector_database_connection | search("sqlite://.*") and
+    _ironic_inspector_reinstalled and 
+    _ironic_inspector_updated and
+    not _ironic_inspector_previous
+  become: yes
+  become_user: ironic_inspector_user
+
+- name: Update database schema
+  command: ironic-inspector-dbsync --config-file "{{ ironic_inspector_config_file }}" upgrade
+  when: >
+    not ironic_inspector_database_connection | search("sqlite://.*") and
+    _ironic_inspector_reinstalled and 
+    _ironic_inspector_updated and
+    _ironic_inspector_previous
+  become: yes
+  become_user: ironic_inspector_user
+
+- name: Restart Ironic-Inspector daemon for the new configuration
+  service:
+    name: "{{ ironic_inspector_service_name }}"
+    state: restarted 
+  when: _ironic_inspector_updated
+
+- name: Ensure Ironic-Inspector daemon is started and enabled on boot
+  service: 
+    name: "{{ ironic_inspector_service_name }}"
+    state: started 
+    enabled: "{{ ironic_inspector_enabled_on_startup | ternary('yes', 'no') }}"
+
