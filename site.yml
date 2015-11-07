@@ -64,6 +64,8 @@
       ironic_enabled_drivers: ["pxe_ipmitool", "agent_ipmitool"]
 
     - role: ironic-inspector
+      ironic_inspector_enabled: true
+      ironic_inspector_ipa_images_path: "{{ baremetal_server_images_deploy_path }}"
       ironic_inspector_ironic_url: "http://{{ ansible_eth0.ipv4.address }}:6385/"
       ironic_inspector_database_mysql_host: "localhost"
       ironic_inspector_database_mysql_userid: "{{ baremetal_server_inspector_database_user }}"
@@ -130,6 +132,13 @@
             script: "/usr/sbin/service ironic-conductor start"
           stop: 
             script: "/usr/sbin/service ironic-conductor stop"
+        - name: ironic-inspector
+          type: process
+          target: "{{ ironic_inspector_pidfile }}"
+          start: 
+            script: "/usr/sbin/service ironic-inspector start"
+          stop: 
+            script: "/usr/sbin/service ironic-inspector stop"
         - name: nginx
           type: process
           target: "{{ nginx_pidfile }}"
@@ -137,27 +146,6 @@
             script: "/etc/init.d/nginx start"
           stop:
             script: "/etc/init.d/nginx stop"
-
-  tasks:
-
-    - name: Create configdrive metadata folder
-      file:
-        path: "{{ baremetal_server_http_root_path }}/metadata"
-        mode: 0755
-        recurse: yes
-        state: directory
-
-    - name: Download IPA Coreos ramdisk
-      get_url:
-        url: http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem.cpio.gz
-        dest: "{{ baremetal_server_images_deploy_path }}/coreos_production_pxe_image-oem.cpio.gz"
-        force: no
-
-    - name: Download IPA Coreos kernel
-      get_url:
-        url: http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe.vmlinuz
-        dest: "{{ baremetal_server_images_deploy_path }}/coreos_production_pxe.vmlinuz"
-        force: no
   
 #   - name: Display all variables/facts known for a host
 #     debug: var=hostvars[inventory_hostname]
