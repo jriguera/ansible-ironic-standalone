@@ -1,0 +1,7 @@
+# {{ item.name }} {% if item.auth.title is defined %}: {{ item.auth.title }} {% endif %}
+
+{% if item.auth.users is defined %}
+{% for user in item.auth.users %}
+{{ user }}:{{ item.auth.users[user] }}
+{% endfor %}
+{% endif %}
