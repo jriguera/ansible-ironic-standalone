@@ -1,63 +1,62 @@
 ---
-- name: Debian - Import repository key
-  apt_key: url="{{ nginx_os_repo_key }}" state=present
-  when: >
-    ansible_os_family == 'Debian' and 
-    not nginx_os_packages and
-    not nginx_os_repo_key is none and
-    nginx_os_repo_key | search("http://.*")
-  ignore_errors: yes
-  tags: ["debian"]
+# Debian repository
+- block:
 
-- name: Debian - Add repository package
-  apt: name="{{ nginx_os_repo_key }}" state=latest
-  when: >
-    ansible_os_family == 'Debian' and 
-    not nginx_os_packages and
-    not nginx_os_repo_key is none and
-    not nginx_os_repo_key | search("http://.*")
-  tags: ["debian"]
+  - name: Debian - Import repository key
+    apt_key: url="{{ nginx_os_repo_key }}" state=present
+    when: >
+      not nginx_os_repo_key is none and
+      nginx_os_repo_key | search("http://.*")
+    ignore_errors: yes
 
-- name: Debian - Add repository url
-  apt_repository: repo="{{ nginx_os_repo_url }}" state=present
+  - name: Debian - Add repository package
+    apt: name="{{ nginx_os_repo_key }}" state=latest
+    when: >
+      not nginx_os_repo_key is none and
+      not nginx_os_repo_key | search("http://.*")
+
+  - name: Debian - Add repository url
+    apt_repository: repo="{{ nginx_os_repo_url }}" state=present
+
   when: >
     ansible_os_family == 'Debian' 
     and not nginx_os_packages
-  tags: ["debian"]
+  tags: ["debian", "repository"]
 
-- name: RedHat - Add repository
-  yum: name="{{ nginx_os_repo_url }}" state=present
-  when: >
-    ansible_os_family == 'RedHat' and 
-    not nginx_os_packages
-  tags: ["redhat"]
 
-- name: RedHat - Import repository key
-  rpm_key: key="{{ nginx_os_repo_key }}" state=present
+# RedHat repository
+- block:
+  - name: RedHat - Add repository
+    yum: name="{{ nginx_os_repo_url }}" state=present
+
+  - name: RedHat - Import repository key
+    rpm_key: key="{{ nginx_os_repo_key }}" state=present
+    when: nginx_os_repo_key is not none
+
   when: >
-    ansible_os_family == 'RedHat' and 
-    not nginx_os_packages and 
-    not nginx_os_repo_key is none
-  tags: ["redhat"]
+      ansible_os_family == 'RedHat'
+      and not nginx_os_packages
+  tags: ["redhat", "repository"]
+
 
 - name: RedHat - Install required packages
   yum:
     name: "{{ item.key }}{{ '-' + item.version | default('*') }}"
     state: "{{ item.state | default('present') }}"
-  with_dict: nginx_packages
+  with_dict: "{{ nginx_packages }}"
   when: ansible_os_family == 'RedHat'
   register: __nginx_installed
-  tags: ["redhat"]
+  tags: ["redhat", "packages"]
 
 - name: Debian - Install required packages
   apt: 
     name: "{{ item.key }}{{ '=' + item.version | default('*') }}"
     state: "{{ item.state | default('present') }}"
     install_recommends: "{{ nginx_packages_install_recommends }}"
-  with_dict: nginx_packages
+  with_dict: "{{ nginx_packages }}"
   when: ansible_os_family == 'Debian'
   register: __nginx_installed
-  tags: ["debian"]
+  tags: ["debian", "packages"]
 
 - name: Check if packages were installed
   set_fact: _nginx_reinstalled="{{ __nginx_installed.changed }}"
@@ -66,26 +65,28 @@
   service: name={{ nginx_daemon }} state=stopped enabled=no
   ignore_errors: yes
   when: _nginx_reinstalled
-  
-- name: Debian - Delete upstart configuration
-  file:
-    path: "/etc/init/{{ nginx_daemon }}.conf"
-    state: absent
-  when: >
-    ansible_os_family == 'Debian' and
-    nginx_init_system != "upstart"
-  notify: stop nginx
-  tags: ["debian", "ubuntu"]
 
-- name: Debian - Delete init.d configuration
-  file:
-    path: "/etc/init.d/{{ nginx_daemon }}"
-    state: absent
-  when: >
-    ansible_os_family == 'Debian' and
-    nginx_init_system != "initd"
-  notify: stop nginx
-  tags: ["debian", "ubuntu"]
+
+# Delete the rest of init system scripts
+- block:
+  - name: Debian - Delete upstart configuration
+    file: path="/etc/init/{{ nginx_daemon }}.conf" state=absent
+    when: nginx_init_system != "upstart"
+    notify: stop nginx
+
+  - name: Debian - Delete init.d configuration
+    file: path="/etc/init.d/{{ nginx_daemon }}" state=absent
+    when: nginx_init_system != "initd"
+    notify: stop nginx
+
+  - name: Debian - Delete systemd configuration
+    file: path="/lib/systemd/system/{{ nginx_daemon }}.service" state=absent
+    when: nginx_init_system != "systemd"
+    notify: stop nginx
+
+  when: ansible_os_family == 'Debian'
+  tags: ["debian", "ubuntu", "init"]
+
 
 # Flush all notify stop handlers, to be sure that they are done!
 # The reason is because of upstart service
