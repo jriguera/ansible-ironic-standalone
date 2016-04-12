@@ -18,6 +18,17 @@
 - include: users.yml
   tags: ["mysql", "users"]
 
-- include: replication.yml
-  tags: ["mysql", "replication"]
+- include: replication_master.yml
+  when: >
+    (mysql_replication_role == 'master')
+    and mysql_replication_master is defined
+    and mysql_replication_master is not none
+  tags: ["mysql", "replication", "master"]
+
+- include: replication_slave.yml
+  when: >
+    (mysql_replication_role == 'slave')
+    and mysql_replication_master is defined
+    and mysql_replication_master is not none
+  tags: ["mysql", "replication", "slave"]
 

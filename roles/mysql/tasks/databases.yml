@@ -5,6 +5,6 @@
     collation: "{{ item.collation | default('utf8_general_ci') }}"
     encoding: "{{ item.encoding | default('utf8') }}"
     state: present
-  with_items: mysql_database_list
+  with_items: "{{ mysql_database_list }}"
   when: mysql_database_list is defined
 

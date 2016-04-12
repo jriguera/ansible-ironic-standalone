@@ -1,13 +1,13 @@
 ---
 - name: restart mysql
-  service: name={{ mysql_daemon }} state=restarted sleep=5
+  service: name="{{ mysql_daemon }}" state=restarted sleep=5
 
 - name: start mysql
-  service: name={{ mysql_daemon }} state=started
+  service: name="{{ mysql_daemon }}" state=started
 
 - name: stop mysql
-  service: name={{ mysql_daemon }} state=stopped
+  service: name="{{ mysql_daemon }}" state=stopped
   
 - name: reload mysql
-  service: name={{ mysql_daemon }} state=reloaded
+  service: name="{{ mysql_daemon }}" state=reloaded
 

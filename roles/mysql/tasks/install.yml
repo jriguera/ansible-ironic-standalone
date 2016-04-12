@@ -1,44 +1,42 @@
 ---
-- name: Debian - Import repository key
-  apt_key: url="{{ mysql_os_repo_key }}" state=present
+# Debian repository
+- block:
+  - name: Debian - Import repository key
+    apt_key: url="{{ mysql_os_repo_key }}" state=present
+    when: >
+      not mysql_os_repo_key is none and
+      mysql_os_repo_key | search("http://.*")
+    ignore_errors: yes
+
+  - name: Debian - Add repository package
+    apt: name="{{ mysql_os_repo_key }}" state=latest
+    when: >
+      not mysql_os_repo_key is none and
+      not mysql_os_repo_key | search("http://.*")
+
+  - name: Debian - Add repository url
+    apt_repository: repo="{{ mysql_os_repo_url }}" state=present
+
   when: >
     ansible_os_family == 'Debian' and 
-    not mysql_os_packages and
-    not mysql_os_repo_key is none and
-    mysql_os_repo_key | search("http://.*")
-  ignore_errors: yes
-  tags: ["debian"]
-
-- name: Debian - Add repository package
-  apt: name="{{ mysql_os_repo_key }}" state=latest
-  when: >
-    ansible_os_family == 'Debian' and 
-    not mysql_os_packages and
-    not mysql_os_repo_key is none and
-    not mysql_os_repo_key | search("http://.*")
-  tags: ["debian"]
-
-- name: Debian - Add repository url
-  apt_repository: repo="{{ mysql_os_repo_url }}" state=present
-  when: >
-    ansible_os_family == 'Debian' 
-    and not mysql_os_packages
-  tags: ["debian"]
-
-- name: RedHat - Add repository
-  yum: name="{{ mysql_os_repo_url }}" state=present
-  when: >
-    ansible_os_family == 'RedHat' and 
     not mysql_os_packages
-  tags: ["redhat"]
+  tags: ["debian", "repository"]
 
-- name: RedHat - Import repository key
-  rpm_key: key="{{ mysql_os_repo_key }}" state=present
+
+# RedHat repository
+- block:
+  - name: RedHat - Add repository
+    yum: name="{{ mysql_os_repo_url }}" state=present
+
+  - name: RedHat - Import repository key
+    rpm_key: key="{{ mysql_os_repo_key }}" state=present
+    when: mysql_os_repo_key is not none
+
   when: >
-    ansible_os_family == 'RedHat' and 
-    not mysql_os_packages and 
-    not mysql_os_repo_key is none
-  tags: ["redhat"]
+      ansible_os_family == 'RedHat'
+      and not mysql_os_packages
+  tags: ["redhat", "repository"]
+
 
 - name: Check if pidfile exists
   stat: path="{{ mysql_pidfile }}"
@@ -51,20 +49,20 @@
   yum:
     name: "{{ item.key }}{{ '-' + item.version | default('*') }}"
     state: "{{ item.state | default('present') }}"
-  with_dict: mysql_packages_dict
+  with_dict: "{{ mysql_packages_dict }}"
   when: ansible_os_family == 'RedHat'
   register: __mysql_installed
-  tags: ["redhat"]
+  tags: ["redhat", "packages"]
 
 - name: Debian - Install required packages
   apt: 
     name: "{{ item.key }}{{ '=' + item.version | default('*') }}"
     state: "{{ item.state | default('present') }}"
     install_recommends: "{{ mysql_packages_install_recommends }}"
-  with_dict: mysql_packages_dict
+  with_dict: "{{ mysql_packages_dict }}"
   when: ansible_os_family == 'Debian'
   register: __mysql_installed
-  tags: ["debian"]
+  tags: ["debian", "packages"]
 
 - name: Check if packages were installed
   set_fact: _mysql_reinstalled="{{ __mysql_installed.changed }}"
@@ -73,29 +71,32 @@
 # we need to stop mysql and remove the logfiles in case the user set a 
 # custom log file size.
 - name: Ensure MySQL is stopped after initial install
-  service: name={{ mysql_daemon }} state=stopped enabled=no
+  service: name="{{ mysql_daemon }}" state=stopped enabled=no
   ignore_errors: yes
   when: _mysql_reinstalled
 
-- name: Debian - Delete upstart configuration
-  file:
-    path: "/etc/init/{{ mysql_daemon }}.conf"
-    state: absent
-  when: >
-    ansible_os_family == 'Debian' and
-    mysql_init_system != "upstart"
-  notify: stop mysql
-  tags: ["debian", "ubuntu"]
 
-- name: Debian - Delete init.d configuration
-  file:
-    path: "/etc/init.d/{{ mysql_daemon }}"
-    state: absent
-  when: >
-    ansible_os_family == 'Debian' and
-    mysql_init_system != "initd"
-  notify: stop mysql
-  tags: ["debian", "ubuntu"]
+# Delete the rest of init system scripts
+- block:
+  - name: Debian - Delete upstart configuration
+    file: path="/etc/init/{{ mysql_daemon }}.conf" state=absent
+    when: mysql_init_system != "upstart"
+    notify: stop mysql
+
+  - name: Debian - Delete init.d configuration
+    file: path="/etc/init.d/{{ mysql_daemon }}" state=absent
+    when: mysql_init_system != "initd"
+    notify: stop mysql
+
+  - name: Debian - Delete systemd configuration
+    file: path="/lib/systemd/system/{{ mysql_daemon }}.service" state=absent
+    when: mysql_init_system != "systemd"
+    notify: stop mysql
+
+  when: ansible_os_family == 'Debian'
+  ignore_errors: yes
+  tags: ["debian", "ubuntu", "init"]
+
 
 # Flush all notify stop handlers, to be sure that they are done!
 # The reason is because of upstart service

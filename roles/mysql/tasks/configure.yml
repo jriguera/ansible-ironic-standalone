@@ -22,9 +22,13 @@
   when: mysql_slow_query_log
 
 - name: Delete innodb log files created after initial install
-  shell: "rm {{ mysql_datadir }}/ib_logfile[01]"
+  file: path="{{ mysql_datadir }}/{{ item }}" state=absent
+  with_items:
+    - ib_logfile0
+    - ib_logfile1
   when: _mysql_reinstalled and _mysql_updated
+  ignore_errors: yes
 
 - name: Ensure MySQL is started and enabled on boot
-  service: name={{ mysql_daemon }} state=started enabled={{ mysql_enabled_on_startup | ternary('yes', 'no') }}
+  service: name="{{ mysql_daemon }}" state=started enabled="{{ mysql_enabled_on_startup | ternary('yes', 'no') }}"
 
