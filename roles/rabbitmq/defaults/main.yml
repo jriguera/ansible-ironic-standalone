@@ -32,7 +32,8 @@ rabbitmq_ssl_keyfile:
 # Plugins
 #rabbitmq_plugins_dict: { plugin2: src.ez }
 rabbitmq_plugins_dict: { rabbitmq_management: }
-rabbitmq_new_only: false
+rabbitmq_plugins_only_listed: false
+rabbitmq_plugins_disabled: []
 
 # VHOST
 rabbitmq_vhost_definition_list: []
