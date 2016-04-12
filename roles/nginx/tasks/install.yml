@@ -1,7 +1,6 @@
 ---
 # Debian repository
 - block:
-
   - name: Debian - Import repository key
     apt_key: url="{{ nginx_os_repo_key }}" state=present
     when: >
@@ -85,6 +84,7 @@
     notify: stop nginx
 
   when: ansible_os_family == 'Debian'
+  ignore_errors: yes
   tags: ["debian", "ubuntu", "init"]
 
 
