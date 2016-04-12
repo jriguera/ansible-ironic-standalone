@@ -31,6 +31,7 @@
   when: >
     nginx_server_list is defined and
     not nginx_server_list is none
+  no_log: True
   tags: ["delete"]
 
 
@@ -106,6 +107,7 @@
   when: >
     nginx_server_list is defined and
     not nginx_server_list is none
+  no_log: True
   tags: ["create"]
 
 
