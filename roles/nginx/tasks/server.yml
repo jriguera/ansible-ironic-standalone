@@ -41,9 +41,8 @@
     file: 
       path: "{{ item.root }}"
       state: directory
-      mode: 0755
+      mode: 0775
       owner: "{{ nginx_user }}"
-      group: "{{ nginx_group }}"
     with_items: "{{ nginx_server_list }}"
     when: >
       not (item.delete is defined and item.delete) and
@@ -53,9 +52,8 @@
     file:
       path: "{{ item.1.root }}"
       state: directory
-      mode: 0755
+      mode: 0775
       owner: "{{ nginx_user }}"
-      group: "{{ nginx_group }}"
     with_subelements:
       - "{{ nginx_server_list }}"
       - location_list
