@@ -15,32 +15,33 @@
     mode: 0755
     state: directory
 
-- name: Create DHCP dnsmasq configuration
-  template:
-    src: dnsmasq.d/dhcp.conf.j2
-    dest: "{{ dnsmasq_config_dir }}/dhcp.conf"
-    owner: "{{ dnsmasq_user }}"
-    group: "{{ dnsmasq_group }}"
-    mode: 0644
-  notify: reload dnsmasq
-  register: __dnsmasq_updated_dhcp
+
+- block:
+  - name: Create DHCP dnsmasq configuration
+    template:
+      src: dnsmasq.d/dhcp.conf.j2
+      dest: "{{ dnsmasq_config_dir }}/dhcp.conf"
+      owner: "{{ dnsmasq_user }}"
+      group: "{{ dnsmasq_group }}"
+      mode: 0644
+    notify: reload dnsmasq
+    register: __dnsmasq_updated_dhcp
+
+  - name: Create TFTP dnsmasq configuration
+    template:
+      src: dnsmasq.d/tftp.conf.j2
+      dest: "{{ dnsmasq_config_dir }}/tftp.conf"
+      owner: "{{ dnsmasq_user }}"
+      group: "{{ dnsmasq_group }}"
+      mode: 0644
+    notify: reload dnsmasq
+    register: __dnsmasq_updated_tftp
+    when: dnsmasq_tftp
+
   when: > 
     dnsmasq_dhcp and
     dnsmasq_conf_dhcp is defined
 
-- name: Create TFTP dnsmasq configuration
-  template:
-    src: dnsmasq.d/tftp.conf.j2
-    dest: "{{ dnsmasq_config_dir }}/tftp.conf"
-    owner: "{{ dnsmasq_user }}"
-    group: "{{ dnsmasq_group }}"
-    mode: 0644
-  notify: reload dnsmasq
-  register: __dnsmasq_updated_tftp
-  when: > 
-    dnsmasq_dhcp and
-    dnsmasq_conf_dhcp is defined and
-    dnsmasq_tftp
 
 - name: Create global dnsmasq configuration
   template:
@@ -61,8 +62,8 @@
     mode: 0755
     state: directory
   when: >
-    dnsmasq_conf_dhcp_hosts is defined and
-    not dnsmasq_conf_dhcp_hosts is none
+    dnsmasq_conf_dhcp_hosts is defined
+    and dnsmasq_conf_dhcp_hosts is not none
 
 - name: Create dhcp hosts file from configuration
   template:
@@ -71,10 +72,9 @@
     owner: "{{ dnsmasq_user }}"
     group: "{{ dnsmasq_group }}"
     mode: 0644
-  notify: reload dnsmasq
   when: >
-    dnsmasq_conf_dhcp_hosts is defined and 
-    dnsmasq_conf_dhcp_hosts is iterable
+    dnsmasq_conf_dhcp_hosts is defined
+    and dnsmasq_conf_dhcp_hosts is iterable
   notify: reload dnsmasq
 
 - name: Copy dhcp hosts file if defined
@@ -107,13 +107,14 @@
     owner: "{{ dnsmasq_user }}"
     group: "{{ dnsmasq_group }}"
     mode: 0644
-  notify: reload dnsmasq
   when: dnsmasq_conf_hosts is defined
+  notify: reload dnsmasq
 
 - name: Checking if configuration was updated
+  set_fact: _dnsmasq_updated="{{ __dnsmasq_updated_global.changed }}" or "{{ __dnsmasq_updated_dhcp.changed }}" or "{{ __dnsmasq_updated_tftp.changed }}"
+
+- name: Set updated flag
   set_fact: dnsmasq_updated=_dnsmasq_updated.changed
-  set_fact: >
-    _dnsmasq_updated="{{ __dnsmasq_updated_global.changed }}" or "{{ __dnsmasq_updated_dhcp.changed }}" or "{{ __dnsmasq_updated_tftp.changed }}"
 
 - name: Ensure dnsmasq is started and enabled on boot
   service: name="{{ dnsmasq_daemon }}" state=started enabled="{{ dnsmasq_enabled_on_startup | ternary('yes', 'no') }}"
