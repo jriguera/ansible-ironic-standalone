@@ -2,9 +2,8 @@
 - name: Create deploy file images folder
   file:
     path: "{{ item }}"
-    owner: "{{ ironic_user }}"
     group: "{{ ironic_group }}"
-    mode: 0755
+    mode: 0775
     state: directory
   with_items:
     - "{{ ironic_pxe_images_path }}"
@@ -13,9 +12,8 @@
 - name: Create PXE root folders
   file:
     path: "{{ item }}"
-    owner: "{{ ironic_user }}"
     group: "{{ ironic_group }}"
-    mode: 0755
+    mode: 0775
     state: directory
   with_items:
     - "{{ ironic_pxe_tftp_root }}"
@@ -27,9 +25,8 @@
 - name: Create HTTP root deploy folder
   file:
     path: "{{ ironic_deploy_http_root }}"
-    owner: "{{ ironic_user }}"
     group: "{{ ironic_group }}"
-    mode: 0755
+    mode: 0775
     state: directory
   when: >
     ironic_deploy_http_root is defined and 
@@ -115,13 +112,13 @@
     dest: "{{ ironic_pxe_tftp_root }}/map-file"
     owner: "{{ ironic_user }}"
     group: "{{ ironic_group }}"
-    mode: 0644
+    mode: 0664
   when: >
     ironic_pxe_tftp_root is defined and
     not ironic_pxe_tftp_root is none
 
 - name: Copy PXE boot files for TFTP
-  command: cp "{{ item }}" "{{ ironic_pxe_tftp_root }}"
+  shell: cp "{{ item }}" "{{ ironic_pxe_tftp_root }}" && chown -R "{{ ironic_user }}:{{ ironic_group }}" "{{ ironic_pxe_tftp_root }}/{{ item | basename}}"
   when: >
     ironic_pxe_tftp_root is defined and
     not ironic_pxe_tftp_root is none and
@@ -129,8 +126,8 @@
   with_items:
     - /usr/lib/syslinux/pxelinux.0
     - /usr/lib/syslinux/chain.c32
-#   - /usr/lib/syslinux/modules/*/ldlinux.*
   ignore_errors: yes
+  changed_when: False
 
 - name: Check if elilo is needed for UEFI
   stat: path="{{ ironic_pxe_tftp_root }}/{{ ironic_pxe_uefi_pxe_bootfile_name }}"
@@ -168,7 +165,7 @@
   tags: ["elilo"]
 
 - name: Install elilo in tftpboot
-  shell: cp /tmp/elilo-*.*-x86_64.efi "{{ ironic_pxe_tftp_root }}/elilo.efi"
+  shell: cp /tmp/elilo-*.*-x86_64.efi "{{ ironic_pxe_tftp_root }}/elilo.efi" && chown "{{ ironic_user }}:{{ ironic_group }}" "{{ ironic_pxe_tftp_root }}/elilo.efi"
   when: >
     ironic_pxe_tftp_root is defined and
     not ironic_pxe_tftp_root is none and
@@ -176,18 +173,7 @@
     ironic_pxe_uefi_pxe_bootfile_name == "elilo.efi" and
     not __ironic_uefi_elilo.stat.exists
   tags: ["elilo"]
-
-- name: Check files permissions on PXE root folder
-  file:
-    path: "{{ ironic_pxe_tftp_root }}"
-    owner: "{{ ironic_user }}"
-    group: "{{ ironic_group }}"
-    mode: 0775
-    state: directory
-    recurse: yes
-  when: >
-    ironic_pxe_tftp_root is defined and 
-    not ironic_pxe_tftp_root is none
+  changed_when: False
 
 - name: Reload Ironic daemons
   service: name="{{ ironic_conductor_service_name }}" state=reloaded

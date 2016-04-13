@@ -3,18 +3,18 @@
   yum:
     name: "{{ item.key }}{{ '-' + item.version | default('*') }}"
     state: "{{ item.state | default('present') }}"
-  with_dict: ironic_conductor_packages_console
+  with_dict: "{{ ironic_conductor_packages_console }}"
   when: ansible_os_family == 'RedHat'
-  tags: ["install", "redhat"]
+  tags: ["install", "redhat", "packages"]
 
 - name: Debian - Install console packages
   apt: 
     name: "{{ item.key }}{{ '=' + item.version | default('*') }}"
     state: "{{ item.state | default('present') }}"
     install_recommends: "{{ ironic_packages_install_recommends }}"
-  with_dict: ironic_conductor_packages_console
+  with_dict: "{{ ironic_conductor_packages_console }}"
   when: ansible_os_family == 'Debian'
-  tags: ["install", "debian"]
+  tags: ["install", "debian", "packages"]
 
 - name: Create PIDs folder for console processes
   file:

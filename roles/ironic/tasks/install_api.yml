@@ -3,20 +3,20 @@
   yum:
     name: "{{ item.key }}{{ '-' + item.version | default('*') }}"
     state: "{{ item.state | default('present') }}"
-  with_dict: ironic_api_packages
+  with_dict: "{{ ironic_api_packages }}"
   when: ansible_os_family == 'RedHat'
   register: __ironic_api_installed
-  tags: ["redhat"]
+  tags: ["redhat", "packages"]
 
 - name: Debian - Install Ironic-API required packages
   apt: 
     name: "{{ item.key }}{{ '=' + item.version | default('*') }}"
     state: "{{ item.state | default('present') }}"
     install_recommends: "{{ ironic_packages_install_recommends }}"
-  with_dict: ironic_api_packages
+  with_dict: "{{ ironic_api_packages }}"
   when: ansible_os_family == 'Debian'
   register: __ironic_api_installed
-  tags: ["debian"]
+  tags: ["debian", "packages"]
 
 - name: Check if Ironic-API packages were installed
   set_fact: _ironic_api_reinstalled="{{ __ironic_api_installed.changed }}"
@@ -28,25 +28,28 @@
   ignore_errors: yes
   when: _ironic_api_reinstalled
 
-- name: Debian - Delete Ironic-API upstart configuration
-  file:
-    path: "/etc/init/{{ ironic_api_service_name }}.conf"
-    state: absent
-  when: >
-    ansible_os_family == 'Debian' and
-    ironic_init_system != "upstart"
-  notify: stop api
-  tags: ["debian", "ubuntu"]
 
-- name: Debian - Delete Ironic-API init.d configuration
-  file:
-    path: "/etc/init.d/{{ ironic_api_service_name }}"
-    state: absent 
-  when: >
-    ansible_os_family == 'Debian' and
-    ironic_init_system != "initd"
-  notify: stop api
-  tags: ["debian", "ubuntu"]
+# Delete the rest of init system scripts
+- block:
+  - name: Debian - Delete Ironic-API upstart configuration
+    file: path="/etc/init/{{ ironic_api_service_name }}.conf" state=absent
+    when: ironic_init_system != "upstart"
+    notify: stop api
+
+  - name: Debian - Delete init.d configuration
+    file: path="/etc/init.d/{{ ironic_api_service_name }}" state=absent
+    when: ironic_init_system != "initd"
+    notify: stop api
+
+  - name: Debian - Delete systemd configuration
+    file: path="/lib/systemd/system/{{ ironic_api_service_name }}.service" state=absent
+    when: ironic_init_system != "systemd"
+    notify: stop api
+
+  when: ansible_os_family == 'Debian'
+  ignore_errors: yes
+  tags: ["debian", "ubuntu", "init"]
+
 
 # Flush all notify stop handlers, to be sure that they are done!
 # The reason is because of upstart service

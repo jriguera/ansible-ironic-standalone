@@ -37,8 +37,8 @@
     mode: 0755
     state: directory
   when: >
-    ironic_oslo_concurrency_lock_path is defined and 
-    not ironic_oslo_concurrency_lock_path is none 
+    ironic_oslo_concurrency_lock_path is defined
+    and ironic_oslo_concurrency_lock_path is not none 
 
 - name: Copy oslo policy file if defined
   copy:
@@ -48,8 +48,8 @@
     group: "{{ ironic_group }}"
     mode: 0644
   when: >
-    ironic_oslo_policy_file and
-    not ironic_oslo_policy_file is none
+    ironic_oslo_policy_file
+    and ironic_oslo_policy_file is not none
   register: __ironic_policy_file
 
 - name: Defining mysql connection
