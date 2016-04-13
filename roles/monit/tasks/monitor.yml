@@ -1,9 +1,7 @@
 ---
 - name: Delete monitors
-  file:
-    state: absent
-    path: "{{ monit_config_dir }}/{{ item.name }}" 
-  with_items: monit_monitoring_list
+  file: path="{{ monit_config_dir }}/{{ item.name }}" state=absent
+  with_items: "{{ monit_monitoring_list }}"
   when: >
     monit_monitoring_list is defined and
     not monit_monitoring_list is none and
@@ -17,7 +15,7 @@
     owner: "{{ monit_user }}"
     group: "{{ monit_group }}"
     mode: 0644
-  with_items: monit_monitoring_list
+  with_items: "{{ monit_monitoring_list }}"
   when: >
     monit_monitoring_list is defined and
     not monit_monitoring_list is none and

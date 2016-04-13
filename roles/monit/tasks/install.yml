@@ -1,44 +1,42 @@
 ---
-- name: Debian - Import repository key
-  apt_key: url="{{ monit_os_repo_key }}" state=present
-  when: >
-    ansible_os_family == 'Debian' and 
-    not monit_os_packages and
-    not monit_os_repo_key is none and
-    monit_os_repo_key | search("http://.*")
-  ignore_errors: yes
-  tags: ["debian"]
+# Debian repository
+- block:
+  - name: Debian - Import repository key
+    apt_key: url="{{ monit_os_repo_key }}" state=present
+    when: >
+      not monit_os_repo_key is none and
+      monit_os_repo_key | search("http://.*")
+    ignore_errors: yes
 
-- name: Debian - Add repository package
-  apt: name="{{ monit_os_repo_key }}" state=latest
-  when: >
-    ansible_os_family == 'Debian' and 
-    not monit_os_packages and
-    not monit_os_repo_key is none and
-    not monit_os_repo_key | search("http://.*")
-  tags: ["debian"]
+  - name: Debian - Add repository package
+    apt: name="{{ monit_os_repo_key }}" state=latest
+    when: >
+      not monit_os_repo_key is none and
+      not monit_os_repo_key | search("http://.*")
 
-- name: Debian - Add repository url
-  apt_repository: repo="{{ monit_os_repo_url }}" state=present
+  - name: Debian - Add repository url
+    apt_repository: repo="{{ monit_os_repo_url }}" state=present
+
   when: >
-    ansible_os_family == 'Debian' 
+    ansible_os_family == 'Debian'
     and not monit_os_packages
-  tags: ["debian"]
+  tags: ["debian", "repository"]
 
-- name: RedHat - Add repository
-  yum: name="{{ monit_os_repo_url }}" state=present
-  when: >
-    ansible_os_family == 'RedHat' and 
-    not monit_os_packages
-  tags: ["redhat"]
 
-- name: RedHat - Import repository key
-  rpm_key: key="{{ monit_os_repo_key }}" state=present
+# RedHat repository
+- block:
+  - name: RedHat - Add repository
+    yum: name="{{ monit_os_repo_url }}" state=present
+
+  - name: RedHat - Import repository key
+    rpm_key: key="{{ monit_os_repo_key }}" state=present
+    when: monit_os_repo_key is not none
+
   when: >
-    ansible_os_family == 'RedHat' and 
-    not monit_os_packages and 
-    not monit_os_repo_key is none
-  tags: ["redhat"]
+      ansible_os_family == 'RedHat'
+      and not monit_os_packages
+  tags: ["redhat", "repository"]
+
 
 - name: Check if configuration exists
   stat: path="{{ monit_config_file }}"
@@ -51,48 +49,51 @@
   yum:
     name: "{{ item.key }}{{ '-' + item.version | default('*') }}"
     state: "{{ item.state | default('present') }}"
-  with_dict: monit_packages
+  with_dict: "{{ monit_packages }}"
   when: ansible_os_family == 'RedHat'
   register: __monit_installed
-  tags: ["redhat"]
+  tags: ["redhat", "packages"]
 
 - name: Debian - Install the required packages
   apt: 
     name: "{{ item.key }}{{ '=' + item.version | default('*') }}"
     state: "{{ item.state | default('present') }}"
     install_recommends: "{{ monit_packages_install_recommends }}"
-  with_dict: monit_packages
+  with_dict: "{{ monit_packages }}"
   when: ansible_os_family == 'Debian'
   register: __monit_installed
-  tags: ["debian"]
+  tags: ["debian", "packages"]
 
 - name: Check if packages were installed
   set_fact: _monit_reinstalled="{{ __monit_installed.changed }}"
 
 - name: Ensure monit is stopped after initial install
-  service: name={{ monit_daemon }} state=stopped enabled=no
+  service: name="{{ monit_daemon }}" state=stopped enabled=no
   ignore_errors: yes
   when: _monit_reinstalled
 
-- name: Debian - Delete upstart configuration
-  file:
-    path: "/etc/init/{{ monit_daemon }}.conf"
-    state: absent
-  when: >
-    ansible_os_family == 'Debian' and
-    monit_init_system != "upstart"
-  notify: stop monit
-  tags: ["debian", "ubuntu"]
 
-- name: Debian - Delete init.d configuration
-  file:
-    path: "/etc/init.d/{{ monit_daemon }}"
-    state: absent
-  when: >
-    ansible_os_family == 'Debian' and
-    monit_init_system != "initd"
-  notify: stop monit
-  tags: ["debian", "ubuntu"]
+# Delete the rest of init system scripts
+- block:
+  - name: Debian - Delete upstart configuration
+    file: path="/etc/init/{{ monit_daemon }}.conf" state=absent
+    when: monit_init_system != "upstart"
+    notify: stop monit
+
+  - name: Debian - Delete init.d configuration
+    file: path="/etc/init.d/{{ monit_daemon }}" state=absent
+    when: monit_init_system != "initd"
+    notify: stop monit
+
+  - name: Debian - Delete systemd configuration
+    file: path="/lib/systemd/system/{{ monit_daemon }}.service" state=absent
+    when: monit_init_system != "systemd"
+    notify: stop monit
+
+  when: ansible_os_family == 'Debian'
+  ignore_errors: yes
+  tags: ["debian", "ubuntu", "init"]
+
 
 # Flush all notify stop handlers, to be sure that they are done!
 # The reason is because of upstart service
