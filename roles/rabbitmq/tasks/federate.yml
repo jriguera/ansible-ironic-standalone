@@ -5,7 +5,7 @@
 
 - name: Restart RabbitMQ to be able to setup federation
   service: name="{{ rabbitmq_daemon }}" state=restarted
-  when: __rabbitmq_federation_plugin.changed
+  when: __rabbitmq_federation_plugin|changed
 
 - name: Set the federation-upstream parameter
   rabbitmq_parameter:

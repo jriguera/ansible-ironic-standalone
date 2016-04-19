@@ -1,10 +1,6 @@
 ---
 rabbitmq_os_repo_url: "deb http://ubuntu-cloud.archive.canonical.com/ubuntu {{ ansible_distribution_release }}-updates/{{ rabbitmq_repo_release }} main"
 rabbitmq_os_repo_key: "ubuntu-cloud-keyring"
-rabbitmq_packages_install_recommends: true
-rabbitmq_init_system: "initd"
-
-rabbitmq_pidfile: /var/run/rabbitmq/pid
 
 rabbitmq_packages:
   rabbitmq-server:
