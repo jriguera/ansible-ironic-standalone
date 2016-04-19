@@ -1,6 +1,6 @@
 ---
 - hosts: all
-  sudo: true
+  become: yes
   vars:
     baremetal_server_database_rootpass: root
     baremetal_server_database_name: ironic
@@ -13,6 +13,7 @@
     baremetal_server_dhcp_domain: pxe.local
     baremetal_server_http_root_path: /var/lib/ironic/http
     baremetal_server_images_path: /var/lib/ironic/http/images
+    baremetal_server_metadata_path: /var/lib/ironic/http/metadata
     baremetal_server_images_deploy_path: /var/lib/ironic/http/deploy
 
   roles:
@@ -37,9 +38,9 @@
 
     - role: ironic
       ironic_debug: true
-      ironic_my_ip: "{{ ansible_eth0.ipv4.address }}"
-      ironic_conductor_api_url: "http://{{ ansible_eth0.ipv4.address }}:6385/"
-      ironic_pxe_tftp_server: "{{ ansible_eth1.ipv4.address }}"
+      ironic_my_ip: "{{ ansible_default_ipv4.address }}"
+      ironic_conductor_api_url: "http://{{ ansible_default_ipv4.address }}:6385/"
+      ironic_pxe_tftp_server: "{{ ansible_default_ipv4.address }}"
       ironic_oslo_messaging_rabbit_host: "localhost"
       ironic_oslo_messaging_rabbit_userid: "{{ baremetal_server_msg_user }}"
       ironic_oslo_messaging_rabbit_password: "{{ baremetal_server_msg_pass }}"
@@ -50,10 +51,14 @@
       ironic_database_mysql_db: "{{ baremetal_server_database_name }}"
       ironic_pxe_images_path: "{{ baremetal_server_images_path }}"
       ironic_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
-      ironic_deploy_http_url: "http://{{ ansible_eth1.ipv4.address }}/deploy"
+      ironic_deploy_http_url: "http://{{ ansible_default_ipv4.address }}/deploy"
       ironic_deploy_http_root: "{{ baremetal_server_images_deploy_path }}"
       ironic_deploy_erase_devices_priority: 0
       ironic_enabled_drivers: ["pxe_ipmitool", "agent_ipmitool"]
+      ironic_cors_domains:
+        ironic_webclient:
+          allowed_origin: "http://localhost:8080"
+          allow_credentials: True
 
     - role: dnsmasq
       dnsmasq_conf_domain: "{{ baremetal_server_dhcp_domain }}"
@@ -64,7 +69,7 @@
           generate_names: true
           option:
             - "option:router,{{ ansible_default_ipv4.gateway }}"
-            - "option:dns-server,{{ ansible_eth0.ipv4.address }}"
+            - "option:dns-server,{{ ansible_default_ipv4.address }}"
           boot: [ "{{ ironic_pxe_bootfile_name }}" ]
           tftp: "{{ ironic_pxe_tftp_root }}"
 
@@ -72,78 +77,59 @@
       nginx_server_list:
         - name: "{{ ansible_hostname }}"
           root: "{{ baremetal_server_http_root_path }}"
+          client_body_temp_path: "{{ baremetal_server_http_root_path }}/tmp"
           access_log: "/var/log/nginx/{{ ansible_hostname }}-server_access.log"
           location_list:
             - name: "/"
               autoindex: "on"
+            - name: "/images/"
+              autoindex: "on"
+              client_body_buffer_size: "16k" 
+              client_max_body_size: "50G"
+              create_full_put_path: "on"
+              dav_access: "user:rw group:rw all:r"
+              dav_methods: "PUT DELETE MKCOL COPY MOVE"
+              default_type: "application/octet-stream"
+            - name: "/metadata/"
+              autoindex: "on"
+              client_body_buffer_size: "16k" 
+              client_max_body_size: "100M"
+              create_full_put_path: "on"
+              dav_access: "user:rw group:rw all:r"
+              dav_methods: "PUT DELETE MKCOL COPY MOVE"
+              default_type: "application/octet-stream"
+            - name: "/deploy/"
+              autoindex: "on"
+              client_body_buffer_size: "16k" 
+              client_max_body_size: "100M"
+              create_full_put_path: "on"
+              dav_access: "user:rw group:rw all:r"
+              dav_methods: "PUT DELETE MKCOL COPY MOVE"
+              default_type: "application/octet-stream"
+
+    - role: webclient
+      webclient_webdir_owner: "{{ nginx_user }}"
+      webclient_webdir_group: "{{ ironic_group }}"
 
     - role: monit
       monit_monitoring_list:
         - name: mysql
-          type: process
           target: "{{ mysql_pidfile }}"
-          start:
-            script: "/etc/init.d/mysql start"
-            timeout: 60
-          stop: 
-            script: "/etc/init.d/mysql stop"
+          script: "/usr/sbin/service mysql %"
         - name: rabbitmq
-          type: process
           target: "{{ rabbitmq_pidfile }}"
-          start: 
-            script: "/etc/init.d/rabbitmq-server start"
-          stop:
-            script: "/etc/init.d/rabbitmq-server stop"
-        - name: dnsmasq
-          type: process
-          target: "{{ dnsmasq_pidfile }}"
-          start:
-            script: "/etc/init.d/dnsmasq start"
-          stop:
-            script: "/etc/init.d/dnsmasq stop"
+          script: "/usr/sbin/service rabbitmq-server %"
         - name: ironic-api
-          type: process
           target: "{{ ironic_api_pidfile }}"
-          start:
-            script: "/usr/sbin/service ironic-api start"
-          stop:
-            script: "/usr/sbin/service ironic-api stop"
+          script: "/usr/sbin/service ironic-api %"
         - name: ironic-conductor
-          type: process
           target: "{{ ironic_conductor_pidfile }}"
-          start: 
-            script: "/usr/sbin/service ironic-conductor start"
-          stop: 
-            script: "/usr/sbin/service ironic-conductor stop"
+          script: "/usr/sbin/service ironic-conductor %"
         - name: nginx
-          type: process
           target: "{{ nginx_pidfile }}"
-          start:
-            script: "/etc/init.d/nginx start"
-          stop:
-            script: "/etc/init.d/nginx stop"
+          script: "/usr/sbin/service nginx %"
 
-  tasks:
-
-    - name: Create configdrive metadata folder
-      file:
-        path: "{{ baremetal_server_http_root_path }}/metadata"
-        mode: 0755
-        recurse: yes
-        state: directory
-
-    - name: Download IPA Coreos ramdisk
-      get_url:
-        url: http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem.cpio.gz
-        dest: "{{ baremetal_server_images_deploy_path }}/coreos_production_pxe_image-oem.cpio.gz"
-        force: no
-
-    - name: Download IPA Coreos kernel
-      get_url:
-        url: http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe.vmlinuz
-        dest: "{{ baremetal_server_images_deploy_path }}/coreos_production_pxe.vmlinuz"
-        force: no
-  
+#  tasks:
+#
 #   - name: Display all variables/facts known for a host
 #     debug: var=hostvars[inventory_hostname]
-
