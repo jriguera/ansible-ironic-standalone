@@ -1,5 +1,6 @@
 ---
 # Specific variables for this server
+# Could be defined in the inventory!
 
 baremetal_ipmi_ip: 10.0.0.1
 baremetal_ipmi_user: IPMIUSER
