@@ -66,6 +66,7 @@ relay_log = relay-bin
 wait_timeout = {{ mysql_wait_timeout }}
 default_storage_engine = innodb
 init_connect = "{{ mysql_init_connect }}"
+#explicit_defaults_for_timestamp = 1
 
 {% if mysql_performance_schema is defined and mysql_performance_schema %}
 # Enable performance schema
@@ -86,11 +87,11 @@ query_cache_size = {{ mysql_query_cache_size }}
 # InnoDB settings
 innodb_file_per_table = {{ mysql_innodb_file_per_table }}
 innodb_buffer_pool_size = {{ mysql_innodb_buffer_pool_size }}
-innodb_additional_mem_pool_size = {{ mysql_innodb_additional_mem_pool_size }}
 innodb_log_file_size = {{ mysql_innodb_log_file_size }}
 innodb_log_buffer_size = {{ mysql_innodb_log_buffer_size }}
 innodb_flush_log_at_trx_commit = {{ mysql_innodb_flush_log_at_trx_commit }}
 innodb_lock_wait_timeout = {{ mysql_innodb_lock_wait_timeout }}
+
 
 [mysqldump]
 quick

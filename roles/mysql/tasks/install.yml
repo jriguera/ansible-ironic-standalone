@@ -47,25 +47,25 @@
 
 - name: RedHat - Install required packages
   yum:
-    name: "{{ item.key }}{{ '-' + item.version | default('*') }}"
-    state: "{{ item.state | default('present') }}"
+    name: "{{ item.key if ('version' not in item.value) else ('%s-%s' % (item.key, item.value['version'])) }}"
+    state: "{{ item.value.state | default('present') }}"
   with_dict: "{{ mysql_packages_dict }}"
   when: ansible_os_family == 'RedHat'
-  register: __mysql_installed
+  register: __mysql_installed_rh
   tags: ["redhat", "packages"]
 
 - name: Debian - Install required packages
   apt: 
-    name: "{{ item.key }}{{ '=' + item.version | default('*') }}"
-    state: "{{ item.state | default('present') }}"
+    name: "{{ item.key if ('version' not in item.value) else ('%s=%s' % (item.key, item.value['version'])) }}"
+    state: "{{ item.value.state | default('present') }}"
     install_recommends: "{{ mysql_packages_install_recommends }}"
   with_dict: "{{ mysql_packages_dict }}"
   when: ansible_os_family == 'Debian'
-  register: __mysql_installed
+  register: __mysql_installed_debian
   tags: ["debian", "packages"]
 
 - name: Check if packages were installed
-  set_fact: _mysql_reinstalled="{{ __mysql_installed.changed }}"
+  set_fact: _mysql_reinstalled="{{ __mysql_installed_rh.changed or __mysql_installed_debian.changed }}"
 
 # Because Debian/Ubuntu starts MySQL as part of the install process, 
 # we need to stop mysql and remove the logfiles in case the user set a 
@@ -75,30 +75,20 @@
   ignore_errors: yes
   when: _mysql_reinstalled
 
+- name: Get init system type
+  command: cat /proc/1/comm
+  register: __mysql_init_system
+  changed_when: False
 
-# Delete the rest of init system scripts
-- block:
-  - name: Debian - Delete upstart configuration
-    file: path="/etc/init/{{ mysql_daemon }}.conf" state=absent
-    when: mysql_init_system != "upstart"
-    notify: stop mysql
+- name: Set init system type
+  set_fact: mysql_init_system="{{ __mysql_init_system.stdout }}"
 
-  - name: Debian - Delete init.d configuration
-    file: path="/etc/init.d/{{ mysql_daemon }}" state=absent
-    when: mysql_init_system != "initd"
-    notify: stop mysql
+# Always ...
+- name: Delete upstart configuration
+  file: path="/etc/init/{{ mysql_daemon }}.conf" state=absent  
+  tags: ["systemd", "init"]
 
-  - name: Debian - Delete systemd configuration
-    file: path="/lib/systemd/system/{{ mysql_daemon }}.service" state=absent
-    when: mysql_init_system != "systemd"
-    notify: stop mysql
-
-  when: ansible_os_family == 'Debian'
-  ignore_errors: yes
-  tags: ["debian", "ubuntu", "init"]
-
-
-# Flush all notify stop handlers, to be sure that they are done!
-# The reason is because of upstart service
-- meta: flush_handlers
+- name: Delete init.d scripts
+  file: path="/etc/init.d/{{ mysql_daemon }}" state=absent
+  when: mysql_init_system == "systemd"
 

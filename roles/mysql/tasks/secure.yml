@@ -27,11 +27,9 @@
   changed_when: false
 
 - name: Remove anonymous MySQL users
-  mysql_user:
-     name: ""
-     host: "{{ item }}"
-     state: absent
+  mysql_user: name=""  host="{{ item }}" state=absent
   with_items: "{{ mysql_anonymous_hosts.stdout_lines }}"
+  when: mysql_anonymous_hosts.stdout_lines
 
 - name: Remove MySQL test database
   mysql_db: name="test" state=absent

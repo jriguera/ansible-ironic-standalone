@@ -1,14 +1,18 @@
 ---
+# It is not include officially in the repos
+mysql_os_packages: False
+mysql_version: "5.6"
+
+mysql_os_repo_url: "http://repo.mysql.com/mysql-community-release-el{{ ansible_distribution_major_version }}.rpm"
+
 mysql_daemon: mysqld
 mysql_config_file: /etc/my.cnf
 mysql_socket: /var/lib/mysql/mysql.sock
 mysql_pidfile: /var/run/mysqld/mysqld.pid
 
 mysql_packages_dict:
-  mysql:
-    state: latest
-  mysql-server:
-    state: latest
+  mysql-community-server:
+    version: "{{ mysql_version }}*"
   MySQL-python:
     state: latest
 

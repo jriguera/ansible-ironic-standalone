@@ -1,6 +1,11 @@
 ---
 mysql_enabled_on_startup: true
 
+# Install from upstream repos or directly from operating system packages
+# except for RH/Centos -overwritten in vars files- because it has been changed
+# by MariaDB
+mysql_os_packages: True
+
 # Other settings
 mysql_nice: 0
 mysql_performance_schema: true
@@ -37,7 +42,6 @@ mysql_query_cache_size: "16M"
 # Set .._buffer_pool_size up to 80% of RAM but beware of setting too high.
 mysql_innodb_file_per_table: "1"
 mysql_innodb_buffer_pool_size: "256M"
-mysql_innodb_additional_mem_pool_size: "20M"
 # Set .._log_file_size to 25% of buffer pool size.
 mysql_innodb_log_file_size: "64M"
 mysql_innodb_log_buffer_size: "8M"
@@ -53,7 +57,7 @@ mysql_innodb_lock_wait_timeout: 50
 #  - { name: example, host: 127.0.0.1, password: secret, priv: *.*:USAGE }
 
 # Replication settings (replication is only enabled if master/user have values)
-mysql_server_id: "{{ ansible_eth0.ipv4.address | replace('.', ', ') | list | last  }}"
+mysql_server_id: "{{ ansible_default_ipv4.address | replace('.', ', ') | list | last  }}"
 mysql_max_binlog_size: "100M"
 mysql_expire_logs_days: "10"
 mysql_replication_role: "none"
