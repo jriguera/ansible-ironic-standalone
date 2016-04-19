@@ -6,7 +6,7 @@
 
 - name: Poweroff and delete servers using Ironic
   hosts: conductor
-  sudo: true
+  become: True
   gather_facts: False
   vars_files:
     - vars/baremetal.yml
@@ -60,5 +60,6 @@
       delegate_to: "{{ baremetal_client }}"
 
     - name: Delete config-drive
-      shell: rm -rf "{{ baremetal_server_configdrive_path }}/{{ __baremetal_new.stdout.split() | first | trim }}"*
-
+      file:
+        path: "{{ baremetal_server_configdrive_path }}/{{ __baremetal_new.stdout.split() | first | trim }}"
+        state: absent
