@@ -1,22 +1,25 @@
 ---
 galaxy_info:
-  author: jriguera
-  description: Ansible role for configuring Monit
-  min_ansible_version: 1.9
-  license: Gplv3
+  author: Jose Riguera Lopez (jriguera@gmail.com)
+  description: Install and setup Monit on RedHat/Debian based distributions
+  license: Apache 2.0
+  min_ansible_version: 2.0
+
   platforms:
-  - name: Debian
-    versions:
-    - all
-  - name: Ubuntu
-    versions:
-    - all
   - name: EL
     versions:
-    - all
+    - 6
+    - 7
+  - name: Ubuntu
+    versions:
+    - trusty
+  - name: Debian
+    versions:
+    - jessie
 
   categories:
     - monitoring
     - system
 
 dependencies: []
+

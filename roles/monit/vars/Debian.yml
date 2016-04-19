@@ -1,8 +1,6 @@
 ---
 monit_config_file: /etc/monit/monitrc
 monit_config_dir: /etc/monit/conf.d
-monit_packages_install_recommends: true
-monit_init_system: "initd"
 
 monit_packages:
   monit:

@@ -1,32 +1,48 @@
 # {{ ansible_managed }}
 
-{% if item.type == 'process' %}
+{% if item.script is defined and item.script is not none %}
+{% set item_type = 'process' %}
+{% else %}
+{% set item_type = item.type | default('process') %}
+{% endif %}
+
+{% if item_type == 'process' %}
 check process {{ item.name }} with pidfile {{ item.target }}
-{% if item.start is defined and not item.start is none %}
-  start program = "{{ item.start.script }}"
-{% if item.start.uid is defined %}
-    as uid "{{ item.start.uid }}"
+{% set item_start = item.start | default({}) %}
+{% set item_stop = item.stop | default({}) %}
+{% if item.script is defined and item.script is not none %}
+{% if not item_start %}
+{% set item_start = {'script': item.script | replace('%', 'start') } %}
 {% endif %}
-{% if item.start.gid is defined %}
-    as gid "{{ item.start.gid }}"
-{% endif %}
-{% if item.start.timeout is defined %}
-    with timeout {{ item.start.timeout }} seconds
+{% if not item_stop %}
+{% set item_stop = {'script': item.script | replace('%', 'stop') } %}
 {% endif %}
 {% endif %}
-{% if item.stop is defined and not item.stop is none %}
-  stop program = "{{ item.stop.script }}"
-{% if item.stop.uid is defined %}
-    as uid "{{ item.stop.uid }}"
+{% if item_start %}
+  start program = "{{ item_start.script }}"
+{% if item_start.uid is defined %}
+    as uid "{{ item_start.uid }}"
 {% endif %}
-{% if item.stop.gid is defined %}
-    as gid "{{ item.stop.gid }}"
+{% if item_start.gid is defined %}
+    as gid "{{ item_start.gid }}"
 {% endif %}
-{% if item.stop.timeout is defined %}
-    with timeout {{ item.stop.timeout }} seconds
+{% if item_start.timeout is defined %}
+    with timeout {{ item_start.timeout }} seconds
 {% endif %}
 {% endif %}
-{% if item.restart is defined and not item.restart is none %}
+{% if item_stop %}
+  stop program = "{{ item_stop.script }}"
+{% if item_stop.uid is defined %}
+    as uid "{{ item_stop.uid }}"
+{% endif %}
+{% if item_stop.gid is defined %}
+    as gid "{{ item_stop.gid }}"
+{% endif %}
+{% if item_stop.timeout is defined %}
+    with timeout {{ item_stop.timeout }} seconds
+{% endif %}
+{% endif %}
+{% if item.restart is defined and item.restart is not none %}
   restart program = "{{ item.restart.script }}"
 {% if item.restart.uid is defined %}
     as uid "{{ item.restart.uid }}"
@@ -38,9 +54,9 @@ check process {{ item.name }} with pidfile {{ item.target }}
     with timeout {{ item.restart.timeout }} seconds
 {% endif %}
 {% endif %}
-{% elif item.type == 'system' %}
+{% elif item_type == 'system' %}
 check system {{ monit_monitor.name }}
-{% elif item.type == 'host' %}
+{% elif item_type == 'host' %}
 check host {{ item.name }} with address {{ item.target }}
 {% elif monit_monitor.type == 'filesystem' %}
 check filesystem {{ item.name }} with path {{ item.target }}
@@ -50,4 +66,3 @@ check filesystem {{ item.name }} with path {{ item.target }}
   {{ rule }}
 {% endfor %}
 {% endif %}
-
