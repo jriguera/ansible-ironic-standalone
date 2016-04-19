@@ -1,0 +1,10 @@
+---
+- name: Define folder permissions for web
+  file:
+    path: "{{ item.path }}"
+    owner: "{{ webclient_webdir_owner }}"
+    group: "{{ webclient_webdir_group }}"
+    mode: 0775
+    state: "{{ item.state | default('directory') }}"
+  with_items: "{{ webclient_webdir_list }}"
+  when: webclient_webdir_list is defined

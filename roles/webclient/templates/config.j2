@@ -1,0 +1,15 @@
+[
+{% for key in webclient_config_list %}
+    {
+        "name": "{{ key['name'] }}",
+        "ironic": {
+            "apiRoot": "{{ key['ironic_api'] }}"
+        }{% if key['glance_api'] is defined %},
+        "glance": {
+            "apiRoot": "{{ key['glance_api'] }}"
+        }{% endif %}
+
+    }{% if not loop.last %},{% endif %}
+
+{% endfor %}
+]

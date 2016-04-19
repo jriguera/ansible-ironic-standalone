@@ -1,0 +1,10 @@
+---
+- include: install.yml
+  tags: ["webclient", "install"]
+
+- include: configure.yml
+  tags: ["webclient", "configure"]
+
+- include: folders.yml
+  tags: ["webclient", "folders"]
+
