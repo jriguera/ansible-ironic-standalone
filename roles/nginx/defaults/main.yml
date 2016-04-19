@@ -1,6 +1,9 @@
 ---
 nginx_enabled_on_startup: true
 
+# Install from upstream repos or directly from operating system packages
+nginx_os_packages: true
+
 # Main options
 nginx_error_log: "/var/log/nginx/error.log"
 nginx_error_log_level: "error"
