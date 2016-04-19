@@ -2,9 +2,8 @@
 galaxy_info:
   author: Jose Riguera
   description: Creates a configdrive for OpenStack
-  company: Springer SBM
-  license: Apache
-  min_ansible_version: 1.9
+  license: Apache 2.0
+  min_ansible_version: 2.0
 
   platforms:
   - name: EL
@@ -13,15 +12,16 @@ galaxy_info:
     - 7
   - name: Fedora
     versions:
-    - 18
-    - 19
     - 20
+    - 21
+    - 22
+    - 23
   - name: Ubuntu
     versions:
     - trusty
   - name: Debian
     versions:
-    - wheezy
+    - jessie
 
   categories:
   - cloud

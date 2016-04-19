@@ -1,4 +1,9 @@
 ---
+# Check if genisoimage and other packages which are needed to create
+# configdrive are installed. The check can be disabled to speed up (a bit)
+# the role (assuming the packages are already installed)
+configdrive_check_required_packages: True
+
 # You should overwrite those role variables!
 # It will generate the network configuration based
 # on the family!
