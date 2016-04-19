@@ -1,0 +1,14 @@
+#!/bin/sh
+# {{ ansible_managed }}
+
+echo " * System managed with monit!"
+{% if monit_monitoring_list %}
+echo "   Use 'monit stop/stat/status' to manage:"
+echo
+{% for proc in monit_monitoring_list %}
+{% if not (proc.delete is defined and proc.delete) %}
+echo "   * {{ proc.name }}"
+{% endif %}
+{% endfor %}
+{% endif %}
+echo
