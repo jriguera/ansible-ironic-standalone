@@ -6,7 +6,7 @@
 
 - name: Define and deploy physical servers using Ironic
   hosts: conductor
-  sudo: true
+  become: True
   gather_facts: False
   vars_files:
     - vars/baremetal.yml
@@ -154,6 +154,7 @@
       when: baremetal_configdrive
       delegate_to: "{{ baremetal_client }}"
 
+    # Not needed! ...
     - name: Set PXE boot for the next boot
       command: >
         ironic
