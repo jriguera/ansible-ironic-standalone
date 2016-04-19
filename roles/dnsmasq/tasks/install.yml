@@ -40,55 +40,61 @@
 
 - name: RedHat - Install required packages
   yum:
-    name: "{{ item.key }}{{ '-' + item.version | default('*') }}"
-    state: "{{ item.state | default('present') }}"
+    name: "{{ item.key if ('version' not in item.value) else ('%s-%s' % (item.key, item.value['version'])) }}"
+    state: "{{ item.value.state | default('present') }}"
   with_dict: "{{ dnsmasq_packages }}"
   when: ansible_os_family == 'RedHat'
-  register: __dnsmasq_installed
+  register: __dnsmasq_installed_rh
   tags: ["redhat", "packages"]
 
 - name: Debian - Install required packages
   apt: 
-    name: "{{ item.key }}{{ '=' + item.version | default('*') }}"
-    state: "{{ item.state | default('present') }}"
+    name: "{{ item.key if ('version' not in item.value) else ('%s=%s' % (item.key, item.value['version'])) }}"
+    state: "{{ item.value.state | default('present') }}"
     install_recommends: "{{ dnsmasq_packages_install_recommends }}"
   with_dict: "{{ dnsmasq_packages }}"
   when: ansible_os_family == 'Debian'
-  register: __dnsmasq_installed
+  register: __dnsmasq_installed_debian
   tags: ["debian", "packages"]
 
 - name: Check if packages were installed
-  set_fact: _dnsmasq_reinstalled="{{ __dnsmasq_installed.changed }}"
+  set_fact: _dnsmasq_reinstalled="{{ __dnsmasq_installed_rh.changed or __dnsmasq_installed_debian.changed }}"
 
 - name: Ensure dnsmasq is stopped after initial install
   service: name="{{ dnsmasq_daemon }}" state=stopped enabled=no
   ignore_errors: yes
   when: _dnsmasq_reinstalled
 
+- name: Get init system
+  command: cat /proc/1/comm
+  register: __dnsmasq_init_system
+  changed_when: False
 
-# Delete the rest of init system scripts
+- name: Set init system
+  set_fact: dnsmasq_init_system="{{ __dnsmasq_init_system.stdout }}"
+
 - block:
-  - name: Debian - Delete upstart configuration
+  - name: Create custom systemd folder configuration
+    file:
+      path: "/etc/systemd/system/{{ dnsmasq_daemon }}.service.d"
+      state: directory
+      mode: 0755
+
+  - name: Define custom systemd properties
+    template:
+      src: systemd.conf.j2
+      dest: "/etc/systemd/system/{{ dnsmasq_daemon }}.service.d/service.conf"
+      mode: 0644
+    register: __dnsmasq_systemd
+
+  - name: Delete upstart configuration
     file: path="/etc/init/{{ dnsmasq_daemon }}.conf" state=absent
-    when: dnsmasq_init_system != "upstart"
-    notify: stop dnsmasq
 
-  - name: Debian - Delete init.d configuration
-    file: path="/etc/init.d/{{ dnsmasq_daemon }}" state=absent
-    when: dnsmasq_init_system != "initd"
-    notify: stop dnsmasq
+  - name: Reload systemd
+    command: systemctl daemon-reload
+    when: __dnsmasq_systemd|changed
 
-  - name: Debian - Delete systemd configuration
-    file: path="/lib/systemd/system/{{ dnsmasq_daemon }}.service" state=absent
-    when: dnsmasq_init_system != "systemd"
-    notify: stop dnsmasq
+  when: dnsmasq_init_system == 'systemd'
+  tags: ["systemd", "init"]
 
-  when: ansible_os_family == 'Debian'
-  ignore_errors: yes
-  tags: ["debian", "ubuntu", "init"]
-
-
-# Flush all notify stop handlers, to be sure that they are done!
-# The reason is because of upstart service
-- meta: flush_handlers
 

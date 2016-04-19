@@ -15,6 +15,19 @@
     mode: 0755
     state: directory
 
+- name: Create empty log file
+  file:
+    path: "{{ dnsmasq_conf_log }}"
+    owner: "{{ dnsmasq_user }}"
+    group: "{{ dnsmasq_group }}"
+    mode: 0644
+    state: touch
+  when: >
+    dnsmasq_conf_log is defined and
+    dnsmasq_conf_log is not none and
+    dnsmasq_conf_log != '-'
+  changed_when: False
+
 
 - block:
   - name: Create DHCP dnsmasq configuration
@@ -38,9 +51,9 @@
     register: __dnsmasq_updated_tftp
     when: dnsmasq_tftp
 
-  when: > 
-    dnsmasq_dhcp and
+  when: >
     dnsmasq_conf_dhcp is defined
+    and dnsmasq_dhcp
 
 
 - name: Create global dnsmasq configuration
@@ -78,23 +91,23 @@
   notify: reload dnsmasq
 
 - name: Copy dhcp hosts file if defined
-  copy: 
-    src: "{{ dnsmasq_conf_dhcp_hosts }}" 
-    dest: "{{ dnsmasq_config_dhcphosts | dirname }}/{{ dnsmasq_conf_dhcp_hosts | basename }}" 
+  copy:
+    src: "{{ dnsmasq_conf_dhcp_hosts }}"
+    dest: "{{ dnsmasq_config_dhcphosts | dirname }}/{{ dnsmasq_conf_dhcp_hosts | basename }}"
     owner: "{{ dnsmasq_user }}"
     group: "{{ dnsmasq_group }}"
     mode: 0644
   when: >
-    dnsmasq_conf_dhcp_hosts is defined and 
+    dnsmasq_conf_dhcp_hosts is defined and
     dnsmasq_conf_dhcp_hosts is not iterable
   notify: reload dnsmasq
 
 - name: Copy dhcp script file
-  copy: 
-    src: "{{ dnsmasq_conf_dhcp_script }}" 
-    dest: "{{ dnsmasq_config_dhcpscript }}" 
-    owner: root 
-    group: root 
+  copy:
+    src: "{{ dnsmasq_conf_dhcp_script }}"
+    dest: "{{ dnsmasq_config_dhcpscript }}"
+    owner: root
+    group: root
     mode: 0775
   when: >
     dnsmasq_conf_dhcp_script is defined and
@@ -110,12 +123,12 @@
   when: dnsmasq_conf_hosts is defined
   notify: reload dnsmasq
 
-- name: Checking if configuration was updated
-  set_fact: _dnsmasq_updated="{{ __dnsmasq_updated_global.changed }}" or "{{ __dnsmasq_updated_dhcp.changed }}" or "{{ __dnsmasq_updated_tftp.changed }}"
-
-- name: Set updated flag
-  set_fact: dnsmasq_updated=_dnsmasq_updated.changed
+- name: Check if configuration was updated
+  set_fact: dnsmasq_updated="{{ __dnsmasq_updated_global.changed or __dnsmasq_updated_dhcp.changed or __dnsmasq_updated_tftp.changed }}"
 
 - name: Ensure dnsmasq is started and enabled on boot
-  service: name="{{ dnsmasq_daemon }}" state=started enabled="{{ dnsmasq_enabled_on_startup | ternary('yes', 'no') }}"
+  service:
+    name: "{{ dnsmasq_daemon }}"
+    state: started
+    enabled: "{{ dnsmasq_enabled_on_startup | ternary('yes', 'no') }}"
 
