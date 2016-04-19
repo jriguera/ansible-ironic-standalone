@@ -2,20 +2,29 @@
 ironic_os_repo_url: "http://rdo.fedorapeople.org/openstack-{{ ironic_release }}/rdo-release-{{ ironic_release }}.rpm"
 ironic_os_repo_key:
 
+ironic_conductor_service_name: openstack-ironic-conductor
+ironic_conductor_pidfile: /var/run/ironic/openstack-ironic-conductor.pid
+ironic_conductor_shellinabox_service_name: shellinaboxd
+
+ironic_api_service_name: openstack-ironic-api
+ironic_api_pidfile: /var/run/ironic/openstack-ironic-api.pid
+
+
 ironic_api_packages:
   openstack-selinux:
     state: latest
-  ironic-api:
+  openstack-ironic-api:
     state: latest
 
 ironic_conductor_packages:
   openstack-selinux:
     state: latest
-  ironic-conductor:
+  openstack-ironic-conductor:
     state: latest
 
+# epel-release for shellinabox
 ironic_conductor_packages_aux:
-  syslinux-tftpboot:
+  epel-release:
     state: latest
   ipmitool:
     state: latest
@@ -27,7 +36,7 @@ ironic_conductor_packages_aux:
     state: latest
   iscsi-initiator-utils:
     state: latest
-  util-linux-ng:
+  util-linux:
     state: latest
   genisoimage:
     state: latest
@@ -39,4 +48,3 @@ ironic_conductor_packages_console:
     state: latest
   shellinabox:
     state: latest
-

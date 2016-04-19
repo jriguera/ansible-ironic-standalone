@@ -2,7 +2,6 @@
 ironic_os_repo_url: "deb http://ubuntu-cloud.archive.canonical.com/ubuntu {{ ansible_distribution_release }}-updates/{{ ironic_release }} main"
 ironic_os_repo_key: "ubuntu-cloud-keyring"
 ironic_packages_install_recommends: true
-ironic_init_system: "upstart"
 
 ironic_api_packages:
   ironic-api:
@@ -13,8 +12,6 @@ ironic_conductor_packages:
     state: latest
 
 ironic_conductor_packages_aux:
-  syslinux: 
-    state: latest
   ipmitool:
     state: latest
   qemu-utils:

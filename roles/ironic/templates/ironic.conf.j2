@@ -338,7 +338,7 @@ allowed_origin={{ ironic_cors_allowed_origin }}
 
 # Indicate that the actual request can include user
 # credentials (boolean value)
-allow_credentials={{ ironic_cors_allow_credentials | ternary('true','false') }}
+allow_credentials={{ ironic_cors_allow_credentials | default(True) | ternary('true','false') }}
 
 # Indicate which headers are safe to expose to the API.
 # Defaults to HTTP Simple Headers. (list value)

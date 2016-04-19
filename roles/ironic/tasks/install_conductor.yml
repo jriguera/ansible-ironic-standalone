@@ -1,38 +1,38 @@
 ---
 - name: RedHat - Install Ironic-Conductor required packages
   yum:
-    name: "{{ item.key }}{{ '-' + item.version | default('*') }}"
-    state: "{{ item.state | default('present') }}"
+    name: "{{ item.key if ('version' not in item.value) else ('%s-%s' % (item.key, item.value['version'])) }}"
+    state: "{{ item.value.state | default('present') }}"
   with_dict: "{{ ironic_conductor_packages }}"
   when: ansible_os_family == 'RedHat'
-  register: __ironic_conductor_installed
+  register: __ironic_conductor_installed_rh
   tags: ["redhat", "packages"]
 
 - name: Debian - Install Ironic-Conductor required packages
   apt: 
-    name: "{{ item.key }}{{ '=' + item.version | default('*') }}"
-    state: "{{ item.state | default('present') }}"
+    name: "{{ item.key if ('version' not in item.value) else ('%s=%s' % (item.key, item.value['version'])) }}"
+    state: "{{ item.value.state | default('present') }}"
     install_recommends: "{{ ironic_packages_install_recommends }}"
   with_dict: "{{ ironic_conductor_packages }}"
   when: ansible_os_family == 'Debian'
-  register: __ironic_conductor_installed
+  register: __ironic_conductor_installed_debian
   tags: ["debian", "packages"]
 
 - name: Check if packages were installed
-  set_fact: _ironic_conductor_reinstalled="{{ __ironic_conductor_installed.changed }}"
+  set_fact: _ironic_conductor_reinstalled="{{ __ironic_conductor_installed_rh.changed or __ironic_conductor_installed_debian.changed }}"
 
 - name: RedHat - Install Ironic-Conductor auxiliary packages
   yum:
-    name: "{{ item.key }}{{ '-' + item.version | default('*') }}"
-    state: "{{ item.state | default('present') }}"
+    name: "{{ item.key if ('version' not in item.value) else ('%s-%s' % (item.key, item.value['version'])) }}"
+    state: "{{ item.value.state | default('present') }}"
   with_dict: "{{ ironic_conductor_packages_aux }}"
   when: ansible_os_family == 'RedHat'
   tags: ["redhat", "aux", "packages"]
 
 - name: Debian - Install Ironic-Conductor auxiliary packages
   apt: 
-    name: "{{ item.key }}{{ '=' + item.version | default('*') }}"
-    state: "{{ item.state | default('present') }}"
+    name: "{{ item.key if ('version' not in item.value) else ('%s=%s' % (item.key, item.value['version'])) }}"
+    state: "{{ item.value.state | default('present') }}"
     install_recommends: "{{ ironic_packages_install_recommends }}"
   with_dict: "{{ ironic_conductor_packages_aux }}"
   when: ansible_os_family == 'Debian'
@@ -45,30 +45,42 @@
   ignore_errors: yes
   when: _ironic_conductor_reinstalled
 
+- name: Create pid folder
+  file:
+    path: "{{ ironic_conductor_pidfile | dirname }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    mode: 0755
+    state: directory
 
-# Delete the rest of init system scripts
+
 - block:
-  - name: Debian - Delete Ironic-Conductor upstart configuration
+  - name: Create custom systemd folder configuration
+    file:
+      path: "/etc/systemd/system/{{ ironic_conductor_service_name }}.service.d"
+      state: directory
+      mode: 0755
+
+  - name: Define custom systemd properties
+    template:
+      src: systemd-conductor.conf.j2
+      dest: "/etc/systemd/system/{{ ironic_conductor_service_name }}.service.d/service.conf"
+      mode: 0644
+    register: __ironic_conductor_systemd
+
+  - name: Delete upstart configuration
     file: path="/etc/init/{{ ironic_conductor_service_name }}.conf" state=absent
-    when: ironic_init_system != "upstart"
-    notify: stop conductor
 
-  - name: Debian - Delete init.d configuration
-    file: path="/etc/init.d/{{ ironic_conductor_service_name }}" state=absent
-    when: ironic_init_system != "initd"
-    notify: stop conductor
-
-  - name: Debian - Delete systemd configuration
-    file: path="/lib/systemd/system/{{ ironic_conductor_service_name }}.service" state=absent
-    when: ironic_init_system != "systemd"
-    notify: stop conductor
-
-  when: ansible_os_family == 'Debian'
-  ignore_errors: yes
-  tags: ["debian", "ubuntu", "init"]
+  - name: Reload systemd
+    command: systemctl daemon-reload
+    when: __ironic_conductor_systemd|changed
+  
+  when: ironic_init_system == 'systemd'
+  tags: ["systemd", "init"]
 
 
-# Flush all notify stop handlers, to be sure that they are done!
-# The reason is because of upstart service
-- meta: flush_handlers
+- name: Delete init.d script       
+  file: path="/etc/init.d/{{ ironic_conductor_service_name }}" state=absent
+  when: ironic_init_system == "init"
+  tags: ["upstart", "init"]
 

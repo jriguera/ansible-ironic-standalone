@@ -1,4 +1,6 @@
 ---
+# As deploy images are managed external service (e.g. nginx), 
+# there is no need to setup the ownership
 - name: Create deploy file images folder
   file:
     path: "{{ item }}"
@@ -8,7 +10,9 @@
   with_items:
     - "{{ ironic_pxe_images_path }}"
     - "{{ ironic_pxe_instance_master_path }}"
-  
+
+# As PXE is managed by external service, there is no
+# need to setup the ownership  
 - name: Create PXE root folders
   file:
     path: "{{ item }}"
@@ -22,6 +26,8 @@
     ironic_pxe_tftp_root is defined and 
     not ironic_pxe_tftp_root is none
 
+# As deploy images are managed external service (e.g. nginx), 
+# there is no need to setup the ownership
 - name: Create HTTP root deploy folder
   file:
     path: "{{ ironic_deploy_http_root }}"
@@ -106,74 +112,74 @@
     not ironic_pxe_ipxe_boot_script is none
   register: __ironic_ipxe_template
 
-- name: Generate map-file for DHCP daemon
-  template:
-    src: map-file.j2
-    dest: "{{ ironic_pxe_tftp_root }}/map-file"
-    owner: "{{ ironic_user }}"
-    group: "{{ ironic_group }}"
-    mode: 0664
-  when: >
-    ironic_pxe_tftp_root is defined and
-    not ironic_pxe_tftp_root is none
 
-- name: Copy PXE boot files for TFTP
-  shell: cp "{{ item }}" "{{ ironic_pxe_tftp_root }}" && chown -R "{{ ironic_user }}:{{ ironic_group }}" "{{ ironic_pxe_tftp_root }}/{{ item | basename}}"
+- include: setup_ipa.yml
   when: >
+    ironic_deploy_http_root is defined and
+    not ironic_deploy_http_root is none and
+    ironic_deploy_http_url is defined and
+    not ironic_deploy_http_url is none
+  tags: ["ipa"]
+
+
+# Get pxelinux from syslinux
+- name: Copy syslinux binaries to PXE folder
+  shell: cp -v "{{ item }}" "{{ ironic_pxe_tftp_root }}" && chgrp "{{ ironic_group }}" "{{ ironic_pxe_tftp_root }}/{{ item | basename }}" && chmod 0664  "{{ ironic_pxe_tftp_root }}/{{ item | basename }}"
+  with_items:
+    - bios/core/pxelinux.0
+    - bios/memdisk/memdisk
+    - bios/com32/sysdump/sysdump.c32
+    - bios/com32/sysdump/sysdump.elf
+  when: >
+    _ironic_syslinux_change and
     ironic_pxe_tftp_root is defined and
     not ironic_pxe_tftp_root is none and
     ironic_pxe_bootfile_name == 'pxelinux.0'
-  with_items:
-    - /usr/lib/syslinux/pxelinux.0
-    - /usr/lib/syslinux/chain.c32
-  ignore_errors: yes
-  changed_when: False
+  args:
+    chdir: "{{ ironic_syslinux_basedir }}/syslinux-{{ ironic_pxe_syslinux_version }}"
+  tags: ["pxelinux"]
 
-- name: Check if elilo is needed for UEFI
-  stat: path="{{ ironic_pxe_tftp_root }}/{{ ironic_pxe_uefi_pxe_bootfile_name }}"
+
+# Get elilo for UEFI
+- block:
+  - name: Get elilo tarball from url
+    get_url:
+      checksum: "{{ ironic_pxe_elilo_tarball_checksum }}"
+      url: "{{ ironic_pxe_elilo_tarball_url }}"
+      dest: "{{ ironic_syslinux_basedir }}/elilo-{{ ironic_pxe_elilo_version }}.tgz"
+    register: __ironic_pxe_elilo_tarball
+
+  - name: Create elilo tarball folder
+    file:
+      path: "{{ ironic_syslinux_basedir }}/elilo-{{ ironic_pxe_elilo_version }}"
+      owner: "{{ ironic_user }}"
+      group: "{{ ironic_group }}"
+      mode: 0775
+      state: directory
+    when: __ironic_pxe_elilo_tarball | changed
+
+  - name: Unarchive elilo tarball
+    unarchive:
+      src: "{{ ironic_syslinux_basedir }}/elilo-{{ ironic_pxe_elilo_version }}.tgz"
+      dest: "{{ ironic_syslinux_basedir }}/elilo-{{ ironic_pxe_elilo_version }}"
+      owner: "{{ ironic_user }}"
+      group: "{{ ironic_group }}"
+      copy: no
+    when: __ironic_pxe_elilo_tarball | changed
+
+  - name: Copy elilo binaries to PXE folder
+    shell: cp -v elilo-*.*-x86_64.efi  "{{ ironic_pxe_tftp_root }}/elilo.efi" && chown "{{ ironic_user }}:{{ ironic_group }}" "{{ ironic_pxe_tftp_root }}/elilo.efi"
+    args:
+      chdir: "{{ ironic_syslinux_basedir }}/elilo-{{ ironic_pxe_elilo_version }}"
+    when: __ironic_pxe_elilo_tarball | changed
+
   when: >
     ironic_pxe_tftp_root is defined and
     not ironic_pxe_tftp_root is none and
     ironic_pxe_uefi_pxe_bootfile_name is defined and
     ironic_pxe_uefi_pxe_bootfile_name == "elilo.efi"
-  register: __ironic_uefi_elilo
-  tags: ["elilo"]
+  tags: ["elilo", "uefi"]
 
-- name: Get elilo tarball if UEFI is enabled
-  get_url:
-    url: "{{ ironic_elilo_url }}"
-    dest: "/tmp/elilo.tar.gz"
-  when: >
-    ironic_pxe_tftp_root is defined and
-    not ironic_pxe_tftp_root is none and
-    ironic_pxe_uefi_pxe_bootfile_name is defined and
-    ironic_pxe_uefi_pxe_bootfile_name == "elilo.efi" and
-    not __ironic_uefi_elilo.stat.exists
-  tags: ["elilo"]
-
-- name: Unarchive elilo tarball
-  unarchive:
-    src: "/tmp/elilo.tar.gz"
-    dest: "/tmp/"
-    copy: no
-  when: >
-    ironic_pxe_tftp_root is defined and
-    not ironic_pxe_tftp_root is none and
-    ironic_pxe_uefi_pxe_bootfile_name is defined and
-    ironic_pxe_uefi_pxe_bootfile_name == "elilo.efi" and
-    not __ironic_uefi_elilo.stat.exists
-  tags: ["elilo"]
-
-- name: Install elilo in tftpboot
-  shell: cp /tmp/elilo-*.*-x86_64.efi "{{ ironic_pxe_tftp_root }}/elilo.efi" && chown "{{ ironic_user }}:{{ ironic_group }}" "{{ ironic_pxe_tftp_root }}/elilo.efi"
-  when: >
-    ironic_pxe_tftp_root is defined and
-    not ironic_pxe_tftp_root is none and
-    ironic_pxe_uefi_pxe_bootfile_name is defined and
-    ironic_pxe_uefi_pxe_bootfile_name == "elilo.efi" and
-    not __ironic_uefi_elilo.stat.exists
-  tags: ["elilo"]
-  changed_when: False
 
 - name: Reload Ironic daemons
   service: name="{{ ironic_conductor_service_name }}" state=reloaded

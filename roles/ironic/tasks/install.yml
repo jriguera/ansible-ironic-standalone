@@ -46,3 +46,13 @@
   set_fact: _ironic_previous="{{ __ironic_conf.stat.exists }}"
 
 
+- name: Get init system type
+  command: cat /proc/1/comm
+  register: __ironic_init_system
+  changed_when: False
+
+- name: Set init system type
+  set_fact: ironic_init_system="{{ __ironic_init_system.stdout }}"
+
+# Force restart all the sevices (database, messaging) if they were installed or reinstalled
+- meta: flush_handlers

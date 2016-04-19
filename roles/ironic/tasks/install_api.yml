@@ -1,25 +1,25 @@
 ---
 - name: RedHat - Install Ironic-API required packages
   yum:
-    name: "{{ item.key }}{{ '-' + item.version | default('*') }}"
-    state: "{{ item.state | default('present') }}"
+    name: "{{ item.key if ('version' not in item.value) else ('%s-%s' % (item.key, item.value['version'])) }}"
+    state: "{{ item.value.state | default('present') }}"
   with_dict: "{{ ironic_api_packages }}"
   when: ansible_os_family == 'RedHat'
-  register: __ironic_api_installed
+  register: __ironic_api_installed_rh
   tags: ["redhat", "packages"]
 
 - name: Debian - Install Ironic-API required packages
   apt: 
-    name: "{{ item.key }}{{ '=' + item.version | default('*') }}"
-    state: "{{ item.state | default('present') }}"
+    name: "{{ item.key if ('version' not in item.value) else ('%s=%s' % (item.key, item.value['version'])) }}"
+    state: "{{ item.value.state | default('present') }}"
     install_recommends: "{{ ironic_packages_install_recommends }}"
   with_dict: "{{ ironic_api_packages }}"
   when: ansible_os_family == 'Debian'
-  register: __ironic_api_installed
+  register: __ironic_api_installed_debian
   tags: ["debian", "packages"]
 
 - name: Check if Ironic-API packages were installed
-  set_fact: _ironic_api_reinstalled="{{ __ironic_api_installed.changed }}"
+  set_fact: _ironic_api_reinstalled="{{ __ironic_api_installed_rh.changed or __ironic_api_installed_debian.changed }}" 
 
 # Because Ubuntu starts ironic daemons as part of the install process, 
 # we need to stop it
@@ -28,30 +28,42 @@
   ignore_errors: yes
   when: _ironic_api_reinstalled
 
+- name: Create pid folder
+  file:
+    path: "{{ ironic_api_pidfile | dirname }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    mode: 0755
+    state: directory
 
-# Delete the rest of init system scripts
+
 - block:
-  - name: Debian - Delete Ironic-API upstart configuration
+  - name: Create custom systemd folder configuration
+    file: 
+      path: "/etc/systemd/system/{{ ironic_api_service_name }}.service.d"
+      state: directory
+      mode: 0755
+
+  - name: Define custom systemd properties
+    template:
+      src: systemd-api.conf.j2
+      dest: "/etc/systemd/system/{{ ironic_api_service_name }}.service.d/service.conf"
+      mode: 0644
+    register: __ironic_api_systemd
+
+  - name: Delete upstart configuration
     file: path="/etc/init/{{ ironic_api_service_name }}.conf" state=absent
-    when: ironic_init_system != "upstart"
-    notify: stop api
 
-  - name: Debian - Delete init.d configuration
-    file: path="/etc/init.d/{{ ironic_api_service_name }}" state=absent
-    when: ironic_init_system != "initd"
-    notify: stop api
-
-  - name: Debian - Delete systemd configuration
-    file: path="/lib/systemd/system/{{ ironic_api_service_name }}.service" state=absent
-    when: ironic_init_system != "systemd"
-    notify: stop api
-
-  when: ansible_os_family == 'Debian'
-  ignore_errors: yes
-  tags: ["debian", "ubuntu", "init"]
+  - name: Reload systemd
+    command: systemctl daemon-reload
+    when: __ironic_api_systemd|changed
+  
+  when: ironic_init_system == 'systemd'
+  tags: ["systemd", "init"]
 
 
-# Flush all notify stop handlers, to be sure that they are done!
-# The reason is because of upstart service
-- meta: flush_handlers
+- name: Delete init.d script
+  file: path="/etc/init.d/{{ ironic_api_service_name }}" state=absent
+  when: ironic_init_system == "init"
+  tags: ["upstart", "init"]
 
