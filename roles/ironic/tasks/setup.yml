@@ -1,0 +1,78 @@
+---
+- name: Create additional base folders
+  file:
+    path: "{{ item }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    mode: 0755
+    state: directory
+  with_items:
+    - "{{ ironic_state_path }}"
+    - "{{ ironic_syslinux_basedir }}"
+
+- name: Create temp folder
+  file:
+    path: "{{ ironic_tempdir }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    mode: 0755
+    state: directory
+  when: >
+    ironic_tempdir is defined and
+    ironic_tempdir != '/tmp'
+
+- name: Create the logging folder
+  file:
+    path: "{{ ironic_log | dirname }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    mode: 0750
+    state: directory
+  when: >
+    ironic_log is defined and 
+    ironic_log != 'syslog'
+
+- name: Create lock folder
+  file:
+    path: "{{ ironic_oslo_concurrency_lock_path }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    mode: 0755
+    state: directory
+  when: >
+    ironic_oslo_concurrency_lock_path is defined
+    and ironic_oslo_concurrency_lock_path is not none 
+
+- name: Get syslinux tarball from url
+  get_url:
+    checksum: "{{ ironic_pxe_syslinux_tarball_checksum }}"
+    url: "{{ ironic_pxe_syslinux_tarball_url }}"
+    dest: "{{ ironic_syslinux_basedir }}/syslinux-{{ ironic_pxe_syslinux_version }}.tgz"
+  register: __ironic_syslinux_change
+
+- name: Unarchive syslinux tarball
+  unarchive:
+    src: "{{ ironic_syslinux_basedir }}/syslinux-{{ ironic_pxe_syslinux_version }}.tgz"
+    dest: "{{ ironic_syslinux_basedir }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    copy: no
+  when: __ironic_syslinux_change | changed
+
+- name: Set fact syslinux change
+  set_fact: _ironic_syslinux_change="{{ __ironic_syslinux_change | changed }}"
+
+- name: Define syslinux path
+  set_fact: ironic_isolinux_bin="{{ ironic_syslinux_basedir }}/syslinux-{{ ironic_pxe_syslinux_version }}/bios/core/isolinux.bin"
+  when: ironic_isolinux_bin is not defined
+
+
+# Include tasks for conductor
+- include: setup_console.yml
+  when: ironic_conductor
+  tags: ["conductor", "console"]
+
+- include: setup_pxe.yml
+  when: ironic_conductor
+  tags: ["conductor", "pxe"]
+

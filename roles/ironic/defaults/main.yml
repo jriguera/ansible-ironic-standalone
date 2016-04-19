@@ -27,7 +27,6 @@ ironic_rpc_backend: "rabbit"
 ironic_auth_strategy: "noauth"
 ironic_enabled_drivers: [ "pxe_ipmitool" ]
 ironic_fatal_exception_format_errors: false
-ironic_isolinux_bin: /usr/lib/syslinux/isolinux.bin
 ironic_pybasedir: /usr/lib/python2.7/dist-packages/ironic
 ironic_bindir: /usr/bin
 ironic_force_raw_images: true
@@ -37,12 +36,32 @@ ironic_run_external_periodic_tasks: true
 # If defined, it will copy next two templates
 ironic_isolinux_config_template:
 ironic_grub_config_template:
+# Isolinux is taken from the syslinux tarball is
+# not defined here, otherwise this is the default value
+#ironic_isolinux_bin: /usr/lib/syslinux/isolinux.bin
+
 
 # Ironic-api options:
 ironic_api_host_ip: "0.0.0.0"
 ironic_api_port: 6385
 # If you are behing a proxy, you can define here the proxy URL
 #ironic_api_public_endpoint:
+
+
+# CORS: http://docs.openstack.org/developer/oslo.middleware/cors.html
+#ironic_cors_allowed_origin: "*"
+#ironic_cors_allow_credentials: true
+#ironic_cors_expose_headers: ["Content-Type", "Cache-Control", "Content-Language", "Expires", "Last-Modified", "Pragma"]
+#ironic_cors_max_age: 3600
+#ironic_cors_allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+#ironic_cors_allow_headers: ["Content-Type", "Cache-Control", "Content-Language", "Expires", "Last-Modified", "Pragma"]
+
+# CORS subdomains
+#ironic_cors_domains:
+#  localhost_webclient:
+#     allowed_origin: "http://localhost:8080"
+#     allow_credentials: True
+
 
 # Ironic-conductor options:
 ironic_conductor_api_url: "http://127.0.0.1:6385/"
@@ -152,21 +171,17 @@ ironic_pxe_uefi_pxe_bootfile_name: "elilo.efi"
 #ironic_pxe_config_template:
 #ironic_pxe_uefi_pxe_config_template:
 
+# Ironic Python Agent to be deployed on ironic_deploy_http_root
+ironic_pxe_ipa_download: True
+ironic_pxe_ipa_img_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem-stable-{{ ironic_release }}.cpio.gz"
+ironic_pxe_ipa_img_checksum: "sha1:91408b50932f1f4203a0bf95ee91db03628d7e3e"
+ironic_pxe_ipa_img_name: "coreos_production_pxe_image-oem.cpio.gz"
+ironic_pxe_ipa_kernel_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe-stable-{{ ironic_release }}.vmlinuz"
+ironic_pxe_ipa_kernel_checksum: "sha1:7c1f31fba3747197fc8356f03aa4ad7372ba643e"
+ironic_pxe_ipa_kernel_name: "coreos_production_pxe.vmlinuz"
+
 # Enabling iPXE
 ironic_ipxe: false
 # If defined, it will copy the file
 #ironic_pxe_ipxe_boot_script:
 
-# CORS
-#ironic_cors_allowed_origin: "*"
-ironic_cors_allow_credentials: true
-#ironic_cors_expose_headers: ["Content-Type", "Cache-Control", "Content-Language", "Expires", "Last-Modified", "Pragma"]
-ironic_cors_max_age: 3600
-#ironic_cors_allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-#ironic_cors_allow_headers: ["Content-Type", "Cache-Control", "Content-Language", "Expires", "Last-Modified", "Pragma"]
-
-# CORS subdomains
-#ironic_cors_domains:
-#  ironic_webclient:
-#     allowed_origin: "*"
-#     allow_credentials: True
