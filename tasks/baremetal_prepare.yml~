@@ -63,3 +63,10 @@
     (not baremetal_console_port is defined or baremetal_console_port|trim == '')
 
 
+- name: Check MD5 image checksum defined
+  fail: msg="MD5 image checksum not defined. Check if the image exists on the repository"
+  when: >
+    baremetal_image_checksum is not defined
+    or baremetal_image_checksum is none
+
+
