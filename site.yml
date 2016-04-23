@@ -72,9 +72,12 @@
           allow_credentials: True
 
     - role: inspector
-      ironic_inspector_enabled: true
-      ironic_inspector_ipa_images_path: "{{ baremetal_server_images_deploy_path }}"
-      ironic_inspector_ironic_url: "http://{{ ansible_default_ipv4.address }}:6385/"
+      ironic_inspector_enabled: True
+      ironic_inspector_ipa_download: False
+      ironic_inspector_ipa_tftproot: "{{ ironic_pxe_tftp_root }}"
+      ironic_inspector_ipa_images_path: "{{ ironic_pxe_images_path }}"
+      ironic_inspector_ironic_url: "http://10.0.0.10:6385/"
+      ironic_inspector_ipa_callback_url: "http://10.0.0.10:{{ ironic_inspector_listen_port }}/v1/continue"
       ironic_inspector_database_mysql_host: "localhost"
       ironic_inspector_database_mysql_userid: "{{ baremetal_server_inspector_database_user }}"
       ironic_inspector_database_mysql_password: "{{ baremetal_server_inspector_database_pass }}"
