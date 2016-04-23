@@ -1,15 +1,19 @@
 ---
+# Take the package given by the distribution (True for Xenial, False otherwise)
+ironic_inspector_os_packages: False
+
 # Enable or disable inspector daemon and pxe configuration
 ironic_inspector_enabled: true
 ironic_inspector_enabled_on_startup: true
 
 ironic_inspector_debug: false
 ironic_inspector_trace: false
-ironic_inspector_verbose: true
 
+# Main settings
 ironic_inspector_listen_address: "0.0.0.0"
 ironic_inspector_listen_port: 5050
 ironic_inspector_timeout: 3600
+# One week to keep the introspection data
 ironic_inspector_node_status_keep_time: 604800
 ironic_inspector_clean_up_period: 60
 ironic_inspector_max_concurrency: 1000
@@ -23,29 +27,66 @@ ironic_inspector_fatal_deprecations: false
 #ironic_inspector_database_mysql_userid: "inspector"
 #ironic_inspector_database_mysql_password: "inspector"
 #ironic_inspector_database_mysql_db: "inspector"
-# otherwise:
+# otherwise, these are the defaults:
 ironic_inspector_database_connection: "sqlite:///var/lib/ironic-inspector/inspector.db"
 ironic_inspector_database_idle_timeout: 600
 ironic_inspector_database_pool_size: 10
 #ironic_inspector_database_pool_timeout:
 ironic_inspector_database_use_db_reconnect: true
 
+# How to contact Ironic API to define the server
 ironic_inspector_ironic_url: "http://127.0.0.1:6385/"
 ironic_inspector_ironic_os_service_type: "baremetal"
 ironic_inspector_ironic_os_endpoint_type: "internalURL"
 
+# CORS: http://docs.openstack.org/developer/oslo.middleware/cors.html
+#ironic_inspector_cors_allowed_origin: "*"
+#ironic_inspector_cors_allow_credentials: True
+#ironic_inspector_cors_expose_headers: ["Content-Type", "Cache-Control", "Content-Language", "Expires", "Last-Modified", "Pragma"]
+#ironic_inspector_cors_max_age: 3600
+#ironic_inspector_cors_allow_methods: ["GET", "POST", "PUT", "HEAD", "PATCH", "DELETE", "OPTIONS"]
+#ironic_inspector_cors_allow_headers: ["X-Auth-Token", "X-OpenStack-Ironic-Inspector-API-Minimum-Version", "X-OpenStack-Ironic-Inspector-API-Maximum-Version", "X-OpenStack-Ironic-Inspector-API-Version"]
+# CORS subdomains
+#ironic_inspector_cors_domains:
+#  localhost:
+#     allowed_origin: "http://localhost:8080"
+#     allow_credentials: True
+
 # Force download always the IPA ramdisk and kernel
-ironic_inspector_ipa_force_download: false
-ironic_inspector_ipa_ramdisk_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem.cpio.gz"
-ironic_inspector_ipa_kernel_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe.vmlinuz"
+ironic_inspector_ipa_download: True
 ironic_inspector_ipa_images_path: "/var/lib/ironic/images"
-# Define ipa_kernel and ipa_initramfs to create the $TFTPROOT/pxelinux.cfg/default
-# otherwise they will be donwloaded
-#ironic_inspector_ipa_kernel:
-#ironic_inspector_ipa_ramdisk:
-ironic_inspector_ipa_callback_url: "http://{{ ansible_eth0.ipv4.address }}:{{ ironic_inspector_listen_port | default('5050') }}/v1/continue"
+ironic_inspector_ipa_ramdisk_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem-stable-{{ ironic_inspector_release }}.cpio.gz"
+ironic_inspector_ipa_ramdisk_checksum: "sha1:435f974d6cd21101a140151af1a9fc239835f901"
+ironic_inspector_ipa_ramdisk: "coreos_production_pxe_image-oem.cpio.gz"
+ironic_inspector_ipa_kernel_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe-stable-{{ ironic_inspector_release }}.vmlinuz"
+ironic_inspector_ipa_kernel_checksum: "sha1:7c1f31fba3747197fc8356f03aa4ad7372ba643e"
+ironic_inspector_ipa_kernel: "coreos_production_pxe.vmlinuz"
+ironic_inspector_ipa_callback_url: "http://{{ ansible_default_ipv4.address }}:{{ ironic_inspector_listen_port }}/v1/continue"
 ironic_inspector_ipa_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
 ironic_inspector_ipa_tftproot: "/var/lib/ironic/tftpboot"
+
+# Which MAC addresses to add as ports during introspection. Possible
+# values: all (all MAC addresses), active (MAC addresses of NIC with
+# IP addresses), pxe (only MAC address of NIC node PXE booted from,
+# falls back to "active" if PXE MAC is not supplied by the ramdisk).
+ironic_inspector_processing_add_ports: "all"
+# Which ports (already present on a node) to keep after introspection.
+# Possible values: all (do not delete anything), present (keep ports
+# which MACs were present in introspection data), added (keep only
+# MACs that we added during introspection).
+ironic_inspector_processing_keep_ports: "all"
+ironic_inspector_processing_overwrite_existing: True
+ironic_inspector_processing_enable_setting_ipmi_credentials: False
+#ironic_inspector_processing_default_processing_hooks: ["ramdisk_error", "root_disk_selection", "scheduler", "validate_interfaces"]
+#ironic_inspector_processing_node_not_found_hook:
+ironic_inspector_processing_ramdisk_logs_dir: "/var/log/ironic-inspector"
+ironic_inspector_processing_always_store_ramdisk_logs: False
+ironic_inspector_processing_store_data_location: "inspection"
+ironic_inspector_processing_disk_partitioning_spacing: True
+ironic_inspector_processing_log_bmc_address: True
+
+# Name of the driver used by the enroll hook
+ironic_inspector_discovery_enroll_node_driver: "inspector"
 
 # Define auth_uri to use keystone authentication, otherwise
 # noauth will be assumed
@@ -58,22 +99,11 @@ ironic_inspector_keystone_authtoken_service_user: "admin"
 ironic_inspector_keystone_authtoken_service_password: "admin"
 ironic_inspector_keystone_authtoken_service_tenant_name: "admin"
 
-ironic_inspector_firewall_manage: false
+# Manage FW on the PXE host, disabled
+ironic_inspector_firewall_manage: False
 ironic_inspector_firewall_interface: "eth0"
 ironic_inspector_firewall_update_period: 15
 ironic_inspector_firewall_chain: "ironic-inspector"
-
-ironic_inspector_processing_add_ports: "pxe"
-ironic_inspector_processing_keep_ports: "all"
-ironic_inspector_processing_overwrite_existing: true
-ironic_inspector_processing_enable_setting_ipmi_credentials: true
-#ironic_inspector_processing_default_processing_hooks: ["ramdisk_error", "root_disk_selection", "scheduler", "validate_interfaces"]
-#ironic_inspector_processing_processing_hooks: ["$default_processing_hooks"]
-#ironic_inspector_processing_node_not_found_hook:
-ironic_inspector_processing_ramdisk_logs_dir: "/var/log/ironic-inspector"
-ironic_inspector_processing_always_store_ramdisk_logs: false
-ironic_inspector_processing_store_data_location: "inspection"
-ironic_inspector_processing_disk_partitioning_spacing: true
 
 # If swift_os_auth_url is not none, it will be used for storing introspection data. 
 # otherwise introspection data will not be stored.

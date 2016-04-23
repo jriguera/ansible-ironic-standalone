@@ -2,7 +2,6 @@
 ironic_inspector_os_repo_url: "deb http://ubuntu-cloud.archive.canonical.com/ubuntu {{ ansible_distribution_release }}-updates/{{ ironic_inspector_release }} main"
 ironic_inspector_os_repo_key: "ubuntu-cloud-keyring"
 ironic_inspector_packages_install_recommends: true
-ironic_inspector_init_system: "upstart"
 
 ironic_inspector_packages:
   ironic-inspector:

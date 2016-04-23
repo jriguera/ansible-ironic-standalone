@@ -1,44 +1,42 @@
 ---
-- name: Debian - Import repository key
-  apt_key: url="{{ ironic_inspector_os_repo_key }}" state=present
-  when: >
-    ansible_os_family == 'Debian' and 
-    not ironic_inspector_os_packages and
-    not ironic_inspector_os_repo_key is none and
-    ironic_inspector_os_repo_key | search("http://.*")
-  ignore_errors: yes
-  tags: ["debian"]
+# Debian repository
+- block:
+  - name: Debian - Import repository key
+    apt_key: url="{{ ironic_inspector_os_repo_key }}" state=present
+    when: >
+      not ironic_inspector_os_repo_key is none and
+      ironic_inspector_os_repo_key | search("http://.*")
+    ignore_errors: yes
 
-- name: Debian - Add repository package
-  apt: name="{{ ironic_inspector_os_repo_key }}" state=latest
-  when: >
-    ansible_os_family == 'Debian' and 
-    not ironic_inspector_os_packages and
-    not ironic_inspector_os_repo_key is none and
-    not ironic_inspector_os_repo_key | search("http://.*")
-  tags: ["debian"]
+  - name: Debian - Add repository package
+    apt: name="{{ ironic_inspector_os_repo_key }}" state=latest
+    when: >
+      not ironic_inspector_os_repo_key is none and
+      not ironic_inspector_os_repo_key | search("http://.*")
 
-- name: Debian - Add repository url
-  apt_repository: repo="{{ ironic_inspector_os_repo_url }}" state=present
+  - name: Debian - Add repository url
+    apt_repository: repo="{{ ironic_inspector_os_repo_url }}" state=present
+
   when: >
-    ansible_os_family == 'Debian' 
+    ansible_os_family == 'Debian'
     and not ironic_inspector_os_packages
-  tags: ["debian"]
+  tags: ["debian", "repository"]
 
-- name: RedHat - Add repository
-  yum: name="{{ ironic_inspector_os_repo_url }}" state=present
+
+# RedHat repository
+- block:
+  - name: RedHat - Add repository
+    yum: name="{{ ironic_inspector_os_repo_url }}" state=present
+
+  - name: RedHat - Import repository key
+    rpm_key: key="{{ ironic_inspector_os_repo_key }}" state=present
+    when: ironic_inspector_os_repo_key is not none
+  
   when: >
     ansible_os_family == 'RedHat' and 
     not ironic_inspector_os_packages
-  tags: ["redhat"]
+  tags: ["redhat", "repository"]
 
-- name: RedHat - Import repository key
-  rpm_key: key="{{ ironic_inspector_os_repo_key }}" state=present
-  when: >
-    ansible_os_family == 'RedHat' and 
-    not ironic_inspector_os_packages and 
-    not ironic_inspector_os_repo_key is none
-  tags: ["redhat"]
 
 - name: Check if configuration exists
   stat: path="{{ ironic_inspector_config_file }}"
@@ -49,57 +47,66 @@
 
 - name: RedHat - Install Ironic-Inspector required packages
   yum:
-    name: "{{ item.key }}{{ '-' + item.version | default('*') }}"
-    state: "{{ item.state | default('present') }}"
-  with_dict: ironic_inspector_packages
+    name: "{{ item.key if ('version' not in item.value) else ('%s-%s' % (item.key, item.value['version'])) }}"
+    state: "{{ item.value.state | default('present') }}"
+  with_dict: "{{ ironic_inspector_packages }}"
   when: ansible_os_family == 'RedHat'
-  register: __ironic_inspector_installed
-  tags: ["redhat"]
+  register: __ironic_inspector_installed_rh
+  tags: ["redhat", "packages"]
 
 - name: Debian - Install Ironic-Inspector required packages
   apt: 
-    name: "{{ item.key }}{{ '=' + item.version | default('*') }}"
-    state: "{{ item.state | default('present') }}"
+    name: "{{ item.key if ('version' not in item.value) else ('%s=%s' % (item.key, item.value['version'])) }}"
+    state: "{{ item.value.state | default('present') }}"
     install_recommends: "{{ ironic_inspector_packages_install_recommends }}"
-  with_dict: ironic_inspector_packages
+  with_dict: "{{ ironic_inspector_packages }}"
   when: ansible_os_family == 'Debian'
-  register: __ironic_inspector_installed
-  tags: ["debian"]
+  register: __ironic_inspector_installed_debian
+  tags: ["debian", "packages"]
 
 - name: Check if Ironic-Inspector packages were installed
-  set_fact: _ironic_inspector_reinstalled="{{ __ironic_inspector_installed.changed }}"
+  set_fact: _ironic_inspector_reinstalled="{{ __ironic_inspector_installed_rh.changed or __ironic_inspector_installed_debian.changed }}"
 
 # Because Ubuntu starts ironic daemons as part of the install process, 
 # we need to stop it
 - name: Stop Ironic-Inspector daemon after initial install
-  service:
-    name: "{{ ironic_inspector_service_name }}"
-    state: stopped
-    enabled: no
+  service: name="{{ ironic_inspector_service_name }}" state=stopped enabled=no
   ignore_errors: yes
   when: _ironic_inspector_reinstalled
 
-- name: Debian - Delete Ironic-Inspector upstart configuration
-  file:
-    path: "/etc/init/{{ ironic_inspector_service_name }}.conf"
-    state: absent
-  when: >
-    ansible_os_family == 'Debian' and
-    ironic_inspector_init_system != "upstart"
-  notify: stop inspector
-  tags: ["debian", "ubuntu"]
+- name: Get init system type
+  command: cat /proc/1/comm
+  register: __ironic_inspector_init_system
+  changed_when: False
 
-- name: Debian - Delete Ironic-Inspector init.d configuration
-  file:
-    path: "/etc/init.d/{{ ironic_inspector_service_name }}"
-    state: absent 
-  when: >
-    ansible_os_family == 'Debian' and
-    ironic_inspector_init_system != "initd"
-  notify: stop inspector
-  tags: ["debian", "ubuntu"]
+- name: Set init system type
+  set_fact: ironic_inspector_init_system="{{ __ironic_inspector_init_system.stdout }}"
 
-# Flush all notify stop handlers, to be sure that they are done!
-# The reason is because of upstart service
+
+- block:
+  - name: Create custom systemd folder configuration
+    file: 
+      path: "/etc/systemd/system/{{ ironic_inspector_service_name }}.service.d"
+      state: directory
+      mode: 0755
+
+  - name: Define custom systemd properties
+    template:
+      src: systemd.conf.j2
+      dest: "/etc/systemd/system/{{ ironic_inspector_service_name }}.service.d/service.conf"
+      mode: 0644
+    register: __ironic_inspector_systemd
+
+  - name: Delete upstart configuration
+    file: path="/etc/init/{{ ironic_inspector_service_name }}.conf" state=absent
+
+  - name: Reload systemd
+    command: systemctl daemon-reload
+    when: __ironic_inspector_systemd|changed
+  
+  when: ironic_init_system == 'systemd'
+  tags: ["systemd", "init"]
+
+# Force restart all the sevices (database, messaging) if they were installed or reinstalled
 - meta: flush_handlers
 

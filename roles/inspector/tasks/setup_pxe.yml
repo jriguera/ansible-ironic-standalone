@@ -2,50 +2,53 @@
 - name: Create tftproot folder
   file:
     path: "{{ ironic_inspector_ipa_tftproot }}/pxelinux.cfg"
-    owner: "{{ ironic_inspector_user }}"
     group: "{{ ironic_inspector_group }}"
-    mode: 0755
+    mode: 0775
     state: directory
-  when: not ironic_inspector_ipa_tftproot is none
+  when: ironic_inspector_ipa_tftproot is not none
 
-- name: Download IPA ramdisk
-  get_url:
-    url: "{{ ironic_inspector_ipa_ramdisk_url }}"
-    dest: "{{ ironic_inspector_ipa_images_path }}/coreos_production_pxe_image-oem.cpio.gz"
-    force: "{{ ironic_inspector_ipa_force_download | ternary('yes', 'no') }}"
-  when: not ironic_inspector_ipa_ramdisk is defined
 
-- name: Setup IPA ramdisk
-  set_fact: ironic_inspector_ipa_ramdisk="coreos_production_pxe_image-oem.cpio.gz"
-  when: not ironic_inspector_ipa_ramdisk is defined
+- block:
+  - name: Downloading IPA Coreos ramdisk (~250 MB)
+    get_url:
+      checksum: "{{ ironic_inspector_ipa_ramdisk_checksum }}"
+      url: "{{ ironic_inspector_ipa_ramdisk_url }}"
+      dest: "{{ ironic_inspector_ipa_images_path }}/{{ ironic_inspector_ipa_ramdisk }}"
+    
+  - name: Downloading IPA Coreos kernel (~25 MB)
+    get_url:
+      checksum: "{{ ironic_inspector_ipa_kernel_checksum }}"
+      url: "{{ ironic_inspector_ipa_kernel_url }}"
+      dest: "{{ ironic_inspector_ipa_images_path }}/{{ ironic_inspector_ipa_kernel }}"
 
-- name: Download IPA kernel
-  get_url:
-    url: "{{ ironic_inspector_ipa_kernel_url }}"
-    dest: "{{ ironic_inspector_ipa_images_path }}/coreos_production_pxe.vmlinuz"
-    force: "{{ ironic_inspector_ipa_force_download | ternary('yes', 'no') }}"
-  when: not ironic_inspector_ipa_kernel is defined
+  - name: Change permissions
+    file:
+      path: "{{ item }}"
+      group: "{{ ironic_inspector_group }}"
+      mode: 0664
+      state: file
+    with_items:
+      - "{{ ironic_inspector_ipa_images_path }}/{{ ironic_inspector_ipa_ramdisk }}"
+      - "{{ ironic_inspector_ipa_images_path }}/{{ ironic_inspector_ipa_kernel }}"
 
-- name: Setup IPA kernel
-  set_fact: ironic_inspector_ipa_kernel="coreos_production_pxe.vmlinuz"
-  when: not ironic_inspector_ipa_kernel is defined
+  when: ironic_inspector_ipa_download
+
 
 - name: Generate pxelinux.cfg/default
   template:
     src: pxelinux_default.j2
     dest: "{{ ironic_inspector_ipa_tftproot }}/pxelinux.cfg/default"
-    owner: "{{ ironic_inspector_user }}"
     group: "{{ ironic_inspector_group }}"
-    mode: 0644
+    mode: 0664
   when: >
-    not ironic_inspector_ipa_tftproot is none and
-    ironic_inspector_enabled
+    ironic_inspector_ipa_tftproot is not none
+    and ironic_inspector_enabled
 
 - name: Delete pxelinux.cfg/default if disabled
   file: 
     dest: "{{ ironic_inspector_ipa_tftproot }}/pxelinux.cfg/default"
     state: absent
   when: >
-    not ironic_inspector_ipa_tftproot is none and
-    not ironic_inspector_enabled
+    ironic_inspector_ipa_tftproot is not none
+    and not ironic_inspector_enabled
 

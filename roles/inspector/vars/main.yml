@@ -1,9 +1,7 @@
 ---
-# Take the package given by the OS/distrib
-ironic_inspector_os_packages: false
+ironic_inspector_release: "mitaka"
 ironic_inspector_os_repo_url:
 ironic_inspector_os_repo_key:
-ironic_inspector_release: "liberty"
 
 ironic_inspector_service_name: ironic-inspector
 ironic_inspector_pidfile: /var/run/ironic-inspector/ironic-inspector.pid
