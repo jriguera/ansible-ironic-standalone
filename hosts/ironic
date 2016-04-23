@@ -15,7 +15,10 @@ baremetal_server_database_pass=mysql
 baremetal_server_msg_vhost=ironic
 baremetal_server_msg_user=ironic
 baremetal_server_msg_pass=rabbitmq
-baremetal_server_dhcp_params=["10.0.1.100", "10.0.1.200", "infinite"]
+# Leasing time can be only one hour because the static ips
+# can be defined with configdrive. This is only for the time
+# when the server is being deployed
+baremetal_server_dhcp_params=["10.0.1.100", "10.0.1.200", "1h"]
 baremetal_server_dhcp_domain=pxe.local
 baremetal_server_http_root_path=/var/lib/ironic/http
 baremetal_server_images_path=/var/lib/ironic/http/images
@@ -25,6 +28,7 @@ baremetal_server_configdrive_path="/var/lib/ironic/http/metadata"
 baremetal_ironic_token=" "
 baremetal_domain=example.com
 baremetal_nameservers=[ "8.8.8.8" ]
+# Define a ssh key for default cloud user
 baremetal_ssh_key="ssh-rsa AAAAB3NzaC1yc2EAAAADAQAB...tion"
 
 [client]
@@ -68,3 +72,4 @@ conductor ansible_ssh_host=127.0.0.1 ansible_ssh_port=2222
 #[ironic:children]
 #api
 #conductor
+
