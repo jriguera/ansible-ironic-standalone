@@ -61,9 +61,3 @@
   when: ironic_init_system == 'systemd'
   tags: ["systemd", "init"]
 
-
-- name: Delete init.d script
-  file: path="/etc/init.d/{{ ironic_api_service_name }}" state=absent
-  when: ironic_init_system == "init"
-  tags: ["upstart", "init"]
-

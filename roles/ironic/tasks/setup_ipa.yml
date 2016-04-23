@@ -27,6 +27,7 @@
       path: "{{ item }}"
       group: "{{ ironic_group }}"
       mode: 0664
+      state: file
     with_items:
       - "{{ ironic_deploy_http_root }}/{{ ironic_pxe_ipa_kernel_name }}"
       - "{{ ironic_deploy_http_root }}/{{ ironic_pxe_ipa_img_name }}"

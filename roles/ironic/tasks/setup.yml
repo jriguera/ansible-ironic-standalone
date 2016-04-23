@@ -43,7 +43,7 @@
     ironic_oslo_concurrency_lock_path is defined
     and ironic_oslo_concurrency_lock_path is not none 
 
-- name: Get syslinux tarball from url
+- name: Downloading syslinux tarball from url
   get_url:
     checksum: "{{ ironic_pxe_syslinux_tarball_checksum }}"
     url: "{{ ironic_pxe_syslinux_tarball_url }}"
