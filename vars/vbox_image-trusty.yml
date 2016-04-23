@@ -1,7 +1,7 @@
 ---
 # The driver is linked to the image definition on purpose
 # because the images could be created for a specific driver
-baremetal_driver: "agent_ipmitool"
+baremetal_driver: "agent_vbox"
 
 # Folder relative to the servers
 baremetal_deploy_kernel: "file://{{ baremetal_server_images_deploy_path }}/coreos_production_pxe.vmlinuz"
