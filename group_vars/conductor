@@ -2,38 +2,56 @@
 nginx_server_list:
   - name: "{{ ansible_hostname }}"
     root: "{{ baremetal_server_http_root_path }}"
+    client_body_temp_path: "{{ baremetal_server_http_root_path }}/tmp"
     access_log: "/var/log/nginx/{{ ansible_hostname }}-server_access.log"
     location_list:
       - name: "/"
         autoindex: "on"
+      - name: "/images/"
+        autoindex: "on"
+        client_body_buffer_size: "16k" 
+        client_max_body_size: "50G"
+        create_full_put_path: "on"
+        dav_access: "user:rw group:rw all:r"
+        dav_methods: "PUT DELETE MKCOL COPY MOVE"
+        default_type: "application/octet-stream"
+      - name: "/metadata/"
+        autoindex: "on"
+        client_body_buffer_size: "16k" 
+        client_max_body_size: "100M"
+        create_full_put_path: "on"
+        dav_access: "user:rw group:rw all:r"
+        dav_methods: "PUT DELETE MKCOL COPY MOVE"
+        default_type: "application/octet-stream"
+      - name: "/deploy/"
+        autoindex: "on"
+        client_body_buffer_size: "16k" 
+        client_max_body_size: "100M"
+        create_full_put_path: "on"
+        dav_access: "user:rw group:rw all:r"
+        dav_methods: "PUT DELETE MKCOL COPY MOVE"
+        default_type: "application/octet-stream"
+
+# For ironic_webclient
+webclient_webdir_owner: "{{ nginx_user }}"
+webclient_webdir_group: "{{ ironic_group }}"
+
 
 monit_monitoring_list:
   - name: ironic-conductor
-    type: process
     target: "{{ ironic_conductor_pidfile }}"
-    start:
-      script: "/usr/sbin/service ironic-conductor start"
-    stop:
-      script: "/usr/sbin/service ironic-conductor stop"
+    script: "/usr/sbin/service ironic-conductor %"
     rules:
       - "if 3 restarts within 3 cycles then timeout"
   - name: dnsmasq
-    type: process
     target: "{{ dnsmasq_pidfile }}"
-    start:
-      script: "/etc/init.d/dnsmasq start"
-    stop:
-      script: "/etc/init.d/dnsmasq stop"
+    script: "/usr/sbin/service dnsmasq %"
     rules:
       - "if failed port 53 type tcp protocol dns then restart"
       - "if 3 restarts within 3 cycles then timeout"
   - name: nginx
-    type: process
     target: "{{ nginx_pidfile }}"
-    start:
-      script: "/etc/init.d/nginx start"
-    stop:
-      script: "/etc/init.d/nginx stop"
+    script: "/usr/sbin/service nginx %"
     rules:
       - "if failed port 80 type tcp then restart"
       - "if 3 restarts within 3 cycles then timeout" 
