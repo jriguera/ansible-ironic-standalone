@@ -1,6 +1,9 @@
 ---
+# Please check the dnsmasq_conf_dhcp variable interface!
+
 - hosts: all
   become: yes
+  # Normally these vars are defined in the inventory file or in group_vars
   vars:
     baremetal_server_database_rootpass: root
     baremetal_server_database_name: ironic
@@ -9,7 +12,7 @@
     baremetal_server_msg_vhost: ironic
     baremetal_server_msg_user: ironic
     baremetal_server_msg_pass: rabbitmq
-    baremetal_server_dhcp_params: ["10.0.1.100", "10.0.1.200", "infinite"]
+    baremetal_server_dhcp_params: ["10.0.0.100", "10.0.0.200", "infinite"]
     baremetal_server_dhcp_domain: pxe.local
     baremetal_server_http_root_path: /var/lib/ironic/http
     baremetal_server_images_path: /var/lib/ironic/http/images
@@ -39,8 +42,8 @@
     - role: ironic
       ironic_debug: true
       ironic_my_ip: "{{ ansible_default_ipv4.address }}"
-      ironic_conductor_api_url: "http://{{ ansible_default_ipv4.address }}:6385/"
-      ironic_pxe_tftp_server: "{{ ansible_default_ipv4.address }}"
+      ironic_conductor_api_url: "http://10.0.0.10:6385/"
+      ironic_pxe_tftp_server: "10.0.0.10"
       ironic_oslo_messaging_rabbit_host: "localhost"
       ironic_oslo_messaging_rabbit_userid: "{{ baremetal_server_msg_user }}"
       ironic_oslo_messaging_rabbit_password: "{{ baremetal_server_msg_pass }}"
@@ -51,10 +54,10 @@
       ironic_database_mysql_db: "{{ baremetal_server_database_name }}"
       ironic_pxe_images_path: "{{ baremetal_server_images_path }}"
       ironic_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
-      ironic_deploy_http_url: "http://{{ ansible_default_ipv4.address }}/deploy"
+      ironic_deploy_http_url: "http://10.0.0.10/deploy"
       ironic_deploy_http_root: "{{ baremetal_server_images_deploy_path }}"
       ironic_deploy_erase_devices_priority: 0
-      ironic_enabled_drivers: ["pxe_ipmitool", "agent_ipmitool"]
+      ironic_enabled_drivers: ["pxe_ipmitool", "agent_ipmitool", "agent_vbox"]
       ironic_cors_domains:
         ironic_webclient:
           allowed_origin: "http://localhost:8080"
@@ -65,12 +68,13 @@
       dnsmasq_conf_dhcp:
         eth0:
           range: "{{ baremetal_server_dhcp_params }}"
-          ignore_names: true
-          generate_names: true
+          ignore_names: True
+          generate_names: True
           option:
             - "option:router,{{ ansible_default_ipv4.gateway }}"
             - "option:dns-server,{{ ansible_default_ipv4.address }}"
-          boot: [ "{{ ironic_pxe_bootfile_name }}" ]
+          boot:
+            - "{{ ironic_pxe_bootfile_name }}"
           tftp: "{{ ironic_pxe_tftp_root }}"
 
     - role: nginx
@@ -125,6 +129,9 @@
         - name: ironic-conductor
           target: "{{ ironic_conductor_pidfile }}"
           script: "/usr/sbin/service ironic-conductor %"
+        - name: dnsmasq
+          target: "{{ dnsmasq_pidfile }}"
+          script: "/usr/sbin/service dnsmasq %"
         - name: nginx
           target: "{{ nginx_pidfile }}"
           script: "/usr/sbin/service nginx %"

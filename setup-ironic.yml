@@ -1,7 +1,12 @@
 ---
-# Database server
-- hosts: database
-  sudo: true
+# By default it deploys all the pieces on the same server, which for most
+# users is enough. You can split the roles in different servers (have
+# a look at the inventory hosts folder and at the group_vars folder
+# The server can have multiple interfaces! (see dnsmasq role)
+# Please check the dnsmasq_conf_dhcp variable interface!
+
+- hosts: allinone
+  become: yes
   roles:
     - role: mysql
       mysql_root_password: "{{ baremetal_server_database_rootpass }}"
@@ -12,13 +17,7 @@
           password: "{{ baremetal_server_database_pass }}"
           priv: "{{ baremetal_server_database_name }}.*:ALL"
           host: "%"
-    - role: monit
 
-
-# RabbitMQ server
-- hosts: messaging
-  sudo: true
-  roles:
     - role: rabbitmq
       rabbitmq_vhost_definition_list:
         - name: "{{ baremetal_server_msg_vhost }}"
@@ -27,57 +26,47 @@
           password: "{{ baremetal_server_msg_pass }}"
           vhost: "{{ baremetal_server_msg_vhost }}"
           tags: [ "administrator", "management" ]
-    - role: monit
 
-# Ironic API server and Ironic Conductor with http repo
-- hosts: ironic
-  sudo: true
-  roles:
+    # Ironic API server and Ironic Conductor with HTTP repo
     - role: ironic
-      ironic_my_ip: "{{ ansible_eth0.ipv4.address }}"
-      ironic_conductor_api_url: "http://{{ ansible_eth0.ipv4.address }}:6385/"
-      ironic_pxe_tftp_server: "{{ ansible_eth0.ipv4.address }}"
-      ironic_oslo_messaging_rabbit_host: "{{ hostvars[groups['messaging'][0]]['ansible_eth0']['ipv4']['address'] }}"
+      ironic_my_ip: "{{ ansible_default_ipv4.address }}"
+      ironic_conductor_api_url: "http://{{ ansible_default_ipv4.address }}:6385/"
+      ironic_pxe_tftp_server: "{{ ansible_default_ipv4.address }}"
+      ironic_oslo_messaging_rabbit_host: "{{ ansible_default_ipv4.address }}"
       ironic_oslo_messaging_rabbit_userid: "{{ baremetal_server_msg_user }}"
       ironic_oslo_messaging_rabbit_password: "{{ baremetal_server_msg_pass }}"
       ironic_oslo_messaging_rabbit_virtual_host: "{{ baremetal_server_msg_vhost }}"
-      ironic_database_mysql_host: "{{ hostvars[groups['database'][0]]['ansible_eth0']['ipv4']['address'] }}"
+      ironic_database_mysql_host: "{{ ansible_default_ipv4.address }}"
       ironic_database_mysql_userid: "{{ baremetal_server_database_user }}"
       ironic_database_mysql_password: "{{ baremetal_server_database_pass }}"
       ironic_database_mysql_db: "{{ baremetal_server_database_name }}"
       ironic_pxe_images_path: "{{ baremetal_server_images_path }}"
       ironic_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
-      ironic_deploy_http_url: "http://{{ ansible_eth0.ipv4.address }}/deploy"
+      ironic_deploy_http_url: "http://{{ ansible_default_ipv4.address }}/deploy"
       ironic_deploy_http_root: "{{ baremetal_server_images_deploy_path }}"
       ironic_deploy_erase_devices_priority: 0
       ironic_enabled_drivers: ["pxe_ipmitool", "agent_ipmitool"]
+      ironic_cors_domains:
+        ironic_webclient:
+          allowed_origin: "http://{{ ansible_default_ipv4.address }}"
+          allow_credentials: True
+      
     - role: dnsmasq
       dnsmasq_conf_domain: "{{ baremetal_server_dhcp_domain }}"
       dnsmasq_conf_dhcp:
         eth0:
           range: "{{ baremetal_server_dhcp_params }}"
-          ignore_names: true
-          generate_names: true
+          ignore_names: True
+          generate_names: True
           option:
             - "option:router,{{ ansible_default_ipv4.gateway }}"
-            - "option:dns-server,{{ ansible_eth0.ipv4.address }}"
-          boot: [ "{{ ironic_pxe_bootfile_name }}" ]
+            - "option:dns-server,{{ ansible_default_ipv4.address }}"
+          boot:
+            - "{{ ironic_pxe_bootfile_name }}"
           tftp: "{{ ironic_pxe_tftp_root }}"
+    
     - role: nginx
+    - role: webclient
     - role: monit
 
-
-  tasks:
-
-    - name: Download IPA Coreos ramdisk
-      get_url:
-        url: http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem.cpio.gz
-        dest: "{{ baremetal_server_images_deploy_path }}/coreos_production_pxe_image-oem.cpio.gz"
-        force: no
-
-    - name: Download IPA Coreos kernel
-      get_url:
-        url: http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe.vmlinuz
-        dest: "{{ baremetal_server_images_deploy_path }}/coreos_production_pxe.vmlinuz"
-        force: no
 
