@@ -56,16 +56,17 @@
     baremetal_mac | length != 17 and
     baremetal_mac is defined
 
-- name: Checking if IPMI address is defined
-  fail: msg="IPMI address incorrect!"
-  when: >
-    baremetal_ipmi_ip is not defined or
-    baremetal_ipmi_ip|trim == ''
-
 - name: Define the IPMI console port
   set_fact: baremetal_console_port="{{ baremetal_ipmi_ip.split('.')[-1]|int + 10000 }}"
   when: >
-    not baremetal_console_port is defined or
-    baremetal_console_port|trim == '' 
+    baremetal_ipmi_ip is defined and
+    (not baremetal_console_port is defined or baremetal_console_port|trim == '')
+
+
+- name: Check MD5 image checksum defined
+  fail: msg="MD5 image checksum not defined. Check if the image exists on the repository"
+  when: >
+    baremetal_image_checksum is not defined
+    or baremetal_image_checksum is none
 
 
