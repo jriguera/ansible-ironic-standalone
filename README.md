@@ -590,7 +590,7 @@ abr 17 14:04:00 localhost.localdomain ironic-api[19549]: ImportError: cannot imp
 This is because the proper version of urllib3 was not installed, to fix it,
 upgrade the library using pip and restart the daemons with Monit.
 
-``
+```
 # pip install --upgrade urllib3
 Collecting urllib3
   Downloading urllib3-1.15.1-py2.py3-none-any.whl (92kB)
@@ -612,6 +612,4 @@ Apache 2.0
 # Author Information
 
 José Riguera López <jose.riguera@springer.com>
-
-
 
