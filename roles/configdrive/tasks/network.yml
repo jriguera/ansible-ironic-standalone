@@ -83,6 +83,5 @@
     group: "{{ configdrive_group | default(omit) }}"
     mode: 0644
   when: item.route is defined and configdrive_os_family == 'RedHat'
-  with_items: "{{ configdrive_network_device_list }}
-
+  with_items: "{{ configdrive_network_device_list }}"
 

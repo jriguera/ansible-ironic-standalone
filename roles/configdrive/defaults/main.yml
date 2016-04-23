@@ -21,9 +21,9 @@ configdrive_volume_path: "/var/lib/ironic/images/"
 configdrive_meta: {}
 
 # Path to ssh public key file
-configdrive_ssh_public_key_path:
+#configdrive_ssh_public_key_path:
 # Path to cloud-config file
-configdrive_config_user_data_path:
+#configdrive_config_user_data_path:
 
 # Automatically assigned with uuid
 #configdrive_instance_dir:
