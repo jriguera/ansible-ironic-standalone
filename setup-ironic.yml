@@ -44,7 +44,6 @@
       ironic_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
       ironic_deploy_http_url: "http://{{ ansible_default_ipv4.address }}/deploy"
       ironic_deploy_http_root: "{{ baremetal_server_images_deploy_path }}"
-      ironic_deploy_erase_devices_priority: 0
       ironic_enabled_drivers: ["pxe_ipmitool", "agent_ipmitool"]
       ironic_cors_domains:
         ironic_webclient:
