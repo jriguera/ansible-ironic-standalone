@@ -7,7 +7,7 @@
 - name: Define and deploy physical servers using Ironic
   hosts: conductor
   become: True
-  gather_facts: False
+  gather_facts: True
   vars_files:
     - vars/baremetal.yml
   vars:
@@ -22,7 +22,7 @@
       configdrive_meta:
         deploy_date: "{{ baremetal_datetime }}"
         deploy_host: "{{ inventory_hostname }}"
-        deploy_user: "{{ ansible_ssh_user }}"
+        deploy_user: "{{ ansible_user }}"
 
   vars_prompt:
     - name: "id"
@@ -46,13 +46,12 @@
       register: _configdrive_config_user_data_path
       when: >
         baremetal_configdrive and
-        not configdrive_config_user_data_path 
+        (configdrive_config_user_data_path is not defined or not _configdrive_config_user_data_path.stat.exists)
 
     - name: Load servername configdrive
       set_fact: configdrive_config_user_data_path="{{ _configdrive_config_user_data_path.stat.path }}"
       when: >
         baremetal_configdrive and
-        not configdrive_config_user_data_path and
         _configdrive_config_user_data_path.stat.exists
 
     - include: tasks/baremetal_prepare.yml
@@ -152,15 +151,6 @@
     - name: Define the configdrive parameter when enabled configdrive
       set_fact: _baremetal_configdrive_param="--config-drive {{ baremetal_configdrive_base_url }}/{{ baremetal_uuid }}.gz"
       when: baremetal_configdrive
-      delegate_to: "{{ baremetal_client }}"
-
-    # Not needed! ...
-    - name: Set PXE boot for the next boot
-      command: >
-        ironic
-        --os-auth-token="{{ baremetal_ironic_token }}"
-        --ironic-url="{{ baremetal_ironic_url }}"
-        node-set-boot-device "{{ baremetal_uuid }}" pxe
       delegate_to: "{{ baremetal_client }}"
 
     - name: Active and deploy the server
