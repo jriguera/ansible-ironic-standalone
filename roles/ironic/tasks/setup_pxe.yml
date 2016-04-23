@@ -123,13 +123,16 @@
 
 
 # Get pxelinux from syslinux
+# http://www.syslinux.org/wiki/index.php?title=Library_modules#All_Syslinux_variants_need_an_additional_ldlinux_module
 - name: Copy syslinux binaries to PXE folder
   shell: cp -v "{{ item }}" "{{ ironic_pxe_tftp_root }}" && chgrp "{{ ironic_group }}" "{{ ironic_pxe_tftp_root }}/{{ item | basename }}" && chmod 0664  "{{ ironic_pxe_tftp_root }}/{{ item | basename }}"
   with_items:
     - bios/core/pxelinux.0
     - bios/memdisk/memdisk
-    - bios/com32/sysdump/sysdump.c32
-    - bios/com32/sysdump/sysdump.elf
+    - bios/com32/elflink/ldlinux/ldlinux.c32
+    - bios/com32/libutil/libutil.c32
+    - bios/com32/lib/libcom32.c32
+    - bios/com32/chain/chain.c32
   when: >
     _ironic_syslinux_change and
     ironic_pxe_tftp_root is defined and
@@ -142,7 +145,7 @@
 
 # Get elilo for UEFI
 - block:
-  - name: Get elilo tarball from url
+  - name: Downloading elilo tarball from url
     get_url:
       checksum: "{{ ironic_pxe_elilo_tarball_checksum }}"
       url: "{{ ironic_pxe_elilo_tarball_url }}"
