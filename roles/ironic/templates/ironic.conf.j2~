@@ -203,7 +203,11 @@ parallel_image_downloads={{ ironic_parallel_image_downloads | ternary('true','fa
 
 # Print debugging output (set logging level to DEBUG instead
 # of default WARNING level). (boolean value)
-debug={{ ironic_debug | default(False) | ternary('true','false') }}
+debug={{ ironic_debug | ternary('true','false') }}
+
+# Print more verbose output (set logging level to INFO instead
+# of default WARNING level). (boolean value)
+verbose={{ ironic_verbose | ternary('true','false') }}
 
 # The name of a logging configuration file. This file is
 # appended to any existing logging configuration files. For

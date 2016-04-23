@@ -48,4 +48,3 @@ ironic_conductor_packages_console:
     state: latest
   shellinabox:
     state: latest
-

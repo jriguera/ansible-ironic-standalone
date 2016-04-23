@@ -10,6 +10,7 @@ ironic_api: True
 ironic_enabled_on_startup: True
 ironic_debug: False
 ironic_trace: False
+ironic_verbose: True
 
 # Ironic_lib
 ironic_lib_fatal_exception_format_errors: False

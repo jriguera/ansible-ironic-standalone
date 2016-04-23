@@ -1,7 +1,7 @@
 ---
-ironic_release: "mitaka"
 ironic_os_repo_url:
 ironic_os_repo_key:
+ironic_release: "mitaka"
 
 ironic_conductor_service_name: ironic-conductor
 ironic_conductor_pidfile: /var/run/ironic/ironic-conductor.pid
