@@ -1,6 +1,9 @@
 ---
+# Please check the dnsmasq_conf_dhcp variable interface!
+
 - hosts: all
-  sudo: true
+  become: yes
+  # Normally these vars are defined in the inventory file or in group_vars
   vars:
     baremetal_server_database_rootpass: root
     baremetal_server_database_name: ironic
@@ -12,10 +15,11 @@
     baremetal_server_msg_vhost: ironic
     baremetal_server_msg_user: ironic
     baremetal_server_msg_pass: rabbitmq
-    baremetal_server_dhcp_params: ["10.0.1.100", "10.0.1.200", "infinite"]
+    baremetal_server_dhcp_params: ["10.0.0.100", "10.0.0.200", "infinite"]
     baremetal_server_dhcp_domain: pxe.local
     baremetal_server_http_root_path: /var/lib/ironic/http
     baremetal_server_images_path: /var/lib/ironic/http/images
+    baremetal_server_metadata_path: /var/lib/ironic/http/metadata
     baremetal_server_images_deploy_path: /var/lib/ironic/http/deploy
 
   roles:
@@ -45,9 +49,9 @@
 
     - role: ironic
       ironic_debug: true
-      ironic_my_ip: "{{ ansible_eth0.ipv4.address }}"
-      ironic_conductor_api_url: "http://{{ ansible_eth0.ipv4.address }}:6385/"
-      ironic_pxe_tftp_server: "{{ ansible_eth1.ipv4.address }}"
+      ironic_my_ip: "{{ ansible_default_ipv4.address }}"
+      ironic_conductor_api_url: "http://10.0.0.10:6385/"
+      ironic_pxe_tftp_server: "10.0.0.10"
       ironic_oslo_messaging_rabbit_host: "localhost"
       ironic_oslo_messaging_rabbit_userid: "{{ baremetal_server_msg_user }}"
       ironic_oslo_messaging_rabbit_password: "{{ baremetal_server_msg_pass }}"
@@ -58,15 +62,19 @@
       ironic_database_mysql_db: "{{ baremetal_server_database_name }}"
       ironic_pxe_images_path: "{{ baremetal_server_images_path }}"
       ironic_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
-      ironic_deploy_http_url: "http://{{ ansible_eth1.ipv4.address }}/deploy"
+      ironic_deploy_http_url: "http://10.0.0.10/deploy"
       ironic_deploy_http_root: "{{ baremetal_server_images_deploy_path }}"
       ironic_deploy_erase_devices_priority: 0
-      ironic_enabled_drivers: ["pxe_ipmitool", "agent_ipmitool"]
+      ironic_enabled_drivers: ["pxe_ipmitool", "agent_ipmitool", "agent_vbox"]
+      ironic_cors_domains:
+        ironic_webclient:
+          allowed_origin: "http://localhost:8080"
+          allow_credentials: True
 
     - role: ironic-inspector
       ironic_inspector_enabled: true
       ironic_inspector_ipa_images_path: "{{ baremetal_server_images_deploy_path }}"
-      ironic_inspector_ironic_url: "http://{{ ansible_eth0.ipv4.address }}:6385/"
+      ironic_inspector_ironic_url: "http://{{ ansible_default_ipv4.address }}:6385/"
       ironic_inspector_database_mysql_host: "localhost"
       ironic_inspector_database_mysql_userid: "{{ baremetal_server_inspector_database_user }}"
       ironic_inspector_database_mysql_password: "{{ baremetal_server_inspector_database_pass }}"
@@ -77,76 +85,78 @@
       dnsmasq_conf_dhcp:
         eth0:
           range: "{{ baremetal_server_dhcp_params }}"
-          ignore_names: true
-          generate_names: true
+          ignore_names: True
+          generate_names: True
           option:
             - "option:router,{{ ansible_default_ipv4.gateway }}"
-            - "option:dns-server,{{ ansible_eth0.ipv4.address }}"
-          boot: [ "{{ ironic_pxe_bootfile_name }}" ]
+            - "option:dns-server,{{ ansible_default_ipv4.address }}"
+          boot:
+            - "{{ ironic_pxe_bootfile_name }}"
           tftp: "{{ ironic_pxe_tftp_root }}"
 
     - role: nginx
       nginx_server_list:
         - name: "{{ ansible_hostname }}"
           root: "{{ baremetal_server_http_root_path }}"
+          client_body_temp_path: "{{ baremetal_server_http_root_path }}/tmp"
           access_log: "/var/log/nginx/{{ ansible_hostname }}-server_access.log"
           location_list:
             - name: "/"
               autoindex: "on"
+            - name: "/images/"
+              autoindex: "on"
+              client_body_buffer_size: "16k" 
+              client_max_body_size: "50G"
+              create_full_put_path: "on"
+              dav_access: "user:rw group:rw all:r"
+              dav_methods: "PUT DELETE MKCOL COPY MOVE"
+              default_type: "application/octet-stream"
+            - name: "/metadata/"
+              autoindex: "on"
+              client_body_buffer_size: "16k" 
+              client_max_body_size: "100M"
+              create_full_put_path: "on"
+              dav_access: "user:rw group:rw all:r"
+              dav_methods: "PUT DELETE MKCOL COPY MOVE"
+              default_type: "application/octet-stream"
+            - name: "/deploy/"
+              autoindex: "on"
+              client_body_buffer_size: "16k" 
+              client_max_body_size: "100M"
+              create_full_put_path: "on"
+              dav_access: "user:rw group:rw all:r"
+              dav_methods: "PUT DELETE MKCOL COPY MOVE"
+              default_type: "application/octet-stream"
+
+    - role: webclient
+      webclient_webdir_owner: "{{ nginx_user }}"
+      webclient_webdir_group: "{{ ironic_group }}"
 
     - role: monit
       monit_monitoring_list:
         - name: mysql
-          type: process
           target: "{{ mysql_pidfile }}"
-          start:
-            script: "/etc/init.d/mysql start"
-            timeout: 60
-          stop: 
-            script: "/etc/init.d/mysql stop"
+          script: "/usr/sbin/service mysql %"
         - name: rabbitmq
-          type: process
           target: "{{ rabbitmq_pidfile }}"
-          start: 
-            script: "/etc/init.d/rabbitmq-server start"
-          stop:
-            script: "/etc/init.d/rabbitmq-server stop"
-        - name: dnsmasq
-          type: process
-          target: "{{ dnsmasq_pidfile }}"
-          start:
-            script: "/etc/init.d/dnsmasq start"
-          stop:
-            script: "/etc/init.d/dnsmasq stop"
+          script: "/usr/sbin/service rabbitmq-server %"
         - name: ironic-api
-          type: process
           target: "{{ ironic_api_pidfile }}"
-          start:
-            script: "/usr/sbin/service ironic-api start"
-          stop:
-            script: "/usr/sbin/service ironic-api stop"
+          script: "/usr/sbin/service ironic-api %"
         - name: ironic-conductor
-          type: process
           target: "{{ ironic_conductor_pidfile }}"
-          start: 
-            script: "/usr/sbin/service ironic-conductor start"
-          stop: 
-            script: "/usr/sbin/service ironic-conductor stop"
+          script: "/usr/sbin/service ironic-conductor %"
         - name: ironic-inspector
-          type: process
           target: "{{ ironic_inspector_pidfile }}"
-          start: 
-            script: "/usr/sbin/service ironic-inspector start"
-          stop: 
-            script: "/usr/sbin/service ironic-inspector stop"
+          script: "/usr/sbin/service ironic-inspector %"
+        - name: dnsmasq
+          target: "{{ dnsmasq_pidfile }}"
+          script: "/usr/sbin/service dnsmasq %"
         - name: nginx
-          type: process
           target: "{{ nginx_pidfile }}"
-          start:
-            script: "/etc/init.d/nginx start"
-          stop:
-            script: "/etc/init.d/nginx stop"
-  
+          script: "/usr/sbin/service nginx %"
+
+#  tasks:
+#
 #   - name: Display all variables/facts known for a host
 #     debug: var=hostvars[inventory_hostname]
-

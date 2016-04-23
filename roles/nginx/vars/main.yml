@@ -1,5 +1,5 @@
 ---
-nginx_os_packages: true
+# Overwrite these variables in Debian or RedHat files
 nginx_os_repo_url:
 nginx_os_repo_key:
 
@@ -9,4 +9,12 @@ nginx_pidfile: /var/run/nginx.pid
 nginx_config_dir: /etc/nginx
 nginx_config_file: /etc/nginx/nginx.conf
 nginx_ssl_dir: /etc/nginx/ssl
+nginx_sites_dir: /etc/nginx/sites-enabled
+nginx_confd_dir: /etc/nginx/conf.d
+nginx_auth_dir: /etc/nginx/auth.d
+nginx_default_server_path: /etc/nginx/sites-enabled/default
 
+nginx_user: "ningx"
+nginx_group: "nginx"
+
+nginx_packages_install_recommends: true

@@ -1,45 +1,45 @@
 ---
-- name: Remove guest user (hostname)
-  rabbitmq_user:
-    user: guest
-    vhost: /
-    node: "rabbit@{{ ansible_hostname }}"
-    state: absent
-  register: __rabbitmq_rm_guest_hostname
+- block:
+  - name: Remove guest user (hostname)
+    rabbitmq_user: user=guest vhost=/ node="rabbit@{{ ansible_hostname }}" state=absent
+    register: __rabbitmq_rm_guest_hostname
+    ignore_errors: true
+
+  - name: Remove guest user (default)
+    rabbitmq_user: user=guest vhost=/ state=absent
+    when: __rabbitmq_rm_guest_hostname|failed
+
   when: rabbitmq_secure
-  ignore_errors: true
   tags: ["secure"]
 
-- name: Remove guest user (default)
-  rabbitmq_user:
-    user: guest
-    vhost: /
-    state: absent
-  when: rabbitmq_secure and __rabbitmq_rm_guest_hostname|failed
-  tags: ["secure"]
 
-- name: Add vhosts
-  rabbitmq_vhost:
-    name: "{{ item.name }}"
-    node: "{{ item.node | default('rabbit') }}"
-    tracing: "{{ item.tracing | default('no') }}"
-    state: present
-  with_items: rabbitmq_vhost_definition_list
-  when: rabbitmq_vhost_definition_list is defined
+# Manage vhosts and users
+- block:
+  - name: Manage vhosts
+    rabbitmq_vhost:
+      name: "{{ item.name }}"
+      node: "{{ item.node | default('rabbit') }}"
+      tracing: "{{ item.tracing | default('no') }}"
+      state: "{{ item.state | default('present') }}"
+    with_items: "{{ rabbitmq_vhost_definition_list }}"
 
-- name: Add users and setup priveleges
-  rabbitmq_user:
-    user: "{{ item.user }}"
-    password: "{{ item.password }}"
-    vhost: "{{ item.vhost | default('/', false) }}"
-    node: "{{ item.node | default('rabbit') }}"
-    tags: "{{ (item.tags | default('')) | join(',') }}"
-    configure_priv: "{{ item.configure_priv | default('.*') }}"
-    read_priv: "{{ item.read_priv | default('.*') }}"
-    write_priv: "{{ item.write_priv | default('.*') }}"
-    state: present
-    force: "{{ item.force|default('yes') }}"
-  with_items: rabbitmq_users_definition_list
+  - name: Manage users and setup priveleges
+    rabbitmq_user:
+      user: "{{ item.user }}"
+      password: "{{ item.password }}"
+      vhost: "{{ item.vhost | default('/', false) }}"
+      node: "{{ item.node | default('rabbit') }}"
+      tags: "{{ (item.tags | default('')) | join(',') }}"
+      configure_priv: "{{ item.configure_priv | default('.*') }}"
+      read_priv: "{{ item.read_priv | default('.*') }}"
+      write_priv: "{{ item.write_priv | default('.*') }}"
+      force: "{{ item.force|default('no') }}"
+      state: "{{ item.state | default('present') }}"
+    with_items: "{{ rabbitmq_users_definition_list }}"
+    no_log: True
+    tags: ["users"]
+  
   when: rabbitmq_users_definition_list is defined
+  tags: ["manage"]
 
 

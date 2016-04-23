@@ -1,33 +1,110 @@
 ---
 - name: Delete default vhost
-  file:
-    path: "{{ nginx_default_server_path }}"
-    state: absent
+  file: path="{{ nginx_default_server_path }}" state=absent
   when: nginx_remove_default_server
   notify: reload nginx
+  tags: ["delete"]
 
-- name: Delete vhost servers
-  file:
-    state: absent
-    path: "{{ nginx_sites_dir }}/{{ item.name }}.conf" 
-  with_items: nginx_server_list
+
+# Delete vhosts
+- block:
+  - name: Delete vhost servers
+    file: path="{{ nginx_sites_dir }}/{{ item.name }}.conf" state=absent
+    with_items: "{{ nginx_server_list }}"
+    when: item.delete is defined and item.delete
+    notify: reload nginx
+
+  - name: Delete vhost authentication file if exists
+    file: path="{{ nginx_auth_dir }}/{{ item.name }}.conf" state=absent
+    with_items: "{{ nginx_server_list }}"
+    when: item.delete is defined and item.delete
+
+  - name: Delete vhost location authentication file if exists
+    file: path="{{ nginx_auth_dir }}/{{ item.0.name }}_{{ item.1.name | hash('md5') }}.conf" state=absent
+    with_subelements:
+      - "{{ nginx_server_list }}"
+      - location_list
+      - flags:
+        skip_missing: True
+    when: item.0.delete is defined and item.0.delete
+
   when: >
     nginx_server_list is defined and
-    not nginx_server_list is none and
-    (item.delete is defined and item.delete)
-  notify: reload nginx
+    not nginx_server_list is none
+  no_log: True
+  tags: ["delete"]
 
-- name: Add vhost servers
-  template:
-    src: server.conf.j2
-    dest: "{{ nginx_sites_dir }}/{{ item.name }}.conf"
-    owner: "{{ nginx_user }}"
-    group: "{{ nginx_group }}"
-    mode: 0644
-  with_items: nginx_server_list
+
+# Add vhosts
+- block:
+  - name: Create vhost servers root
+    file: 
+      path: "{{ item.root }}"
+      state: directory
+      mode: 0775
+      owner: "{{ nginx_user }}"
+    with_items: "{{ nginx_server_list }}"
+    when: >
+      not (item.delete is defined and item.delete) and
+      (item.root is defined and item.root)
+
+  - name: Create vhost servers location root
+    file:
+      path: "{{ item.1.root }}"
+      state: directory
+      mode: 0775
+      owner: "{{ nginx_user }}"
+    with_subelements:
+      - "{{ nginx_server_list }}"
+      - location_list
+      - flags:
+        skip_missing: True
+    when: >
+      not (item.0.delete is defined and item.0.delete) and
+      (item.1.root is defined and item.1.root)
+
+  - name: Create vhost authentication file
+    template:
+      src: auth_vhost.conf.j2
+      dest: "{{ nginx_auth_dir }}/{{ item.name }}.conf"
+      owner: "{{ nginx_user }}"
+      group: "{{ nginx_group }}"
+      mode: 0644
+    with_items: "{{ nginx_server_list  }}"
+    when: >
+      not (item.delete is defined and item.delete) and
+      (item.auth is defined and item.auth)
+
+  - name: Create vhost location authentication file
+    template:
+      src: auth.conf.j2
+      dest: "{{ nginx_auth_dir }}/{{ item.0.name }}_{{ item.1.name | hash('md5') }}.conf"
+      owner: "{{ nginx_user }}"
+      group: "{{ nginx_group }}"
+      mode: 0644
+    with_subelements:
+      - "{{ nginx_server_list }}"
+      - location_list
+      - flags:
+        skip_missing: True
+    when: >
+      not (item.0.delete is defined and item.0.delete) and
+      (item.1.auth is defined and item.1.auth)
+
+  - name: Add vhost servers
+    template:
+      src: server.conf.j2
+      dest: "{{ nginx_sites_dir }}/{{ item.name }}.conf"
+      owner: "{{ nginx_user }}"
+      group: "{{ nginx_group }}"
+      mode: 0644
+    with_items: "{{ nginx_server_list }}"
+    when: not (item.delete is defined and item.delete)
+    notify: reload nginx
+
   when: >
     nginx_server_list is defined and
-    not nginx_server_list is none and
-    not (item.delete is defined and item.delete)
-  notify: reload nginx
+    not nginx_server_list is none
+  no_log: True
+  tags: ["create"]
 

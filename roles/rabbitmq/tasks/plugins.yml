@@ -1,37 +1,47 @@
 ---
-- name: Copy the plugins
-  copy:
-    src: "{{ item }}"
-    dest: "{{ rabbitmq_plugin_dir }}/rabbitmq_server-{{ _rabbitmq_version }}/plugins/{{ item | basename }}"
-    owner: "{{ rabbitmq_user }}"
-    group: "{{ rabbitmq_group }}"
-    mode: 0644
-  with_items: (rabbitmq_plugins_dict.values() | select("string")) | list
-  when: >
-    rabbitmq_plugins_dict is defined and
-    not rabbitmq_plugins_dict is none
+- block:
+  - name: Copy the plugins
+    copy:
+      src: "{{ item }}"
+      dest: "{{ rabbitmq_plugin_dir }}/rabbitmq_server-{{ _rabbitmq_version }}/plugins/{{ item | basename }}"
+      owner: "{{ rabbitmq_user }}"
+      group: "{{ rabbitmq_group }}"
+      mode: 0644
+    with_items: "{{ (rabbitmq_plugins_dict.values() | select('string')) | list }}"
 
-- name: Enable plugins
-  rabbitmq_plugin:
-    names: "{{ rabbitmq_plugins_dict | join(',') }}"
-    new_only: "{{ rabbitmq_new_only | ternary('yes','no') }}"
+  - name: Manage plugins
+    rabbitmq_plugin:
+      names: "{{ rabbitmq_plugins_dict | join(',') }}"
+      new_only: "{{ rabbitmq_plugins_only_listed | ternary('yes','no') }}"
+    notify: restart rabbitmq
+
   when: >
-    rabbitmq_plugins_dict is defined and
-    not rabbitmq_plugins_dict is none
+    rabbitmq_plugins_dict is defined
+    and rabbitmq_plugins_dict is not none
+  tags: ["enable"]
+
+
+- name: Disable marked plugins
+  rabbitmq_plugin: names="{{ item }}" state=disabled
+  with_items: "{{ rabbitmq_plugins_disabled }}"
+  when: >
+    rabbitmq_plugins_disabled is defined
+    and rabbitmq_plugins_disabled is not none
   notify: restart rabbitmq
+  tags: ["disable"]
 
 - name: List of active plugins to disable
-  command: rabbitmq-plugins list -e -m
+  shell: rabbitmq-plugins list -e -m
   register: __plugins_result
-  when: >
-    not (rabbitmq_plugins_dict is defined and not rabbitmq_plugins_dict is none)
+  changed_when: False
 
 - name: Disable plugins if none added
-  rabbitmq_plugin:
-    name: "{{ item }}"
-    state: disabled
-  with_items: __plugins_result.stdout_lines
+  rabbitmq_plugin: names="{{ item }}" state=disabled
+  with_items: "{{ __plugins_result.stdout_lines }}"
   when: >
-    not (rabbitmq_plugins_dict is defined and not rabbitmq_plugins_dict is none)
+    not rabbitmq_plugins_dict is defined
+    or rabbitmq_plugins_dict is none
   notify: restart rabbitmq
+  tags: ["disable"]
+
 

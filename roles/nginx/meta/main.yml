@@ -1,25 +1,25 @@
 ---
 galaxy_info:
-  author: Jose Riguera
-  description: Nginx installation and setup on RedHat/Debian based distributions
-  company: Springer SBM
-  license: GPLv3
-  min_ansible_version: 1.9
+  author: Jose Riguera Lopez (jriguera@gmail.com)
+  description: Install and setup Nginx (proxy or web) on RedHat/Debian based distributions
+  license: Apache 2.0
+  min_ansible_version: 2.0
 
   platforms:
   - name: EL
     versions:
     - 6
     - 7
-  - name: Debian
-    versions:
-    - all
   - name: Ubuntu
     versions:
-    - all
+    - trusty
+  - name: Debian
+    versions:
+    - jessie
 
   categories:
-    - development
     - web
+    - proxy
 
 dependencies: []
+

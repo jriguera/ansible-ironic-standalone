@@ -1,8 +1,8 @@
 ---
 - name: Check if the ssh public key is defined locally
-  local_action: stat path={{ configdrive_ssh_public_key_path }}
+  local_action: stat path="{{ configdrive_ssh_public_key_path }}"
   register: __configdrive_ssh_public_key_path
-  when: > 
+  when: >
     configdrive_ssh_public_key_path is defined and
     not configdrive_ssh_public_key_path is none
 
@@ -11,15 +11,15 @@
   when: > 
     configdrive_ssh_public_key_path is defined and
     not configdrive_ssh_public_key_path is none and
-    __configdrive_ssh_public_key_path.stat.exists == true
+    __configdrive_ssh_public_key_path.stat.exists == True
 
 - name: Check if the ssh public key is on the server
-  command: cat {{ configdrive_ssh_public_key_path }}
+  command: cat "{{ configdrive_ssh_public_key_path }}"
   register: __configdrive_ssh_public_key_path_remote
   when: > 
     configdrive_ssh_public_key_path is defined and
     not configdrive_ssh_public_key_path is none and
-    __configdrive_ssh_public_key_path.stat.exists == false
+    __configdrive_ssh_public_key_path.stat.exists == False
   ignore_errors: yes
 
 - name: Read ssh public key on the server
@@ -28,7 +28,7 @@
     configdrive_ssh_public_key_path is defined and
     not configdrive_ssh_public_key_path is none and
     __configdrive_ssh_public_key_path_remote|success  and
-    __configdrive_ssh_public_key_path.stat.exists == false
+    __configdrive_ssh_public_key_path.stat.exists == False
 
 - name: Check if the ssh public key is readable
   fail: msg="SSH keys defined in {{ configdrive_ssh_public_key_path }} not found!"

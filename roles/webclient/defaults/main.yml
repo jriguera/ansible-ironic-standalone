@@ -1,0 +1,26 @@
+---
+webclient_tarball_url: "https://github.com/jriguera/ironic-webclient_packages/releases/download/v1.0.0/ironic-webclient-1.0.0.tgz"
+webclient_tarball_checksum: "sha1:6e341c21c151a842c4d65c45ddef04c02d407885"
+
+# Installation of the tarball
+webclient_basedir: "/var/lib/ironic/webclient"
+webclient_basedir_owner: "ironic"
+webclient_basedir_group: "ironic"
+# Final destination folder for the static files for the HTTP server
+webclient_webdir: "/var/lib/ironic/http/www"
+webclient_webdir_owner: "www-data"
+webclient_webdir_group: "ironic"
+
+# List of webdirs to create or change the ownership
+webclient_webdir_list:
+  - path: /var/lib/ironic/http/images
+  - path: /var/lib/ironic/http/metadata
+  - path: /var/lib/ironic/http/deploy
+# Additionally they can be deleted like this:
+# - path: /var/lib/ironic/http/images
+#   state: absent
+
+# Settings for the webclient
+#webclient_config_list:
+#  - name: "Ironic"
+#    ironic_api: "http://localhost:6385/"

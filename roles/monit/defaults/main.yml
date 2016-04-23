@@ -1,5 +1,8 @@
 ---
-monit_enabled_on_startup: true
+monit_enabled_on_startup: True
+
+# Install from upstream repos or directly from operating system packages
+monit_os_packages: True
 
 # Global options
 # The number of seconds to determine if a process is down or not.
@@ -8,6 +11,12 @@ monit_interval: 120
 # The number of seconds before starting to monitor a process which just launched.
 # Set this to 0 to disable it.
 monit_start_delay: 30
+
+# Define a motd message
+monit_update_motd: True
+
+# Enable cpu/memory and fs monitoring
+monit_monitoring_system: True
 
 # Log file. If it is not defined, it will use syslog
 monit_logfile: "/var/log/monit.log"
@@ -55,7 +64,7 @@ monit_event_slots: 200
 # Run the http server and allow localhost to view it, this is required to
 # make monit's CLI function.
 monit_http_port: 2812
-monit_http_signature: false
+monit_http_signature: False
 monit_http_bind: "0.0.0.0"
 monit_http_allow_net_list: []
 monit_http_allow_user_list: [ "admin:admin" ]
@@ -64,20 +73,24 @@ monit_http_allow_user_ro_list: [ "guest:guest" ]
 # To enable SSL you have to define the cert file
 #monit_https_cert: "/path/to/file.pem"
 #monit_https_client: "/path/to/client.pem"
-#monit_https_selfcertification: true
+#monit_https_selfcertification: True
 
 # Monitoring
+# start and stop dictionaries are optional if script is defined,
+# they are only needed to define additional parameters
 #monit_monitoring_list: 
 #  - name: "name"
 #    type: "process"
-#    delete: true
+#    delete: True
+#    script: "/etc/init.d/name %"
 #    target: "/var/run/process/process.pid"
 #    start: { script: "/etc/init.d/name start", uid: "user", gid: "group", timeout: 10 }
-#    stop: { script: "/etc/init.d/name stop" }
+#    #stop: { script: "/etc/init.d/name stop" }
 #    restart: { script: "/etc/init.d/name restart" }
 #    rules:
 #      - "if totalcpu > 80% for 3 cycles then alert"
 #      - "if totalmem > 400.0 MB for 5 cycles then alert"
 #      - "if children > 250 then alert"
 #      - "if loadavg(5min) > 20 for 8 cycles then alert"  
+monit_monitoring_list:
 

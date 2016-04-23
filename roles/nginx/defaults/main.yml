@@ -1,6 +1,9 @@
 ---
 nginx_enabled_on_startup: true
 
+# Install from upstream repos or directly from operating system packages
+nginx_os_packages: true
+
 # Main options
 nginx_error_log: "/var/log/nginx/error.log"
 nginx_error_log_level: "error"
@@ -84,6 +87,23 @@ nginx_server_list: []
 #      - name: "^~ /images/"
 #        confiration: "parameters"
 #        try_files: "$uri $uri/ 404"
+#        auth:
+#           title: "Restricted"
+#            users:
+#               jose: $(openssl passwd -apr1 password)
+
+# Another example with vhost auth
+#nginx_server_list:
+#  - name: "example.com"
+#    delete: True
+#    root: "/var/www/example.com" 
+#    return: "403"
+#    location_list:
+#      - name: "/"
+#    auth:
+#      title: "Restricted"
+#      users:
+#        jose: $(openssl passwd -apr1 password)
 
 # Example with a proxy backend
 #nginx_server_list:

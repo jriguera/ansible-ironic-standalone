@@ -1,12 +1,13 @@
 ---
-dnsmasq_os_packages: true
 dnsmasq_os_repo_url:
 dnsmasq_os_repo_key:
+dnsmasq_packages_install_recommends: true
 
 dnsmasq_daemon: dnsmasq
 dnsmasq_user: dnsmasq
 dnsmasq_group: nogroup
 
+dnsmasq_pidfile: /var/run/dnsmasq.pid
 dnsmasq_config_file: /etc/dnsmasq.conf
 dnsmasq_config_dir: /etc/dnsmasq.d
 dnsmasq_var_dir: /var/lib/dnsmasq

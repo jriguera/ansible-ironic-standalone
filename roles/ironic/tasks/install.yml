@@ -1,44 +1,42 @@
 ---
-- name: Debian - Import repository key
-  apt_key: url="{{ ironic_os_repo_key }}" state=present
-  when: >
-    ansible_os_family == 'Debian' and 
-    not ironic_os_packages and
-    not ironic_os_repo_key is none and
-    ironic_os_repo_key | search("http://.*")
-  ignore_errors: yes
-  tags: ["debian"]
+# Debian repository
+- block:
+  - name: Debian - Import repository key
+    apt_key: url="{{ ironic_os_repo_key }}" state=present
+    when: >
+      not ironic_os_repo_key is none and
+      ironic_os_repo_key | search("http://.*")
+    ignore_errors: yes
 
-- name: Debian - Add repository package
-  apt: name="{{ ironic_os_repo_key }}" state=latest
-  when: >
-    ansible_os_family == 'Debian' and 
-    not ironic_os_packages and
-    not ironic_os_repo_key is none and
-    not ironic_os_repo_key | search("http://.*")
-  tags: ["debian"]
+  - name: Debian - Add repository package
+    apt: name="{{ ironic_os_repo_key }}" state=latest
+    when: >
+      not ironic_os_repo_key is none and
+      not ironic_os_repo_key | search("http://.*")
 
-- name: Debian - Add repository url
-  apt_repository: repo="{{ ironic_os_repo_url }}" state=present
+  - name: Debian - Add repository url
+    apt_repository: repo="{{ ironic_os_repo_url }}" state=present
+
   when: >
-    ansible_os_family == 'Debian' 
+    ansible_os_family == 'Debian'
     and not ironic_os_packages
-  tags: ["debian"]
+  tags: ["debian", "repository"]
 
-- name: RedHat - Add repository
-  yum: name="{{ ironic_os_repo_url }}" state=present
-  when: >
-    ansible_os_family == 'RedHat' and 
-    not ironic_os_packages
-  tags: ["redhat"]
 
-- name: RedHat - Import repository key
-  rpm_key: key="{{ ironic_os_repo_key }}" state=present
+# RedHat repository
+- block:
+  - name: RedHat - Add repository
+    yum: name="{{ ironic_os_repo_url }}" state=present
+
+  - name: RedHat - Import repository key
+    rpm_key: key="{{ ironic_os_repo_key }}" state=present
+    when: ironic_os_repo_key is not none
+
   when: >
-    ansible_os_family == 'RedHat' and 
-    not ironic_os_packages and 
-    not ironic_os_repo_key is none
-  tags: ["redhat"]
+    ansible_os_family == 'RedHat'
+    and not ironic_os_packages
+  tags: ["redhat", "repository"]
+
 
 - name: Check if configuration exists
   stat: path="{{ ironic_config_file }}"
@@ -48,3 +46,13 @@
   set_fact: _ironic_previous="{{ __ironic_conf.stat.exists }}"
 
 
+- name: Get init system type
+  command: cat /proc/1/comm
+  register: __ironic_init_system
+  changed_when: False
+
+- name: Set init system type
+  set_fact: ironic_init_system="{{ __ironic_init_system.stdout }}"
+
+# Force restart all the sevices (database, messaging) if they were installed or reinstalled
+- meta: flush_handlers

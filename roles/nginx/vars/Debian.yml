@@ -1,13 +1,14 @@
 ---
+nginx_os_repo_url: "http://nginx.org/packages/{{ ansible_distribution | lower }}/ {{ ansible_distribution_release }} nginx"
+nginx_os_repo_key: "http://nginx.org/keys/nginx_signing.key"
+
 nginx_sites_dir: /etc/nginx/sites-enabled
 nginx_confd_dir: /etc/nginx/conf.d
+nginx_auth_dir: /etc/nginx/auth.d
 nginx_default_server_path: /etc/nginx/sites-enabled/default
 
 nginx_user: "www-data"
 nginx_group: "www-data"
-
-nginx_packages_install_recommends: true
-nginx_init_system: "initd"
 
 nginx_packages:
   nginx-full:

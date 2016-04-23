@@ -1,13 +1,13 @@
 ---
 - name: restart nginx
-  service: name={{ nginx_daemon }} state=restarted
+  service: name="{{ nginx_daemon }}" state=restarted
   
 - name: reload nginx
-  service: name={{ nginx_daemon }} state=reloaded
+  service: name="{{ nginx_daemon }}" state=reloaded
   
 - name: start nginx
-  service: name={{ nginx_daemon }} state=started
+  service: name="{{ nginx_daemon }}" state=started
 
 - name: stop nginx
-  service: name={{ nginx_daemon }} state=stopped
+  service: name="{{ nginx_daemon }}" state=stopped
 

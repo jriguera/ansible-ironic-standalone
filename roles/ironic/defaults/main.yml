@@ -1,22 +1,27 @@
 ---
+# Take the package given by the distribution (True for Xenial, False otherwise)
+ironic_os_packages: False
+
 # Enable Ironic-Conductor?
 ironic_conductor: True
 # Enable Ironic-API?
 ironic_api: True
 
-ironic_enabled_on_startup: true
-ironic_debug: false
-ironic_trace: false
-ironic_verbose: true
+ironic_enabled_on_startup: True
+ironic_debug: False
+ironic_trace: False
+
+# Ironic_lib
+ironic_lib_fatal_exception_format_errors: False
 
 # Default options:
 #ironic_my_ip:
 ironic_log: "/var/log/ironic/ironic.log"
-ironic_watch_log_file: true
+ironic_watch_log_file: True
 ironic_state_path: "{{ ironic_var_dir }}"
 ironic_host: "{{ inventory_hostname }}"
-ironic_publish_errors: true
-ironic_fatal_deprecations: false
+ironic_publish_errors: True
+ironic_fatal_deprecations: False
 ironic_rpc_conn_pool_size: 30
 ironic_executor_thread_pool_size: 64
 #ironic_notification_driver: [ "messaging" ]
@@ -26,17 +31,20 @@ ironic_executor_thread_pool_size: 64
 ironic_rpc_backend: "rabbit"
 ironic_auth_strategy: "noauth"
 ironic_enabled_drivers: [ "pxe_ipmitool" ]
-ironic_fatal_exception_format_errors: false
-ironic_isolinux_bin: /usr/lib/syslinux/isolinux.bin
+ironic_fatal_exception_format_errors: False
 ironic_pybasedir: /usr/lib/python2.7/dist-packages/ironic
 ironic_bindir: /usr/bin
-ironic_force_raw_images: true
+ironic_force_raw_images: True
 ironic_tempdir: "/tmp"
-ironic_parallel_image_downloads: false
-ironic_run_external_periodic_tasks: true
+ironic_parallel_image_downloads: False
+ironic_run_external_periodic_tasks: True
 # If defined, it will copy next two templates
 ironic_isolinux_config_template:
 ironic_grub_config_template:
+# Isolinux is taken from the syslinux tarball is
+# not defined here, otherwise this is the default value
+#ironic_isolinux_bin: /usr/lib/syslinux/isolinux.bin
+
 
 # Ironic-api options:
 ironic_api_host_ip: "0.0.0.0"
@@ -44,16 +52,33 @@ ironic_api_port: 6385
 # If you are behing a proxy, you can define here the proxy URL
 #ironic_api_public_endpoint:
 
+
+# CORS: http://docs.openstack.org/developer/oslo.middleware/cors.html
+#ironic_cors_allowed_origin: "*"
+#ironic_cors_allow_credentials: True
+#ironic_cors_expose_headers: ["Content-Type", "Cache-Control", "Content-Language", "Expires", "Last-Modified", "Pragma"]
+#ironic_cors_max_age: 3600
+#ironic_cors_allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+#ironic_cors_allow_headers: ["Content-Type", "Cache-Control", "Content-Language", "Expires", "Last-Modified", "Pragma"]
+
+# CORS subdomains
+#ironic_cors_domains:
+#  localhost_webclient:
+#     allowed_origin: "http://localhost:8080"
+#     allow_credentials: True
+
+
 # Ironic-conductor options:
+ironic_conductor_workers_pool_size: 100
 ironic_conductor_api_url: "http://127.0.0.1:6385/"
 ironic_conductor_sync_power_state_interval: 60
 ironic_conductor_check_provision_state_interval: 60
 ironic_conductor_deploy_callback_timeout: 1800
-ironic_conductor_force_power_state_during_sync: false
+ironic_conductor_force_power_state_during_sync: False
 ironic_conductor_send_sensor_data: [ "ALL" ]
-#ironic_conductor_configdrive_swift: "ironic_configdrive"
 ironic_conductor_inspect_timeout: 1800
-ironic_conductor_clean_nodes: true
+ironic_conductor_automated_clean: False
+#ironic_conductor_configdrive_swift: "ironic_configdrive"
 
 # Database options:
 ironic_database_connection: "sqlite:///var/lib/ironic/ironic.db"
@@ -64,7 +89,7 @@ ironic_database_connection: "sqlite:///var/lib/ironic/ironic.db"
 ironic_database_idle_timeout: 600
 ironic_database_pool_size: 10
 #ironic_database_pool_timeout: 
-ironic_database_use_db_reconnect: true
+ironic_database_use_db_reconnect: True
 
 # Keystone options:
 ironic_keystone_region_name: "RegionOne"
@@ -86,8 +111,8 @@ ironic_keystone_authtoken_auth_version: "v3.0"
 ironic_oslo_concurrency_lock_path: "/var/lock/ironic"
 ironic_oslo_messaging_amqp_container_name:
 ironic_oslo_messaging_amqp_idle_timeout: 0
-ironic_oslo_messaging_rabbit_amqp_durable_queues: false
-ironic_oslo_messaging_rabbit_amqp_auto_delete: false
+ironic_oslo_messaging_rabbit_amqp_durable_queues: False
+ironic_oslo_messaging_rabbit_amqp_auto_delete: False
 ironic_oslo_messaging_rabbit_host: "localhost"
 ironic_oslo_messaging_rabbit_port: 5672
 ironic_oslo_messaging_rabbit_userid: "guest"
@@ -95,37 +120,52 @@ ironic_oslo_messaging_rabbit_password: "guest"
 ironic_oslo_messaging_rabbit_login_method: "AMQPLAIN"
 ironic_oslo_messaging_rabbit_virtual_host: "ironic"
 ironic_oslo_messaging_rabbit_max_retries: 0
-ironic_oslo_messaging_rabbit_ha_queues: false
+ironic_oslo_messaging_rabbit_ha_queues: False
 ironic_oslo_messaging_heartbeat_timeout_threshold: 60
 # If defined, it will copy the file
 ironic_oslo_policy_file:
 
 # Deploy options:
-ironic_deploy_efi_system_partition_size: 200
-ironic_deploy_dd_block_size: "1M"
 #ironic_deploy_http_url: 
 ironic_deploy_http_root: "/var/lib/ironic/httpboot"
 ironic_deploy_erase_devices_priority: 10
+
+# Disk utils options:
+ironic_disk_utils_efi_system_partition_size: 200
+ironic_disk_utils_dd_block_size: "1M"
 
 # Inspector options:
 #ironic_inspector_service_url:
 #ironic_inspector_status_check_period: 60
 
-# Glance options:
-#ironic_glance_swift_endpoint_url:
-#ironic_glance_swift_temp_url_key:
-#ironic_glance_swift_temp_url_duration: 1200
+# Glance options
+# Allowed values: swift, radosgw
+#ironic_glance_temp_url_endpoint_type: "swift"
 #ironic_glance_api_servers: [ ]
 #ironic_glace_auth_strategy: "keystone"
+# Swift backend options for glance
+#ironic_glance_swift_endpoint_url:
+#ironic_glance_swift_temp_url_key:
+#ironic_glance_swift_api_version: v1
+#ironic_glance_swift_temp_url_cache_enabled: False
+#ironic_glance_swift_temp_url_duration: 1200
+#ironic_glance_swift_container: "glance"
+#ironic_glance_swift_account:
 
 # Console options:
 ironic_console_terminal: "shellinaboxd"
 ironic_console_terminal_pid_dir: "/tmp"
 
 # Agent options:
-ironic_agent_manage_boot: true
+ironic_agent_manage_boot: True
 ironic_agent_memory_consumed: 0
 ironic_agent_api_version: "v1"
+# Whether the agent ramdisk should stream raw images directly
+# onto the disk or not. By streaming raw images directly onto
+# the disk the agent ramdisk will not spend time copying the
+# image to a tmpfs partition. Streaming may be undesirable if
+# writing to disk is slower than the network
+ironic_agent_stream_raw_images: True
 
 # IPMI options:
 ironic_ipmi_retry_timeout: 60
@@ -141,7 +181,9 @@ ironic_pxe_append_params: ["nofb", "nomodeset", "vga=normal"]
 ironic_pxe_default_ephemeral_format: "ext4"
 ironic_pxe_images_path: "/var/lib/ironic/images"
 ironic_pxe_instance_master_path: "/var/lib/ironic/master_images"
+# Caching options
 ironic_pxe_image_cache_size: 102400
+ironic_pxe_image_cache_ttl: 10080
 ironic_pxe_disk_devices: ["cciss/c0d0", "sda", "hda", "vda"]
 ironic_pxe_tftp_server: "{{ ansible_eth0.ipv4.address }}"
 ironic_pxe_tftp_root: "/var/lib/ironic/tftpboot"
@@ -152,21 +194,17 @@ ironic_pxe_uefi_pxe_bootfile_name: "elilo.efi"
 #ironic_pxe_config_template:
 #ironic_pxe_uefi_pxe_config_template:
 
+# Ironic Python Agent to be deployed on ironic_deploy_http_root
+ironic_pxe_ipa_download: True
+ironic_pxe_ipa_img_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem-stable-{{ ironic_release }}.cpio.gz"
+ironic_pxe_ipa_img_checksum: "sha1:435f974d6cd21101a140151af1a9fc239835f901"
+ironic_pxe_ipa_img_name: "coreos_production_pxe_image-oem.cpio.gz"
+ironic_pxe_ipa_kernel_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe-stable-{{ ironic_release }}.vmlinuz"
+ironic_pxe_ipa_kernel_checksum: "sha1:7c1f31fba3747197fc8356f03aa4ad7372ba643e"
+ironic_pxe_ipa_kernel_name: "coreos_production_pxe.vmlinuz"
+
 # Enabling iPXE
-ironic_ipxe: false
+ironic_ipxe: False
 # If defined, it will copy the file
 #ironic_pxe_ipxe_boot_script:
 
-# CORS
-#ironic_cors_allowed_origin: "*"
-ironic_cors_allow_credentials: true
-#ironic_cors_expose_headers: ["Content-Type", "Cache-Control", "Content-Language", "Expires", "Last-Modified", "Pragma"]
-ironic_cors_max_age: 3600
-#ironic_cors_allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-#ironic_cors_allow_headers: ["Content-Type", "Cache-Control", "Content-Language", "Expires", "Last-Modified", "Pragma"]
-
-# CORS subdomains
-#ironic_cors_domains:
-#  ironic_webclient:
-#     allowed_origin: "*"
-#     allow_credentials: True

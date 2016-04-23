@@ -22,14 +22,9 @@
   when: ironic_conductor
   tags: ["ironic", "conductor", "install"]
 
+- include: setup.yml
+  tags: ["ironic", "setup"]
+
 - include: configure.yml
   tags: ["ironic", "configure"]
-
-- include: setup_console.yml
-  when: ironic_conductor
-  tags: ["ironic", "conductor", "setup", "console"]
-
-- include: setup_pxe.yml
-  when: ironic_conductor
-  tags: ["ironic", "conductor", "setup", "configure", "pxe"]
 

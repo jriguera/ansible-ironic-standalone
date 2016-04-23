@@ -1,5 +1,11 @@
 ---
+# Enable mysql daemon
 mysql_enabled_on_startup: true
+
+# Install from upstream repos or directly from operating system packages
+# except for RH/Centos -overwritten in vars files- because it has been changed
+# by MariaDB
+mysql_os_packages: True
 
 # Other settings
 mysql_nice: 0
@@ -22,27 +28,91 @@ mysql_slow_query_log: false
 mysql_slow_query_log_file: "/var/log/mysql/mysql-slow.log"
 mysql_slow_query_time: 3
 
-# Memory settings (default values optimized ~512MB RAM)
-mysql_key_buffer_size: "256M"
+# The maximum size of one packet or any generated/intermediate string
 mysql_max_allowed_packet: "64M"
-mysql_table_open_cache: "256"
-mysql_sort_buffer_size: "1M"
-mysql_read_buffer_size: "1M"
-mysql_read_rnd_buffer_size: "4M"
+# How to manage timestamp formats
+mysql_explicit_defaults_for_timestamp: 1
+
+# Memory settings for MyISAM
+mysql_key_buffer_size: "512M"
 mysql_myisam_sort_buffer_size: "64M"
-mysql_thread_cache_size: "8"
-mysql_query_cache_size: "16M"
+
+# Default value is good
+mysql_table_open_cache: 2000
+
+mysql_sort_buffer_size: "8M"
+mysql_read_buffer_size: "4M"
+mysql_read_rnd_buffer_size: "8M"
+# Default value is automatic
+#mysql_thread_cache_size: 8
+# No caching by default
+mysql_query_cache_type: 0
+mysql_query_cache_size: "64M"
 
 # InnoDB settings
-# Set .._buffer_pool_size up to 80% of RAM but beware of setting too high.
-mysql_innodb_file_per_table: "1"
-mysql_innodb_buffer_pool_size: "256M"
-mysql_innodb_additional_mem_pool_size: "20M"
+# Set .._buffer_pool_size up to 80% of RAM but beware of setting too high
+mysql_innodb_buffer_pool_size: "1024M"
 # Set .._log_file_size to 25% of buffer pool size.
-mysql_innodb_log_file_size: "64M"
-mysql_innodb_log_buffer_size: "8M"
-mysql_innodb_flush_log_at_trx_commit: "1"
+mysql_innodb_log_file_size: "256M"
+mysql_innodb_log_buffer_size: "128M"
+mysql_innodb_flush_log_at_trx_commit: 1
 mysql_innodb_lock_wait_timeout: 50
+# Flush method defaults to fdatasync, with hardware RAID controller, you can
+# set this to O_DIRECT. This prevents the "double buffering" effect of when
+# reading InnoDB buffer pool pages there is both a copy in InnoDB and in fs 
+# cache, but in can cause issues with some SANs.
+mysql_innodb_flush_method: "O_DIRECT"
+# This setting should be set to 0 on SSDs and most RAIDs which do not have any 
+# performance gains with sequential IO
+mysql_innodb_flush_neighbors: 0
+# A parameter that influences the algorithms and heuristics for the flush
+# operation for the InnoDB buffer pool. Primarily of interest to performance
+# experts tuning I/O-intensive workloads.
+mysql_innodb_lru_scan_depth: 1024
+# Sets an a upper limit on the I/O activity performed by the InnoDB background
+# tasks, such as flushing pages from the buffer pool and merging data from the
+# change buffer. 
+mysql_innodb_io_capacity: 200
+
+# Additional settings
+# Force MySQL to be more strict and not allow legacy
+# defaults which truncate data, accept invalidate dates etc
+# Shown vertically to be a little easier to read.
+mysql_sql_mode:
+  - STRICT_TRANS_TABLES
+  - NO_AUTO_CREATE_USER
+  - NO_AUTO_VALUE_ON_ZERO
+  - NO_ENGINE_SUBSTITUTION
+  - ONLY_FULL_GROUP_BY
+# Force UTF-8 character-set
+mysql_utf8: True
+# Reverse name lookups on incoming connections
+mysql_dnsresolve: True
+# Max allowed concurrent connections
+mysql_max_connections: 200
+# If more than this many successive connection requests from a host are 
+# interrupted without a successful connection, the server blocks that host 
+# from further connections. USE a FW for this! This is not to protect a server!
+mysql_max_connect_errors: 200
+
+# Replication settings (replication is only enabled if master/user have values)
+mysql_server_id: "{{ ansible_default_ipv4.address | replace('.', ', ') | list | last  }}"
+mysql_max_binlog_size: "100M"
+mysql_expire_logs_days: "30"
+mysql_binlog_format: "ROW"
+mysql_transaction_isolation: "READ-COMMITTED"
+# Role: master or slave
+mysql_replication_role: "master"
+#mysql_replication_master:
+
+# Same keys as `mysql_users` above.
+mysql_replication_user: { name: repl, host: "%", password: secret, priv: "*.*:REPLICATION SLAVE" }
+
+# mysqldump settings
+mysql_mysqldump_max_allowed_packet: "64M"
+
+
+# Manage users and databases
 
 # Databases, for example:
 #mysql_database_list:
@@ -51,17 +121,4 @@ mysql_innodb_lock_wait_timeout: 50
 # Users, example:
 #mysql_user_list:
 #  - { name: example, host: 127.0.0.1, password: secret, priv: *.*:USAGE }
-
-# Replication settings (replication is only enabled if master/user have values)
-mysql_server_id: "{{ ansible_eth0.ipv4.address | replace('.', ', ') | list | last  }}"
-mysql_max_binlog_size: "100M"
-mysql_expire_logs_days: "10"
-mysql_replication_role:
-mysql_replication_master:
-
-# Same keys as `mysql_users` above.
-mysql_replication_user: { name: repl, host: "%", password: secret, priv: "*.*:REPLICATION SLAVE" }
-
-# mysqldump settings
-mysql_mysqldump_max_allowed_packet: "64M"
 

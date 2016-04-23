@@ -1,7 +1,7 @@
 ---
-monit_os_packages: true
 monit_os_repo_url:
 monit_os_repo_key:
+monit_packages_install_recommends: true
 
 monit_daemon: monit
 monit_user: root
@@ -11,4 +11,3 @@ monit_pidfile: /var/run/monit.pid
 monit_idfile: /var/lib/monit/id
 monit_statefile: /var/lib/monit/state
 monit_event_dir: /var/lib/monit/events
-

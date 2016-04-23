@@ -1,4 +1,9 @@
 ---
+# Check if genisoimage and other packages which are needed to create
+# configdrive are installed. The check can be disabled to speed up (a bit)
+# the role (assuming the packages are already installed)
+configdrive_check_required_packages: True
+
 # You should overwrite those role variables!
 # It will generate the network configuration based
 # on the family!
@@ -16,9 +21,9 @@ configdrive_volume_path: "/var/lib/ironic/images/"
 configdrive_meta: {}
 
 # Path to ssh public key file
-configdrive_ssh_public_key_path:
+#configdrive_ssh_public_key_path:
 # Path to cloud-config file
-configdrive_config_user_data_path:
+#configdrive_config_user_data_path:
 
 # Automatically assigned with uuid
 #configdrive_instance_dir:

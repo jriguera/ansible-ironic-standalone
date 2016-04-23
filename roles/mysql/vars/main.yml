@@ -1,7 +1,10 @@
 ---
-mysql_os_packages: true
+mysql_version: "5.6"
+
 mysql_os_repo_url:
 mysql_os_repo_key:
+mysql_packages_install_recommends: True
+mysql_os_packages: True
 
 mysql_user: mysql
 mysql_group: mysql

@@ -12,6 +12,18 @@
 - name: Check if configuration was updated
   set_fact: _mysql_updated="{{ __mysql_updated.changed }}"
 
+# For RH
+- name: Create log folder
+  file:
+    path: "{{ mysql_log_error | dirname }}"
+    owner: "{{ mysql_user }}"
+    group: "{{ mysql_group }}"
+    state: directory
+    mode: 0755
+  when: >
+    mysql_log_error is defined
+    and mysql_log_error != 'syslog'
+
 - name: Create slow query log file
   file:
     path: "{{ mysql_slow_query_log_file }}"
@@ -21,10 +33,26 @@
     mode: 0644
   when: mysql_slow_query_log
 
-- name: Delete innodb log files created after initial install
-  shell: "rm {{ mysql_datadir }}/ib_logfile[01]"
-  when: _mysql_reinstalled and _mysql_updated
+
+- block:
+  - name: Stop MySQL to flush innodb log files
+    service:
+      name: "{{ mysql_daemon }}"
+      state: stopped
+
+  - name: Delete innodb log files created after initial install
+    file: path="{{ mysql_datadir }}/{{ item }}" state=absent
+    with_items:
+      - ib_logfile0
+      - ib_logfile1
+    ignore_errors: yes
+
+  when: _mysql_reinstalled or _mysql_updated
+
 
 - name: Ensure MySQL is started and enabled on boot
-  service: name={{ mysql_daemon }} state=started enabled={{ mysql_enabled_on_startup | ternary('yes', 'no') }}
+  service:
+    name: "{{ mysql_daemon }}"
+    state: started
+    enabled: "{{ mysql_enabled_on_startup | ternary('yes', 'no') }}"
 

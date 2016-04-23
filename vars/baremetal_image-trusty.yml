@@ -1,4 +1,6 @@
 ---
+# The driver is linked to the image definition on purpose
+# because the images could be created for a specific driver
 baremetal_driver: "agent_ipmitool"
 
 # Folder relative to the servers

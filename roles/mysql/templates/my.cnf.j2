@@ -43,10 +43,15 @@ long_query_time = {{ mysql_slow_query_time }}
 
 {% if mysql_replication_master is defined and not mysql_replication_master is none %}
 # Replication settings
+binlog_format = {{ mysql_binlog_format | default('ROW') }}
+transaction_isolation = {{ mysql_transaction_isolation | default('READ-COMMITTED') }}
+expire_logs_days = {{ mysql_expire_logs_days }}
+# MySQL server synchronizes its binary log to disk
+sync_binlog = 1
+sync_relay_log = 1
 server_id = {{ mysql_server_id }}
 {% if mysql_replication_role == 'master' %}
 log_bin = mysql-bin
-expire_logs_days = {{ mysql_expire_logs_days }}
 max_binlog_size = {{ mysql_max_binlog_size }}
 {% for db in mysql_databases %}
 {% if db.replicate | default(1) %}
@@ -63,9 +68,28 @@ relay_log = relay-bin
 {% endif %}
 
 # Other settings
-wait_timeout = {{ mysql_wait_timeout }}
+{% if mysql_utf8 %}
+# Force UTF-8 character-set
+character_set_server = utf8
+collation_server = "utf8_general_ci"
+{% endif %}
+{% if not mysql_dnsresolve %}
+# Disables reverse name lookups on incoming connections
+skip_name_resolve = 1
+{% endif %}
+
 default_storage_engine = innodb
+wait_timeout = {{ mysql_wait_timeout }}
 init_connect = "{{ mysql_init_connect }}"
+explicit_defaults_for_timestamp = {{ mysql_explicit_defaults_for_timestamp }}
+
+# Force MySQL to be more strict and not allow legacy
+# defaults which truncate data, accept invalidate dates etc
+# Shown vertically to be a little easier to read.
+sql_mode = "{{ mysql_sql_mode | join(',') }}"
+
+max_connections = {{ mysql_max_connections }}
+max_connect_errors = {{ mysql_max_connect_errors }}
 
 {% if mysql_performance_schema is defined and mysql_performance_schema %}
 # Enable performance schema
@@ -73,24 +97,50 @@ performance_schema = 1
 {% endif %}
 
 # Memory settings
-key_buffer_size = {{ mysql_key_buffer_size }}
-max_allowed_packet = {{ mysql_max_allowed_packet }}
 table_open_cache = {{ mysql_table_open_cache }}
 sort_buffer_size = {{ mysql_sort_buffer_size }}
 read_buffer_size = {{ mysql_read_buffer_size }}
 read_rnd_buffer_size = {{ mysql_read_rnd_buffer_size }}
+
+# MyISAM parameters
+key_buffer_size = {{ mysql_key_buffer_size }}
 myisam_sort_buffer_size = {{ mysql_myisam_sort_buffer_size }}
+
+max_allowed_packet = {{ mysql_max_allowed_packet }}
+
+{% if mysql_thread_cache_size is defined and mysql_thread_cache_size is not none %}
 thread_cache_size = {{ mysql_thread_cache_size }}
-query_cache_size = {{ mysql_query_cache_size }}
+{% endif %}
+{% if mysql_query_cache_type is defined and mysql_query_cache_type != 0 %}
+query_cache_size = {{ mysql_query_cache_size | default("64M") }}
+query_cache_type = {{ mysql_query_cache_type }}
+{% endif %}
 
 # InnoDB settings
-innodb_file_per_table = {{ mysql_innodb_file_per_table }}
+innodb_file_per_table = 1
 innodb_buffer_pool_size = {{ mysql_innodb_buffer_pool_size }}
-innodb_additional_mem_pool_size = {{ mysql_innodb_additional_mem_pool_size }}
 innodb_log_file_size = {{ mysql_innodb_log_file_size }}
+
 innodb_log_buffer_size = {{ mysql_innodb_log_buffer_size }}
 innodb_flush_log_at_trx_commit = {{ mysql_innodb_flush_log_at_trx_commit }}
 innodb_lock_wait_timeout = {{ mysql_innodb_lock_wait_timeout }}
+# Flush method defaults to fdatasync, with hardware RAID controller, you can
+# set this to O_DIRECT. This prevents the "double buffering" effect of when
+# reading InnoDB buffer pool pages there is both a copy in InnoDB and in fs 
+# cache, but in can cause issues with some SANs.
+innodb_flush_method =  {{ mysql_innodb_flush_method }}
+# This setting should be set to 0 on SSDs and most RAIDs which do not have any 
+# performance gains with sequential IO
+innodb_flush_neighbors = {{ mysql_innodb_flush_neighbors }}
+# A parameter that influences the algorithms and heuristics for the flush
+# operation for the InnoDB buffer pool. Primarily of interest to performance
+# experts tuning I/O-intensive workloads.
+innodb_lru_scan_depth = {{ mysql_innodb_lru_scan_depth }}
+# Sets an a upper limit on the I/O activity performed by the InnoDB background
+# tasks, such as flushing pages from the buffer pool and merging data from the
+# change buffer. 
+innodb_io_capacity = {{ mysql_innodb_io_capacity }}
+
 
 [mysqldump]
 quick
@@ -98,6 +148,7 @@ quote_names
 max_allowed_packet = {{ mysql_mysqldump_max_allowed_packet }}
 
 [mysqld_safe]
+timezone = GMT
 # User is ignored when systemd is used
 user = {{ mysql_user }}
 nice = {{ mysql_nice | default('0') }}

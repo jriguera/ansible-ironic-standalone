@@ -50,11 +50,17 @@ server {
     access_log {{ item.access_log }};
 {% endif %}
 
+{% if item.auth is defined and not item.auth is none %}
+    auth_basic "{{ item.auth.title | default('Restricted') }}";
+    auth_basic_user_file {{ nginx_auth_dir }}/{{ item.name }}.conf;
+{% endif %}
+
 {% if item.rewrite is defined %}
 {% for rw in item.rewrite %}
     rewrite {{ rw }};
 {% endfor %}
 {% endif %}
+
 {% if item.return is defined %}
     return {{ item.return }};
 {% endif %}
@@ -63,8 +69,12 @@ server {
 {% for location in item.location_list %}
     location {{ location.name }} {
 {% for (p, v) in location.iteritems() %}
-{% if p != 'name' %}
+{% if p != 'name' and  p != 'auth' %}
        {{ p }} {{ v }};
+{% endif %}
+{% if p == 'auth' %}
+       auth_basic "{{ v.title | default('Restricted') }}";
+       auth_basic_user_file {{ nginx_auth_dir }}/{{ item.name }}_{{ location.name | hash('md5') }}.conf;
 {% endif %}
 {% endfor %}
     }

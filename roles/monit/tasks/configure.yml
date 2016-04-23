@@ -12,29 +12,57 @@
     - "{{ monit_statefile | dirname }}"
     - "{{ monit_event_dir | dirname }}"
 
-- name: Copy ssl certificate
-  copy:
-    src: "{{ monit_https_cert }}"
-    dest: "{{ monit_config_dir }}/{{ monit_https_cert | basename }}"
-    owner: "{{ monit_user }}"
-    group: "{{ monit_group }}"
-    mode: 0640
-  when: >
-    monit_https_cert is defined and
-    not monit_https_cert is none    
-  tags: ["ssl"]
 
-- name: Copy ssl client certificate
-  copy:
-    src: "{{ monit_https_client }}"
-    dest: "{{ monit_config_dir }}/{{ monit_https_client | basename }}"
-    owner: "{{ monit_user }}"
-    group: "{{ monit_group }}"
-    mode: 0640
+- block:
+  - name: Copy ssl certificate
+    copy:
+      src: "{{ monit_https_cert }}"
+      dest: "{{ monit_config_dir }}/{{ monit_https_cert | basename }}"
+      owner: "{{ monit_user }}"
+      group: "{{ monit_group }}"
+      mode: 0640
+
+  - name: Copy ssl client certificate
+    copy:
+      src: "{{ monit_https_client }}"
+      dest: "{{ monit_config_dir }}/{{ monit_https_client | basename }}"
+      owner: "{{ monit_user }}"
+      group: "{{ monit_group }}"
+      mode: 0640
+
   when: >
     monit_https_client is defined and
-    not monit_https_client is none    
+    not monit_https_client is none
   tags: ["ssl"]
+
+
+- name: Delete unmanaged configuration
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ monit_config_dir | dirname }}/monitrc.d"
+  when: ansible_os_family == 'Debian'
+
+- name: Debian - Define motd info
+  template:
+    src: motd.j2
+    dest: "/etc/update-motd.d/95-monit"
+    mode: 0755
+  when: >
+    monit_update_motd and
+    ansible_os_family == 'Debian'
+
+- name: RedHat - Define motd info
+  lineinfile:
+    dest: /etc/motd
+    state: present
+    regexp: "System managed with Monit"
+    line: "* System managed with Monit!"
+    insertafter: EOF
+  when: >
+    monit_update_motd and
+    ansible_os_family == 'RedHat'
 
 - name: Create global monit configuration
   template:
@@ -50,5 +78,7 @@
   set_fact: _monit_updated="{{ __monit_updated.changed }}"
 
 - name: Ensure monit is started and enabled on boot
-  service: name={{ monit_daemon }} state=started enabled={{ monit_enabled_on_startup | ternary('yes', 'no') }}
-
+  service:
+    name: "{{ monit_daemon }}"
+    state: started
+    enabled: "{{ monit_enabled_on_startup | ternary('yes', 'no') }}"

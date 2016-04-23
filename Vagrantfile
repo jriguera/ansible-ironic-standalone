@@ -1,12 +1,48 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+# This is just to be able to run the ansible playbooks within the VM,
+# just go to /vagrant and run the add-vbox.yml playbook
+$script = <<"SCRIPT"
+echo "export IRONIC_URL=http://localhost:6385/" > /etc/profile.d/ironic.sh
+echo "export OS_AUTH_TOKEN=' '" >> /etc/profile.d/ironic.sh
+chmod +x /etc/profile.d/ironic.sh
+pip install python-ironicclient 
+pip install ansible 
+SCRIPT
+
+
+# Run local commands
+module LocalCommand
+    class Config < Vagrant.plugin("2", :config)
+        attr_accessor :command
+    end
+    class Plugin < Vagrant.plugin("2")
+        name "local_shell"
+
+        config(:local_shell, :provisioner) do
+            Config
+        end
+        provisioner(:local_shell) do
+            Provisioner
+        end
+    end
+    class Provisioner < Vagrant.plugin("2", :provisioner)
+        def provision
+            result = system "#{config.command}"
+        end
+    end
+end
+
+
 Vagrant.configure(2) do |config|
 
   config.vm.define "ironic" do |master|
     # Every Vagrant development environment requires a box. You can search for
     # boxes at https://atlas.hashicorp.com/search.
     master.vm.box = "ubuntu/trusty64"
+    # On Centos the interfaces are not eth0 ... change the playbooks!
+    #master.vm.box = "bento/centos-7.2"
 
     # Disable automatic box update checking. If you disable this, then
     # boxes will only be checked for updates when the user runs
@@ -24,7 +60,7 @@ Vagrant.configure(2) do |config|
 
     # Create a private network, which allows host-only access to the machine
     # using a specific IP.
-    master.vm.network "private_network", ip: "10.0.0.10"
+    master.vm.network "private_network", ip: "10.0.0.10", virtualbox__intnet: "intnet"
 
     # Create a public network, which generally matched to bridged network.
     # Bridged networks make the machine appear as another physical device on
@@ -35,7 +71,7 @@ Vagrant.configure(2) do |config|
     # the path on the host to the actual folder. The second argument is
     # the path on the guest to mount the folder. And the optional third
     # argument is a set of non-required options.
-    # master.vm.synced_folder "../data", "/vagrant_data"
+    master.vm.synced_folder ".", "/vagrant"
 
     # Provider-specific configuration so you can fine-tune various
     # backing providers for Vagrant. These expose provider-specific options.
@@ -45,41 +81,73 @@ Vagrant.configure(2) do |config|
       vb.memory = "2048"
     end
 
-    # Enable provisioning with a shell script. Additional provisioners such as
-    # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
-    # documentation for more information about their specific syntax and use.
+    # This script just install the python package for the agent_vbox driver
+    # which is only required for testing purposes with VirtualBox. In a production
+    # server such driver is not needed neither these pre-install tasks
     master.vm.provision "shell", inline: <<-SHELL
-        sudo apt-get update
-        sudo apt-get upgrade -y
+	if [ -f /etc/debian_version ]; then
+                export DEBIAN_FRONTEND=noninteractive
+  		apt-get update
+        	sudo apt-get upgrade -y
+                apt-get install -y python python-pip
+	elif [ -f /etc/redhat-release ]; then
+  		yum -y install epel-release
+  		yum -y update
+                yum -y install python-pip
+	fi
+        # Otherwise ironic-conductor fails to start
+        pip install --upgrade pyremotevbox
     SHELL
+
+    # Start the VirtualBox web service with null authentication for the agent_vbox driver
+    # call with: vagrant provision --provision-with vbox
+    config.vm.provision "vbox", type: "local_shell", command: "VBoxManage setproperty websrvauthlibrary null && pgrep vboxwebsrv || vboxwebsrv &> /dev/null"
+
     master.vm.provision "ansible" do |ansible|
   	ansible.playbook = "site.yml"
         #ansible.verbose = "vvv"
         #ansible.raw_arguments = "--list-task"
     end
+
+    # Enable provisioning with a shell script. Additional provisioners such as
+    # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
+    # documentation for more information about their specific syntax and use.
+    master.vm.provision "shell" do |s|
+        s.inline = $script
+    end
   end
 
-#  config.vm.define "client" do |slave|
-#    ip = "10.0.0.100"
-#    mac = "0800278E158A"
-#
-#    # Use a image designed for pxe boot.
-#    slave.vm.box = "steigr/pxe"
-#
-#    # Give the host a bogus IP, otherwise vagrant will bail out.
-#    # Static mac address match up with dnsmasq dhcp config
-#    # The auto_config: false tells vagrant not to change the hosts ip to the bogus one.
-#    slave.vm.network "private_network", :adapter=>1, ip: "10.0.0.100" , :mac => mac , auto_config: false
-#
-#    # We dont need no stinking synced folder.
-#    config.vm.synced_folder '.', '/vagrant', disabled: true
-#
-#    slave.vm.provider "virtualbox" do |vb, override|
-#        vb.gui = true
-#        # Chipset needs to be piix3, otherwise the machine wont boot properly.
-#        vb.customize ["modifyvm", :id, "--chipset", "piix3"]
-#    end
-#  end
+  config.vm.define "baremetal" do |slave|
+    # If you change this, change also the servers/vbox.yml settings!
+    mac = "08002726008E"
+    name = "baremetal"
+
+    # Use a image designed for pxe boot.
+    slave.vm.box = "c33s/empty"
+
+    # Give the host a bogus IP, otherwise vagrant will bail out.
+    # Static mac address match up with dnsmasq dhcp config
+    # The auto_config: false tells vagrant not to change the hosts ip to the bogus one.
+    slave.vm.network "private_network", :adapter=>1, :mac => mac, auto_config: false, virtualbox__intnet: "intnet"
+
+    # We dont need no stinking synced folder.
+    slave.vm.synced_folder '.', '/vagrant', disabled: true
+    slave.ssh.insert_key = false
+    slave.ssh.proxy_command = "true"
+    slave.vm.boot_timeout = 2 
+    slave.vm.provider "virtualbox" do |vb, override|
+       vb.gui = true
+       vb.name = name
+       # It needs lot of memory to uncompress the image on /tmp
+       vb.memory = "6100"
+       # piix3 chipset
+       #vb.customize ["modifyvm", :id, "--chipset", "piix3"]
+       # Disable USB
+       vb.customize ["modifyvm", :id, "--usb", "on"]
+       vb.customize ["modifyvm", :id, "--usbehci", "off"]
+    end
+    slave.vm.post_up_message = "Hola mundo"
+  end
 
 end
 

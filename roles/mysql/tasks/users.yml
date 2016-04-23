@@ -5,7 +5,9 @@
     host: "{{ item.host | default('localhost') }}"
     password: "{{ item.password }}"
     priv: "{{ item.priv | default('*.*:USAGE') }}"
+    append_privs: "{{ item.append_privs | default('no') }}"
     state: present
-  with_items: mysql_user_list
+  with_items: "{{ mysql_user_list }}"
   when: mysql_user_list is defined
+  no_log: True
 

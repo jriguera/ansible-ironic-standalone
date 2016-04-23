@@ -1,10 +1,10 @@
 ---
-- name: List the backend devices
+- name: Get a list the backend devices
   set_fact: __configdrive_network_backend_item="{{ item }}"
-  with_items: configdrive_network_device_list | selectattr("backend", "defined") | map(attribute='backend') | list
+  with_items: "{{ configdrive_network_device_list | selectattr('backend', 'defined') | map(attribute='backend') | list }}"
   register: __configdrive_network_backend_list
 
-- name: Create network_info.json if needed
+- name: Create network_info.json
   template:
     src: network_info.json.j2
     dest: "{{ configdrive_config_dir }}/{{ configdrive_instance_dir }}/{{ item }}/network_info.json"
@@ -63,8 +63,8 @@
     mode: 0644
   when: >
     __configdrive_network_backend_list.results is defined and
-    not item in configdrive_network_device_list | map(attribute='device') | list 
-  with_items: __configdrive_network_backend_list.results | map(attribute='item') | list | unique
+    item not in (configdrive_network_device_list | map(attribute='device') | list)
+  with_items: "{{ __configdrive_network_backend_list.results | map(attribute='item') | list | unique }}"
 
 - name: Setup all defined devices
   template:
@@ -73,7 +73,7 @@
     owner: "{{ configdrive_user | default(omit) }}"
     group: "{{ configdrive_group | default(omit) }}"
     mode: 0644
-  with_items: configdrive_network_device_list
+  with_items: "{{ configdrive_network_device_list }}"
 
 - name: Setup route configuration for RedHat
   template: 
@@ -82,7 +82,6 @@
     owner: "{{ configdrive_user | default(omit) }}"
     group: "{{ configdrive_group | default(omit) }}"
     mode: 0644
-  with_items: configdrive_network_device_list
   when: item.route is defined and configdrive_os_family == 'RedHat'
-
+  with_items: "{{ configdrive_network_device_list }}"
 

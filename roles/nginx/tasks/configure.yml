@@ -9,6 +9,7 @@
   with_items:
     - "{{ nginx_ssl_dir }}"
     - "{{ nginx_sites_dir }}"
+    - "{{ nginx_auth_dir }}"
 
 - name: Create proxy cache path
   file:
@@ -43,33 +44,36 @@
   notify: reload nginx
   register: __nginx_updated_global
 
-- name: Copy ssl certificate
-  copy:
-    src: "{{ nginx_ssl_certificate }}"
-    dest: "{{ nginx_ssl_dir }}/{{ nginx_ssl_certificate | basename }}"
-    owner: "{{ nginx_user }}"
-    group: "{{ nginx_group }}"
-    mode: 0640
-  when: >
-    nginx_ssl_certificate is defined and
-    not nginx_ssl_certificate is none  
+
+# SSL
+- block:
+  - name: Copy ssl certificate
+    copy:
+      src: "{{ nginx_ssl_certificate }}"
+      dest: "{{ nginx_ssl_dir }}/{{ nginx_ssl_certificate | basename }}"
+      owner: "{{ nginx_user }}"
+      group: "{{ nginx_group }}"
+      mode: 0640
+    when: >
+      nginx_ssl_certificate is defined and
+      not nginx_ssl_certificate is none  
+
+  - name: Copy ssl certificate key
+    copy:
+      src: "{{ nginx_ssl_certificate_key }}"
+      dest: "{{ nginx_ssl_dir }}/{{ nginx_ssl_certificate_key | basename }}"
+      owner: "{{ nginx_user }}"
+      group: "{{ nginx_group }}"
+      mode: 0640
+    when: >
+      nginx_ssl_certificate_key is defined and
+      not nginx_ssl_certificate_key is none
+  
   tags: ["ssl"]
 
-- name: Copy ssl certificate key
-  copy:
-    src: "{{ nginx_ssl_certificate_key }}"
-    dest: "{{ nginx_ssl_dir }}/{{ nginx_ssl_certificate_key | basename }}"
-    owner: "{{ nginx_user }}"
-    group: "{{ nginx_group }}"
-    mode: 0640
-  when: >
-    nginx_ssl_certificate_key is defined and
-    not nginx_ssl_certificate_key is none  
-  tags: ["ssl"]
 
 - name: Checking if configuration was updated
-  set_fact: >
-    _nginx_updated="{{ __nginx_updated_global.changed }}"
+  set_fact: _nginx_updated="{{ __nginx_updated_global.changed }}"
 
 - name: Ensure nginx is started and enabled on boot
   service: name="{{ nginx_daemon }}" state=started enabled="{{ nginx_enabled_on_startup | ternary('yes', 'no') }}"

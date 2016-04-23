@@ -23,6 +23,10 @@ rpc_conn_pool_size={{ ironic_rpc_conn_pool_size | default('30') }}
 # Poll raises timeout exception when timeout expired
 rpc_poll_timeout=1
 
+# Use PUB/SUB pattern for fanout methods. PUB/SUB always uses
+# proxy. (boolean value)
+#use_pub_sub = true
+
 {% if ironic_notification_driver is defined and ironic_notification_driver -%}
 # The Drivers(s) to handle sending notifications. Possible
 # values are messaging, messagingv2, routing,log, test, noop
@@ -72,9 +76,13 @@ my_ip={{ ironic_my_ip }}
 auth_strategy={{ ironic_auth_strategy | default('noauth') }}
 
 # Enable pecan debug mode. WARNING: this is insecure and
-# should not be used in a production environment. (boolean
-# value)
+# should not be used in a production environment. (boolean value)
 #pecan_debug=false
+
+# Return server tracebacks in the API response for any error
+# responses. WARNING: this is insecure and should not be used
+# in a production environment. (boolean value)
+debug_tracebacks_in_api={{ ironic_debug | ternary('true','false') }}
 
 
 ### Options defined in ironic.common.driver_factory
@@ -92,15 +100,6 @@ enabled_drivers={{ ironic_enabled_drivers | join(',') }}
 {% else %}
 enabled_drivers=pxe_ipmitool
 {% endif %}
-
-
-### Options defined in ironic.common.exception
-
-# Used if there is a formatting error when generating an
-# exception message (a programming error). If True, raise an
-# exception; if False, use the unformatted message. (boolean
-# value)
-fatal_exception_format_errors={{ ironic_fatal_exception_format_errors | ternary('true','false') }}
 
 
 ### Options defined in ironic.common.hash_ring
@@ -126,12 +125,14 @@ fatal_exception_format_errors={{ ironic_fatal_exception_format_errors | ternary(
 # (integer value)
 #hash_distribution_replicas=1
 
+# Interval (in seconds) between hash ring resets. (integer value)
+#hash_ring_reset_interval = 180
+
 
 ## Options defined in ironic.common.images
 
-# If True, convert backing images to "raw" disk image format.
-# (boolean value)
-force_raw_images={{ ironic_force_raw_images | ternary('true','false') }}
+# If True, convert backing images to "raw" disk image format. (boolean value)
+force_raw_images={{ ironic_force_raw_images | default(True) | ternary('true','false') }}
 
 # Path to isolinux binary file. (string value)
 isolinux_bin={{ ironic_isolinux_bin | default('/usr/lib/syslinux/isolinux.bin') }}
@@ -162,9 +163,6 @@ state_path={{ ironic_state_path | default('/var/lib/ironic') }}
 
 ### Options defined in ironic.common.service
 
-# Seconds between running periodic tasks. (integer value)
-#periodic_interval=60
-
 # Name of this node.  This can be an opaque identifier.  It is
 # not necessarily a hostname, FQDN, or IP address. However,
 # the node name must be valid within an AMQP key, and if using
@@ -184,8 +182,7 @@ tempdir={{ ironic_tempdir | default('/tmp') }}
 
 ### Options defined in ironic.drivers.modules.image_cache
 
-# Run image downloads and raw format conversions in parallel.
-# (boolean value)
+# Run image downloads and raw format conversions in parallel. (boolean value)
 parallel_image_downloads={{ ironic_parallel_image_downloads | ternary('true','false') }}
 
 
@@ -206,11 +203,7 @@ parallel_image_downloads={{ ironic_parallel_image_downloads | ternary('true','fa
 
 # Print debugging output (set logging level to DEBUG instead
 # of default WARNING level). (boolean value)
-debug={{ ironic_debug | ternary('true','false') }}
-
-# Print more verbose output (set logging level to INFO instead
-# of default WARNING level). (boolean value)
-verbose={{ ironic_verbose | ternary('true','false') }}
+debug={{ ironic_debug | default(False) | ternary('true','false') }}
 
 # The name of a logging configuration file. This file is
 # appended to any existing logging configuration files. For
@@ -298,7 +291,31 @@ fatal_deprecations={{ ironic_fatal_deprecations | ternary('true','false') }}
 
 # Some periodic tasks can be run in a separate process. Should
 # we run them here? (boolean value)
-run_external_periodic_tasks={{ ironic_run_external_periodic_tasks | ternary('true','false') }}
+run_external_periodic_tasks={{ ironic_run_external_periodic_tasks | default(True) | ternary('true','false') }}
+
+
+
+[ssl]
+### Options defined in oslo.service.sslutils
+
+# CA certificate file to use to verify connecting clients. (string value)
+#ca_file = <None>
+
+# Certificate file to use when starting the server securely.  (string value)
+#cert_file = <None>
+
+# Private key file to use when starting the server securely. (string value)
+#key_file = <None>
+
+# SSL version to use (valid only if SSL enabled). Valid values
+# are TLSv1 and SSLv23. SSLv2, SSLv3, TLSv1_1, and TLSv1_2 may
+# be available on some distributions. (string value)
+#version = <None>
+
+# Sets the list of available ciphers. value should be a string
+# in the OpenSSL cipher list format. (string value)
+#ciphers = <None>
+
 
 
 [api]
@@ -326,6 +343,7 @@ public_endpoint={{ ironic_api_public_endpoint }}
 {% endif %}
 
 
+
 [cors]
 # Options defined in oslo.middleware.cors
 
@@ -338,7 +356,7 @@ allowed_origin={{ ironic_cors_allowed_origin }}
 
 # Indicate that the actual request can include user
 # credentials (boolean value)
-allow_credentials={{ ironic_cors_allow_credentials | ternary('true','false') }}
+allow_credentials={{ ironic_cors_allow_credentials | default(True) | ternary('true','false') }}
 
 # Indicate which headers are safe to expose to the API.
 # Defaults to HTTP Simple Headers. (list value)
@@ -362,6 +380,7 @@ allow_methods={{ ironic_cors_allow_methods | join(',') }}
 {% if ironic_cors_allow_headers is defined -%}
 allow_headers={{ ironic_cors_allow_headers | join(',') }}
 {% endif %}
+
 
 
 ### [cors.subdomain]
@@ -394,6 +413,7 @@ allow_headers={{ values["allow_headers"] | join(',') }}
 
 {% endfor %}
 {% endif %}
+
 
 
 [conductor]
@@ -441,7 +461,7 @@ force_power_state_during_sync={{ ironic_conductor_force_power_state_during_sync 
 #periodic_max_workers=8
 
 # The size of the workers greenthread pool. (integer value)
-#workers_pool_size=100
+workers_pool_size={{ ironic_conductor_workers_pool_size | default('100') }}
 
 # Number of attempts to grab a node lock. (integer value)
 #node_locked_retry_attempts=3
@@ -489,11 +509,12 @@ configdrive_use_swift=false
 # unlimited. (integer value)
 inspect_timeout={{ ironic_conductor_inspect_timeout | default('1800') }}
 
-# Cleaning is a configurable set of steps, such as erasing
-# disk drives, that are performed on the node to ensure it is
-# in a baseline state and ready to be deployed to. This is
-# done after instance deletion, and during the transition from
-# a "managed" to "available" state. When enabled, the
+# Enables or disables automated cleaning. Automated cleaning
+# is a configurable set of steps, such as erasing disk drives,
+# that are performed on the node to ensure it is in a baseline
+# state and ready to be deployed to. This is done after
+# instance deletion as well as during the transition from a
+# "manageable" to "available" state. When enabled, the
 # particular steps performed to clean a node depend on which
 # driver that node is managed by; see the individual driver's
 # documentation for details. NOTE: The introduction of the
@@ -501,13 +522,14 @@ inspect_timeout={{ ironic_conductor_inspect_timeout | default('1800') }}
 # significantly longer. In an environment where all tenants
 # are trusted (eg, because there is only one tenant), this
 # option could be safely disabled. (boolean value)
-clean_nodes={{ ironic_conductor_clean_nodes | ternary('true','false') }}
+automated_clean={{ ironic_conductor_automated_clean | default(True) | ternary('true','false') }}
 
 # Timeout (seconds) to wait for a callback from the ramdisk
 # doing the cleaning. If the timeout is reached the node will
 # be put in the "clean failed" provision state. Set to 0 to
 # disable timeout. (integer value)
 #clean_callback_timeout=1800
+
 
 
 [database]
@@ -631,6 +653,7 @@ use_db_reconnect={{ ironic_database_use_db_reconnect | ternary('true','false') }
 # error before error is raised. Set to -1 to specify an
 # infinite retry count. (integer value)
 #db_max_retries=20
+
 
 
 {% if ironic_auth_strategy == 'keystone' -%}
@@ -801,6 +824,7 @@ admin_tenant_name={{ ironic_keystone_authtoken_service_tenant_name | default('ad
 {% endif %}
 
 
+
 {% if ironic_neutron_url is defined and not ironic_neutron_url is none -%}
 [neutron]
 ### Options defined in ironic.dhcp.neutron
@@ -827,6 +851,7 @@ cleaning_network_uuid={{ ironic_neutron_cleaning_network_uuid | default('') }}
 {% endif %}
 
 
+
 [oslo_concurrency]
 ### Options defined in oslo.concurrency
 
@@ -843,6 +868,7 @@ lock_path={{ ironic_oslo_concurrency_lock_path }}
 {% else %}
 disable_process_locking=true
 {% endif %}
+
 
 
 [oslo_messaging_amqp]
@@ -887,6 +913,7 @@ trace={{ ironic_trace | ternary('true','false') }}
 #allow_insecure_clients=false
 
 
+
 {% if ironic_rpc_backend == 'rabbit' -%}
 [oslo_messaging_rabbit]
 ### Options defined in oslo.messaging
@@ -894,10 +921,10 @@ trace={{ ironic_trace | ternary('true','false') }}
 # Use durable queues in AMQP. (boolean value)
 # Deprecated group/name - [DEFAULT]/amqp_durable_queues
 # Deprecated group/name - [DEFAULT]/rabbit_durable_queues
-amqp_durable_queues={{ ironic_oslo_messaging_rabbit_amqp_durable_queues | ternary('true','false') }}
+amqp_durable_queues={{ ironic_oslo_messaging_rabbit_amqp_durable_queues | default(False) | ternary('true','false') }}
 
 # Auto-delete queues in AMQP. (boolean value)
-amqp_auto_delete={{ ironic_oslo_messaging_rabbit_amqp_auto_delete | ternary('true','false') }}
+amqp_auto_delete={{ ironic_oslo_messaging_rabbit_amqp_auto_delete | default(False) | ternary('true','false') }}
 
 # SSL version to use (valid only if SSL enabled). Valid values
 # are TLSv1 and SSLv23. SSLv2, SSLv3, TLSv1_1, and TLSv1_2 may
@@ -922,12 +949,28 @@ amqp_auto_delete={{ ironic_oslo_messaging_rabbit_amqp_auto_delete | ternary('tru
 # have failed. This value should not be longer than rpc_response_timeout.
 #kombu_reconnect_timeout=60
 
-# The RabbitMQ broker address where a single node is used.
-# (string value)
+# EXPERIMENTAL: Possible values are: gzip, bz2. If not set
+# compression will not be used. This option may notbe
+# available in future versions. (string value)
+#kombu_compression = <None>
+
+# How long to wait a missing client beforce abandoning to send
+# it its replies. This value should not be longer than
+# rpc_response_timeout. (integer value)
+# Deprecated group/name - [oslo_messaging_rabbit]/kombu_reconnect_timeout
+#kombu_missing_consumer_retry_timeout = 60
+
+# Determines how the next RabbitMQ node is chosen in case the
+# one we are currently connected to becomes unavailable. Takes
+# effect only if more than one RabbitMQ node is provided in
+# config. (string value)
+# Allowed values: round-robin, shuffle
+kombu_failover_strategy = round-robin
+
+# The RabbitMQ broker address where a single node is used. (string value)
 rabbit_host={{ ironic_oslo_messaging_rabbit_host | default('localhost') }}
 
-# The RabbitMQ broker port where a single node is used.
-# (integer value)
+# The RabbitMQ broker port where a single node is used. (integer value)
 rabbit_port={{ ironic_oslo_messaging_rabbit_port | default('5672') }}
 
 # RabbitMQ HA cluster host:port pairs. (list value)
@@ -961,7 +1004,14 @@ rabbit_max_retries={{ ironic_oslo_messaging_rabbit_max_retries | default('0') }}
 
 # Use HA queues in RabbitMQ (x-ha-policy: all). If you change
 # this option, you must wipe the RabbitMQ database. (boolean value)
-rabbit_ha_queues={{ ironic_oslo_messaging_rabbit_ha_queues | ternary('true','false') }}
+rabbit_ha_queues={{ ironic_oslo_messaging_rabbit_ha_queues | default(False) | ternary('true','false') }}
+
+# Positive integer representing duration in seconds for queue
+# TTL (x-expires). Queues which are unused for the duration of
+# the TTL are automatically deleted. The parameter affects
+# only reply and fanout queues. (integer value)
+# Minimum value: 1
+#rabbit_transient_queues_ttl = 1800
 
 # Number of seconds after which the Rabbit broker is
 # considered down if heartbeat's keep-alive fails (0 disable
@@ -972,6 +1022,113 @@ heartbeat_timeout_threshold={{ ironic_oslo_messaging_heartbeat_timeout_threshold
 # check the heartbeat. (integer value)
 #heartbeat_rate=2
 {% endif %}
+
+# Maximum number of channels to allow (integer value)
+#channel_max = <None>
+
+# The maximum byte size for an AMQP frame (integer value)
+#frame_max = <None>
+
+# How often to send heartbeats for consumer's connections
+# (integer value)
+#heartbeat_interval = 1
+
+# Enable SSL (boolean value)
+#ssl = <None>
+
+# Arguments passed to ssl.wrap_socket (dict value)
+#ssl_options = <None>
+
+# Set socket timeout in seconds for connection's socket
+# (floating point value)
+#socket_timeout = 0.25
+
+# Set TCP_USER_TIMEOUT in seconds for connection's socket
+# (floating point value)
+#tcp_user_timeout = 0.25
+
+# Set delay for reconnection to some host which has connection
+# error (floating point value)
+#host_connection_reconnect_delay = 0.25
+
+# Maximum number of connections to keep queued. (integer
+# value)
+#pool_max_size = 10
+
+# Maximum number of connections to create above
+# `pool_max_size`. (integer value)
+#pool_max_overflow = 0
+
+# Default number of seconds to wait for a connections to
+# available (integer value)
+#pool_timeout = 30
+
+# Lifetime of a connection (since creation) in seconds or None
+# for no recycling. Expired connections are closed on acquire.
+# (integer value)
+#pool_recycle = 600
+
+# Threshold at which inactive (since release) connections are
+# considered stale in seconds or None for no staleness. Stale
+# connections are closed on acquire. (integer value)
+#pool_stale = 60
+
+# Persist notification messages. (boolean value)
+#notification_persistence = false
+
+# Exchange name for for sending notifications (string value)
+#default_notification_exchange = ${control_exchange}_notification
+
+# Max number of not acknowledged message which RabbitMQ can
+# send to notification listener. (integer value)
+#notification_listener_prefetch_count = 100
+
+# Reconnecting retry count in case of connectivity problem
+# during sending notification, -1 means infinite retry.
+# (integer value)
+#default_notification_retry_attempts = -1
+
+# Reconnecting retry delay in case of connectivity problem
+# during sending notification message (floating point value)
+#notification_retry_delay = 0.25
+
+# Time to live for rpc queues without consumers in seconds.
+# (integer value)
+#rpc_queue_expiration = 60
+
+# Exchange name for sending RPC messages (string value)
+#default_rpc_exchange = ${control_exchange}_rpc
+
+# Exchange name for receiving RPC replies (string value)
+#rpc_reply_exchange = ${control_exchange}_rpc_reply
+
+# Max number of not acknowledged message which RabbitMQ can
+# send to rpc listener. (integer value)
+#rpc_listener_prefetch_count = 100
+
+# Max number of not acknowledged message which RabbitMQ can
+# send to rpc reply listener. (integer value)
+#rpc_reply_listener_prefetch_count = 100
+
+# Reconnecting retry count in case of connectivity problem
+# during sending reply. -1 means infinite retry during
+# rpc_timeout (integer value)
+#rpc_reply_retry_attempts = -1
+
+# Reconnecting retry delay in case of connectivity problem
+# during sending reply. (floating point value)
+#rpc_reply_retry_delay = 0.25
+
+# Reconnecting retry count in case of connectivity problem
+# during sending RPC message, -1 means infinite retry. If
+# actual retry attempts in not 0 the rpc request could be
+# processed more then one time (integer value)
+#default_rpc_retry_attempts = -1
+
+# Reconnecting retry delay in case of connectivity problem
+# during sending RPC message (floating point value)
+#rpc_retry_delay = 0.25
+
 
 
 [oslo_policy]
@@ -995,19 +1152,56 @@ policy_dirs={{ ironic_oslo_policy_file | dirname }}
 {% endif %}
 
 
-[deploy]
-### Options defined in ironic.drivers.modules.deploy_utils
+
+[ironic_lib]
+### Options defined in ironic_lib.utils
+
+# Command that is prefixed to commands that are run as root.
+# If not specified, no commands are run as root. (string value)
+#root_helper = sudo ironic-rootwrap /etc/ironic/rootwrap.conf
+
+# Used if there is a formatting error when generating an
+# exception message (a programming error). If True, raise an
+# exception; if False, use the unformatted message. (boolean value)
+fatal_exception_format_errors={{ ironic_lib_fatal_exception_format_errors | default(False) | ternary('true','false') }}
+
+
+
+[disk_utils]
+### Options defined in ironic_lib.disk_utils
 
 # Size of EFI system partition in MiB when configuring UEFI
 # systems for local boot. (integer value)
-efi_system_partition_size={{ ironic_deploy_efi_system_partition_size | default('200') }}
+efi_system_partition_size={{ ironic_disk_utils_efi_system_partition_size | default('200') }}
 
 # Block size to use when writing to the nodes disk. (string value)
-dd_block_size={{ ironic_deploy_dd_block_size | default('1M') }}
+dd_block_size={{ ironic_disk_utils_dd_block_size | default('1M') }}
 
 # Maximum attempts to verify an iSCSI connection is active,
 # sleeping 1 second between attempts. (integer value)
 #iscsi_verify_attempts=3
+
+
+
+[disk_partitioner]
+### Options defined in ironic_lib.disk_partitioner
+
+# After Ironic has completed creating the partition table, it
+# continues to check for activity on the attached iSCSI device
+# status at this interval prior to copying the image to the
+# node, in seconds (integer value)
+#check_device_interval = 1
+
+# The maximum number of times to check that the device is not
+# accessed by another process. If the device is still busy
+# after that, the disk partitioning will be treated as having
+# failed. (integer value)
+#check_device_max_retries = 20
+
+
+
+[deploy]
+### Options defined in ironic.drivers.modules.deploy_utils
 
 {% if ironic_deploy_http_url is defined and not ironic_deploy_http_url is none -%}
 # ironic-conductor node's HTTP server URL. Example:
@@ -1033,6 +1227,7 @@ erase_devices_priority={{ ironic_deploy_erase_devices_priority }}
 #erase_devices_iterations=1
 
 
+
 [dhcp]
 ### Options defined in ironic.common.dhcp_factory
 
@@ -1043,6 +1238,7 @@ dhcp_provider=neutron
 {% else %}
 dhcp_provider=none
 {% endif %}
+
 
 
 [inspector]
@@ -1065,21 +1261,6 @@ enabled=false
 {% endif %}
 
 
-[disk_partitioner]
-### Options defined in ironic.common.disk_partitioner
-
-# After Ironic has completed creating the partition table, it
-# continues to check for activity on the attached iSCSI device
-# status at this interval prior to copying the image to the
-# node, in seconds (integer value)
-#check_device_interval=1
-
-# The maximum number of times to check that the device is not
-# accessed by another process. If the device is still busy
-# after that, the disk partitioning will be treated as having
-# failed. (integer value)
-check_device_max_retries=30
-
 
 [glance]
 ### Options defined in ironic.common.glance_service.v2.image_service
@@ -1089,13 +1270,17 @@ check_device_max_retries=30
 #allowed_direct_url_schemes=
 
 {% if ironic_glance_swift_endpoint_url is defined and not ironic_glance_swift_endpoint_url is none -%}
-# The "endpoint" (scheme, hostname, optional port) for the
-# Swift URL of the form
-# "endpoint_url/api_version/account/container/object_id". Do
-# not include trailing "/". For example, use
-# "https://swift.example.com". Required for temporary URLs.
-# (string value)
+# The "endpoint" (scheme, hostname, optional port) for the Swift URL of the form
+# "endpoint_url/api_version/[account/]container/object_id". Do not include 
+# trailing "/". For example, use "https://swift.example.com". If using RADOS 
+# Gateway, endpoint may also contain /swift path; if it does not, it will be 
+# appended. Required for temporary URLs. (string value)
 swift_endpoint_url={{ ironic_glance_swift_endpoint_url }}
+
+# The Swift API version to create a temporary URL for.
+# Defaults to "v1". Swift temporary URL format:
+# "endpoint_url/api_version/[account/]container/object_id"
+swift_api_version={{ ironic_glance_swift_api_version | default('v1') }} 
 
 {% if ironic_glance_swift_temp_url_key is defined and not ironic_glance_swift_temp_url_key is none -%}
 # The secret token given to Swift to allow temporary URL
@@ -1114,10 +1299,48 @@ swift_temp_url_duration={{ ironic_glance_swift_temp_url_duration | default('1200
 # will only use one container to store all images. When set to
 # an integer value between 1 and 32, a single-tenant store
 # will use multiple containers to store images, and this value
-# will determine how many containers are created. (integer
-# value)
+# will determine how many containers are created. (integer value)
 #swift_store_multiple_containers_seed=0
+
+# The account that Glance uses to communicate with Swift. The
+# format is "AUTH_uuid". "uuid" is the UUID for the account
+# configured in the glance-api.conf. Required for temporary
+# URLs when Glance backend is Swift. For example:
+# "AUTH_a422b2-91f3-2f46-74b7-d7c9e8958f5d30". Swift temporary
+# URL format: "endpoint_url/api_version/[account/]container/object_id"
+{% if ironic_glance_swift_account is defined and not ironic_glance_swift_account is none -%}
+swift_account={{ ironic_glance_swift_account }}
 {% endif %}
+
+# The Swift container Glance is configured to store its images
+# in. Defaults to "glance", which is the default in glance-
+# api.conf. Swift temporary URL format:
+# "endpoint_url/api_version/[account/]container/object_id"
+swift_container={{ ironic_glance_swift_container | default('glance') }}
+
+# Whether to cache generated Swift temporary URLs. Setting it
+# to true is only useful when an image caching proxy is used.
+# Defaults to False. (boolean value)
+swift_temp_url_cache_enabled={{ ironic_glance_swift_temp_url_cache_enabled | default (false) | ternary('true','false') }}
+
+# This is the delay (in seconds) from the time of the deploy
+# request (when the Swift temporary URL is generated) to when
+# the IPA ramdisk starts up and URL is used for the image
+# download. This value is used to check if the Swift temporary
+# URL duration is large enough to let the image download
+# begin. Also if temporary URL caching is enabled this will
+# determine if a cached entry will still be valid when the
+# download starts. swift_temp_url_duration value must be
+# greater than or equal to this option's value. Defaults to 0.
+# Minimum value: 0
+#swift_temp_url_expected_download_start_delay = 0
+{% endif %}
+
+# Type of endpoint to use for temporary URLs. If the Glance
+# backend is Swift, use "swift"; if it is CEPH with RADOS
+# gateway, use "radosgw". (string value)
+# Allowed values: swift, radosgw
+temp_url_endpoint_type={{ ironic_glance_temp_url_endpoint_type | default('swift') }}
 
 
 ### Options defined in ironic.common.image_service
@@ -1128,8 +1351,7 @@ swift_temp_url_duration={{ ironic_glance_swift_temp_url_duration | default('1200
 # Default glance port. (integer value)
 #glance_port=9292
 
-# Default protocol to use when connecting to glance. Set to
-# https for SSL. (string value)
+# Default protocol to use when connecting to glance. Set to https for SSL.
 #glance_protocol=http
 
 {% if ironic_glance_api_servers is defined and not ironic_glance_api_servers is none -%}
@@ -1139,18 +1361,21 @@ swift_temp_url_duration={{ ironic_glance_swift_temp_url_duration | default('1200
 glance_api_servers={{ ironic_glance_api_servers | join(',') }}
 {% endif %}
 
-# Allow to perform insecure SSL (https) requests to glance.
-# (boolean value)
+# Optional path to a CA certificate bundle to be used to
+# validate the SSL certificate served by glance. It is used
+# when glance_api_insecure is set to False. (string value)
+#glance_cafile = <None>
+
+# Allow to perform insecure SSL (https) requests to glance. (boolean value)
 #glance_api_insecure=false
 
-# Number of retries when downloading an image from glance.
-# (integer value)
+# Number of retries when downloading an image from glance. (integer value)
 #glance_num_retries=0
 
 # Authentication strategy to use when connecting to glance.
-# Only "keystone" and "noauth" are currently supported by
-# ironic. (string value)
+# Only "keystone" and "noauth" are currently supported by ironic. (string value)
 auth_strategy={{ ironic_glace_auth_strategy | default(ironic_auth_strategy) }}
+
 
 
 [console]
@@ -1174,6 +1399,7 @@ terminal_pid_dir={{ ironic_console_terminal_pid_dir | default(ironic_tempdir) }}
 # Time (in seconds) to wait for the console subprocess to
 # start. (integer value)
 #subprocess_timeout=10
+
 
 
 [agent]
@@ -1208,6 +1434,16 @@ manage_agent_boot={{ ironic_agent_manage_boot | ternary('true','false') }}
 # (string value)
 agent_api_version={{ ironic_agent_api_version | default('v1') }}
 
+# Whether the agent ramdisk should stream raw images directly
+# onto the disk or not. By streaming raw images directly onto
+# the disk the agent ramdisk will not spend time copying the
+# image to a tmpfs partition (therefore consuming less memory)
+# prior to writing it to the disk. Unless the disk where the
+# image will be copied to is really slow, this option should
+# be set to True. Defaults to True. (boolean value)
+stream_raw_images={{ ironic_agent_stream_raw_images | ternary('true','false') }}
+
+
 
 [ipmi]
 ### Options defined in ironic.drivers.modules.ipminative
@@ -1226,19 +1462,6 @@ retry_timeout={{ ironic_ipmi_retry_timeout | default('60') }}
 # seconds. (integer value)
 min_command_interval={{ ironic_ipmi_min_command_interval | default('5') }}
 
-
-[drac]
-# Options defined in ironic.drivers.modules.drac.client
-
-# In case there is a communication failure, the DRAC client
-# resends the request as many times as defined in this
-# setting. (integer value)
-#client_retry_count=5
-
-# In case there is a communication failure, the DRAC client
-# waits for as many seconds as defined in this setting before
-# resending the request. (integer value)
-#client_retry_delay=5
 
 
 [pxe]
@@ -1264,7 +1487,7 @@ instance_master_path={{ ironic_pxe_instance_master_path | default('/var/lib/iron
 image_cache_size={{ ironic_pxe_image_cache_size | default('20480') }}
 
 # Maximum TTL (in minutes) for old master images in cache. (integer value)
-image_cache_ttl=10080
+image_cache_ttl={{ ironic_pxe_image_cache_ttl | default('10080') }}
 
 # The disk devices to scan while doing the deploy. (string value)
 disk_devices={{ ironic_pxe_disk_devices | join(',') }}
@@ -1317,6 +1540,39 @@ ipxe_enabled=false
 # The IP version that will be used for PXE booting. Can be
 # either 4 or 6. Defaults to 4. EXPERIMENTAL (integer value)
 #ip_version=4
+
+
+
+[iboot]
+### Options defined in ironic.drivers.modules.iboot
+
+# Maximum retries for iBoot operations (integer value)
+#max_retry = 3
+
+# Time (in seconds) between retry attempts for iBoot
+# operations (integer value)
+#retry_interval = 1
+
+# Time (in seconds) to sleep between when rebooting (powering
+# off and on again). (integer value)
+# Minimum value: 0
+#reboot_delay = 5
+
+
+
+[drac]
+# Options defined in ironic.drivers.modules.drac.client
+
+# In case there is a communication failure, the DRAC client
+# resends the request as many times as defined in this
+# setting. (integer value)
+#client_retry_count=5
+
+# In case there is a communication failure, the DRAC client
+# waits for as many seconds as defined in this setting before
+# resending the request. (integer value)
+#client_retry_delay=5
+
 
 
 [ilo]
@@ -1396,6 +1652,66 @@ clean_priority_reset_ilo={{ ironic_ilo_clean_priority_reset_ilo | default('1') }
 #power_wait=2
 
 
+
+[irmc]
+### Options defined in ironic.drivers.modules.irmc.boot
+
+# Ironic conductor node's "NFS" or "CIFS" root path (string value)
+#remote_image_share_root = /remote_image_share_root
+
+# IP of remote image server (string value)
+#remote_image_server = <None>
+
+# Share type of virtual media (string value)
+# Allowed values: CIFS, NFS
+#remote_image_share_type = CIFS
+
+# share name of remote_image_server (string value)
+#remote_image_share_name = share
+
+# User name of remote_image_server (string value)
+#remote_image_user_name = <None>
+
+# Password of remote_image_user_name (string value)
+#remote_image_user_password = <None>
+
+# Domain name of remote_image_user_name (string value)
+#remote_image_user_domain =
+
+### Options defined in ironic.drivers.modules.irmc.common
+
+# Port to be used for iRMC operations (port value)
+# Allowed values: 443, 80
+#port = 443
+
+# Authentication method to be used for iRMC operations (string value)
+# Allowed values: basic, digest
+#auth_method = basic
+
+# Timeout (in seconds) for iRMC operations (integer value)
+#client_timeout = 60
+
+# Sensor data retrieval method. (string value)
+# Allowed values: ipmitool, scci
+#sensor_method = ipmitool
+
+# SNMP protocol version (string value)
+# Allowed values: v1, v2c, v3
+#snmp_version = v2c
+
+# SNMP port (port value)
+# Minimum value: 0
+# Maximum value: 65535
+#snmp_port = 161
+
+# SNMP community. Required for versions "v1" and "v2c" (string value)
+#snmp_community = public
+
+# SNMP security name. Required for version "v3" (string value)
+#snmp_security = <None>
+
+
+
 [amt]
 ### Options defined in ironic.drivers.modules.amt.common
 
@@ -1411,6 +1727,40 @@ clean_priority_reset_ilo={{ ironic_ilo_clean_priority_reset_ilo | default('1') }
 # operation (integer value)
 #action_wait=10
 
+# Time interval (in seconds) for successive awake call to AMT
+# interface, this depends on the IdleTimeout setting on AMT
+# interface. AMT Interface will go to sleep after 60 seconds
+# of inactivity by default. IdleTimeout=0 means AMT will not
+# go to sleep at all. Setting awake_interval=0 will disable
+# awake call. (integer value)
+# Minimum value: 0
+#awake_interval = 60
+
+
+
+[oneview]
+### Options defined in ironic.drivers.modules.oneview.common
+
+# URL where OneView is available (string value)
+#manager_url = <None>
+
+# OneView username to be used (string value)
+#username = <None>
+
+# OneView password to be used (string value)
+#password = <None>
+
+# Option to allow insecure connection with OneView (boolean
+# value)
+#allow_insecure_connections = false
+
+# Path to CA certificate (string value)
+#tls_cacert_file = <None>
+
+# Max connection retries to check changes on OneView (integer value)
+#max_polling_attempts = 12
+
+
 
 [seamicro]
 ### Options defined in ironic.drivers.modules.seamicro
@@ -1423,12 +1773,19 @@ clean_priority_reset_ilo={{ ironic_ilo_clean_priority_reset_ilo | default('1') }
 #action_timeout=10
 
 
+
 [snmp]
 ### Options defined in ironic.drivers.modules.snmp
 
 # Seconds to wait for power action to be completed (integer
 # value)
 #power_timeout=10
+
+# Time (in seconds) to sleep between when rebooting (powering
+# off and on again) (integer value)
+# Minimum value: 0
+#reboot_delay = 0
+
 
 
 [ssh]
@@ -1445,6 +1802,7 @@ clean_priority_reset_ilo={{ ironic_ilo_clean_priority_reset_ilo | default('1') }
 # used by the host that corresponds to a node's MAC address.
 # (integer value)
 #get_vm_name_retry_interval=3
+
 
 
 [virtualbox]

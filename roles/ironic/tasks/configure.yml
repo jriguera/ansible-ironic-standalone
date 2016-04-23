@@ -1,45 +1,4 @@
 ---
-- name: Create the state folder
-  file:
-    path: "{{ ironic_state_path }}"
-    owner: "{{ ironic_user }}"
-    group: "{{ ironic_group }}"
-    mode: 0755
-    state: directory
-
-- name: Create temp folder
-  file:
-    path: "{{ ironic_tempdir }}"
-    owner: "{{ ironic_user }}"
-    group: "{{ ironic_group }}"
-    mode: 0755
-    state: directory
-  when: >
-    ironic_tempdir is defined and
-    ironic_tempdir != '/tmp'
-
-- name: Create the logging folder
-  file:
-    path: "{{ ironic_log | dirname }}"
-    owner: "{{ ironic_user }}"
-    group: "{{ ironic_group }}"
-    mode: 0750
-    state: directory
-  when: >
-    ironic_log is defined and 
-    ironic_log != 'syslog'
-
-- name: Create lock folder
-  file:
-    path: "{{ ironic_oslo_concurrency_lock_path }}"
-    owner: "{{ ironic_user }}"
-    group: "{{ ironic_group }}"
-    mode: 0755
-    state: directory
-  when: >
-    ironic_oslo_concurrency_lock_path is defined and 
-    not ironic_oslo_concurrency_lock_path is none 
-
 - name: Copy oslo policy file if defined
   copy:
     src: "{{ ironic_oslo_policy_file }}"
@@ -48,8 +7,8 @@
     group: "{{ ironic_group }}"
     mode: 0644
   when: >
-    ironic_oslo_policy_file and
-    not ironic_oslo_policy_file is none
+    ironic_oslo_policy_file
+    and ironic_oslo_policy_file is not none
   register: __ironic_policy_file
 
 - name: Defining mysql connection
@@ -70,42 +29,49 @@
     mode: 0644
   register: __ironic_updated_conf
 
-- name: Checking if configuration was updated
-  set_fact: >
-    _ironic_updated="{{ __ironic_updated_conf.changed }}" or "{{ __ironic_policy_file.changed }}"
+- name: Check if configuration was updated
+  set_fact: _ironic_updated="{{ __ironic_updated_conf.changed or __ironic_policy_file.changed }}"
 
-- name: Create initial database schema
-  command: ironic-dbsync --config-file "{{ ironic_config_file }}" create_schema
+
+- block:
+  - name: Create initial database schema
+    command: ironic-dbsync --config-file "{{ ironic_config_file }}" create_schema
+    when: not _ironic_previous
+    notify: restart api
+    become_user: "{{ ironic_user }}"
+
+  - name: Update database schema
+    command: ironic-dbsync --config-file "{{ ironic_config_file }}" upgrade
+    when: _ironic_previous
+    become_user: "{{ ironic_user }}"
+    notify: restart conductor
+
+  - name: Delete SQLite database
+    file: path="{{ ironic_var_dir }}/ironic.db" state=absent
+    when: not _ironic_previous
+
   when: >
-    not ironic_database_connection | search("sqlite://.*") and
-    _ironic_api_reinstalled and 
-    _ironic_updated and
-    not _ironic_previous
+    not ironic_database_connection | search("sqlite://.*")
+    and _ironic_api_reinstalled
+    and _ironic_updated
 
-- name: Update database schema
-  command: ironic-dbsync --config-file "{{ ironic_config_file }}" upgrade
-  when: >
-    not ironic_database_connection | search("sqlite://.*") and
-    _ironic_api_reinstalled and 
-    _ironic_updated and
-    _ironic_previous
 
-- name: Restart Ironic-API daemon for the new configuration
-  service: name="{{ ironic_api_service_name }}" state=restarted 
+- name: Stop Ironic-API daemon for the new configuration
+  service: name="{{ ironic_api_service_name }}" state=stopped
   when: ironic_api and _ironic_updated
 
-- name: Restart Ironic-Conductor daemon for the new configuration
-  service: name="{{ ironic_conductor_service_name }}" state=restarted 
+- name: Stop Ironic-Conductor daemon for the new configuration
+  service: name="{{ ironic_conductor_service_name }}" state=stopped
   when: ironic_conductor and _ironic_updated
 
-- name: Ensure Ironic-API daemon is started and enabled on boot
+- name: Start Ironic-API daemon and ensure it is enabled on boot
   service: 
     name: "{{ ironic_api_service_name }}"
     state: started 
     enabled: "{{ ironic_enabled_on_startup | ternary('yes', 'no') }}"
   when: ironic_api
 
-- name: Ensure Ironic-Conductor daemon is started and enabled on boot
+- name: Start Ironic-Conductor daemon and ensure it is enabled on boot
   service: 
     name: "{{ ironic_conductor_service_name }}" 
     state: started 

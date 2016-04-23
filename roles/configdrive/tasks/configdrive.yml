@@ -24,14 +24,14 @@
   shell: find "{{ _configdrive_content_path }}" -type f | sed "s|{{ _configdrive_content_path }}||"
   register: __configdrive_content_files
 
-- name: Get the include files on temporary folder
+- name: Get the list of include files on temporary folder
   set_fact: _configdrive_content_files="{{ __configdrive_content_files.stdout }}"
 
 - name: Move files to destination from temporary folder
-  command: mv "{{ _configdrive_content_path }}/{{ item.1 }}" "{{ configdrive_config_dir }}/{{ configdrive_instance_dir }}/openstack/content/{{ '%04d' % item.0|int }}"
+  command: mv -v "{{ _configdrive_content_path }}/{{ item.1 }}" "{{ configdrive_config_dir }}/{{ configdrive_instance_dir }}/openstack/content/{{ '%04d' % item.0|int }}"
   with_indexed_items: "{{ __configdrive_content_files.stdout_lines }}"
 
-- name: Cleanup temporary folder
+- name: Delete temporary folder
   file:
     state: absent
     force: yes
@@ -48,7 +48,7 @@
     - "openstack/2012-08-10"
     - "openstack/latest"
 
-- name: Copy user_data if defined
+- name: Copy metadata file user_data
   copy:
     src: "{{ configdrive_config_user_data_path }}"
     dest: "{{ configdrive_config_dir }}/{{ configdrive_instance_dir }}/{{ item }}/user_data"
@@ -60,9 +60,9 @@
     - "openstack/latest"
   when: configdrive_config_user_data_path is defined
 
-- name: Create config-2 volume
+- name: Create configdrive volume file
   shell: > 
-    genisoimage -R -V "config-2" "{{ configdrive_config_dir }}/{{ configdrive_instance_dir }}" 
+    genisoimage -R -V "{{ configdrive_voume_name }}" "{{ configdrive_config_dir }}/{{ configdrive_instance_dir }}" 
     | gzip -c | base64 > "{{ configdrive_volume_path }}/{{ configdrive_instance_dir }}.gz"
   when: configdrive_volume_path is defined and not configdrive_volume_path is none
 

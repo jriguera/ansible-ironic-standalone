@@ -1,26 +1,32 @@
 ---
-- name: Delete monitors
-  file:
-    state: absent
-    path: "{{ monit_config_dir }}/{{ item.name }}" 
-  with_items: monit_monitoring_list
-  when: >
-    monit_monitoring_list is defined and
-    not monit_monitoring_list is none and
-    (item.delete is defined and item.delete)
-  notify: reload monit
-
-- name: Add monitors
+- name: Create default system monitor
   template:
-    src: monitor.j2
-    dest: "{{ monit_config_dir }}/{{ item.name }}"
+    src: system.j2
+    dest: "{{ monit_config_dir }}/{{ ansible_hostname }}"
     owner: "{{ monit_user }}"
     group: "{{ monit_group }}"
     mode: 0644
-  with_items: monit_monitoring_list
-  when: >
-    monit_monitoring_list is defined and
-    not monit_monitoring_list is none and
-    not (item.delete is defined and item.delete)
+  when: monit_monitoring_system
   notify: reload monit
+
+
+- block:
+  - name: Delete monitors
+    file: path="{{ monit_config_dir }}/{{ item.name }}" state=absent
+    with_items: "{{ monit_monitoring_list }}"
+    when: item.delete is defined and item.delete
+    notify: reload monit
+
+  - name: Add monitors
+    template:
+      src: monitor.j2
+      dest: "{{ monit_config_dir }}/{{ item.name }}"
+      owner: "{{ monit_user }}"
+      group: "{{ monit_group }}"
+      mode: 0644
+    with_items: "{{ monit_monitoring_list }}"
+    when: not (item.delete is defined and item.delete)
+    notify: reload monit
+
+  when: monit_monitoring_list
 
