@@ -1,5 +1,5 @@
 ---
-mysql_version: "5.5"
+mysql_version: "5.6"
 
 mysql_os_repo_url:
 mysql_os_repo_key:
