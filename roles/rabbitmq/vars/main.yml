@@ -1,5 +1,5 @@
 ---
-rabbitmq_repo_release: "liberty"
+rabbitmq_repo_release: "mitaka"
 rabbitmq_packages_install_recommends: true
 rabbitmq_os_repo_url:
 rabbitmq_os_repo_key:
