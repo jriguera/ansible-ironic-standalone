@@ -32,7 +32,7 @@ Roles used:
  * `roles/monit` (optional) for basic monitoring of the system and controll 
     the processes with Monit.
  * `roles/ironic` to setup the OpenStack Ironic daemons.
- * `roles/ironic-inspector` to setup the Ironic-Inspector daemon.
+ * `roles/inspector` to setup the Ironic-Inspector daemon.
  * `roles/dnsmasq` to setup a PXE server to use with Ironic.
  * `roles/nginx` (optional) to setup HTTP image repo server (for IPA).
  * `roles/webclient` (optional) to setup ironic_webclient application
