@@ -71,7 +71,7 @@
           allowed_origin: "http://localhost:8080"
           allow_credentials: True
 
-    - role: ironic-inspector
+    - role: inspector
       ironic_inspector_enabled: true
       ironic_inspector_ipa_images_path: "{{ baremetal_server_images_deploy_path }}"
       ironic_inspector_ironic_url: "http://{{ ansible_default_ipv4.address }}:6385/"
