@@ -12,10 +12,15 @@
       mysql_root_password: "{{ baremetal_server_database_rootpass }}"
       mysql_database_list:
         - name: "{{ baremetal_server_database_name }}"
+        - name: "{{ baremetal_server_inspector_database_name }}"
       mysql_user_list:
         - name: "{{ baremetal_server_database_user }}"
           password: "{{ baremetal_server_database_pass }}"
           priv: "{{ baremetal_server_database_name }}.*:ALL"
+          host: "%"
+        - name: "{{ baremetal_server_inspector_database_user }}"
+          password: "{{ baremetal_server_inspector_database_pass }}"
+          priv: "{{ baremetal_server_inspector_database_name }}.*:ALL"
           host: "%"
 
     - role: rabbitmq
@@ -49,6 +54,15 @@
         ironic_webclient:
           allowed_origin: "http://{{ ansible_default_ipv4.address }}"
           allow_credentials: True
+
+    - role: inspector
+      ironic_inspector_enabled: True
+      ironic_inspector_ipa_download: False
+      ironic_inspector_ironic_url: "http://{{ ansible_default_ipv4.address }}:6385/"
+      ironic_inspector_database_mysql_host: "{{ ansible_default_ipv4.address }}"
+      ironic_inspector_database_mysql_userid: "{{ baremetal_server_inspector_database_user }}"
+      ironic_inspector_database_mysql_password: "{{ baremetal_server_inspector_database_pass }}"
+      ironic_inspector_database_mysql_db: "{{ baremetal_server_inspector_database_name }}"
       
     - role: dnsmasq
       dnsmasq_conf_domain: "{{ baremetal_server_dhcp_domain }}"

@@ -15,6 +15,9 @@ baremetal_server_database_pass=mysql
 baremetal_server_msg_vhost=ironic
 baremetal_server_msg_user=ironic
 baremetal_server_msg_pass=rabbitmq
+baremetal_server_inspector_database_name=inspector
+baremetal_server_inspector_database_user=inspector
+baremetal_server_inspector_database_pass=mysql
 # Leasing time can be only one hour because the static ips
 # can be defined with configdrive. This is only for the time
 # when the server is being deployed

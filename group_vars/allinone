@@ -40,6 +40,12 @@ webclient_webdir_owner: "{{ nginx_user }}"
 webclient_webdir_group: "{{ ironic_group }}"
 
 
+# Inspector
+ironic_inspector_ipa_tftproot: "{{ ironic_pxe_tftp_root }}"
+ironic_inspector_ipa_images_path: "{{ ironic_pxe_images_path }}"
+ironic_inspector_ipa_callback_url: "http://{{ ironic_pxe_tftp_server }}:{{ ironic_inspector_listen_port }}/v1/continue"
+
+
 monit_monitoring_list:
   - name: mysql
     target: "{{ mysql_pidfile }}"
@@ -62,6 +68,11 @@ monit_monitoring_list:
   - name: ironic-conductor
     target: "{{ ironic_conductor_pidfile }}"
     script: "/usr/sbin/service ironic-conductor %"
+    rules:
+      - "if 3 restarts within 3 cycles then timeout"
+  - name: ironic-inspector
+    target: "{{ ironic_inspector_pidfile }}"
+    script: "/usr/sbin/service ironic-inspector %"
     rules:
       - "if 3 restarts within 3 cycles then timeout"
   - name: dnsmasq
