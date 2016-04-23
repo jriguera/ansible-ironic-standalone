@@ -43,8 +43,8 @@
   - name: Update database schema
     command: ironic-dbsync --config-file "{{ ironic_config_file }}" upgrade
     when: _ironic_previous
+    notify: restart api
     become_user: "{{ ironic_user }}"
-    notify: restart conductor
 
   - name: Delete SQLite database
     file: path="{{ ironic_var_dir }}/ironic.db" state=absent
