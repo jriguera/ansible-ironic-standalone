@@ -1,0 +1,35 @@
+---
+# Specific variables for this server
+# Could be defined in the inventory!
+
+# The name and mac have to match the ones defined in the Vagrantfile
+baremetal_fqdn: baremetal.vbox.local
+baremetal_mac: 08:00:27:26:00:8E
+# This is the ip to reach the VBbox service running on the main host
+# from the Ironic guest (this is the default value)
+baremetal_ipmi_ip: 10.0.2.2
+
+# Main network parameters. Just an example
+baremetal_ip: 10.100.100.10
+baremetal_netmask: 255.255.255.0
+baremetal_gw: 10.100.100.1
+
+# Image name, defined in vars/baremetal_image-<name>.yml
+baremetal_os: trusty
+
+# If you change the interface name to eth1 (for example)
+# Remember to change the backend devices!
+
+baremetal_network_list:
+  - device: "bond0"
+    type: "bond"
+    bond_mode: "1"
+    address: "{{ baremetal_ip }}"
+    netmask: "{{ baremetal_netmask }}"
+    gateway: "{{ baremetal_gw }}"
+    nameservers: ["8.8.8.8"]
+    domain: "{{ baremetal_domain }}"
+    backend: ["eth0"]
+
+# The rest of the variables for Ironic are not defined here, they are
+# defined on the inventory
