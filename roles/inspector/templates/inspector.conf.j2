@@ -345,7 +345,7 @@ allow_headers={{ values["allow_headers"] | join(',') }}
 
 # The name of the Ironic driver used by the enroll hook when creating
 # a new node in Ironic. (string value)
-enroll_node_driver={{ ironic_inspector_discovery_enroll_node_driver | default('inspector') }}
+enroll_node_driver={{ ironic_inspector_discovery_enroll_node_driver | default('fake') }}
 
 
 

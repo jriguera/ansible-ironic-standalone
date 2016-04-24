@@ -3,11 +3,11 @@
 ironic_inspector_os_packages: False
 
 # Enable or disable inspector daemon and pxe configuration
-ironic_inspector_enabled: true
-ironic_inspector_enabled_on_startup: true
+ironic_inspector_enabled: True
+ironic_inspector_enabled_on_startup: True
 
-ironic_inspector_debug: false
-ironic_inspector_trace: false
+ironic_inspector_debug: False
+ironic_inspector_trace: False
 
 # Main settings
 ironic_inspector_listen_address: "0.0.0.0"
@@ -19,8 +19,8 @@ ironic_inspector_clean_up_period: 60
 ironic_inspector_max_concurrency: 1000
 ironic_inspector_introspection_delay: 5
 ironic_inspector_log: "/var/log/ironic-inspector/inspector.log"
-ironic_inspector_publish_errors: true
-ironic_inspector_fatal_deprecations: false
+ironic_inspector_publish_errors: True
+ironic_inspector_fatal_deprecations: False
 
 # Define these vars for mysql connection:
 #ironic_inspector_database_mysql_host: "localhost"
@@ -32,7 +32,7 @@ ironic_inspector_database_connection: "sqlite:///var/lib/ironic-inspector/inspec
 ironic_inspector_database_idle_timeout: 600
 ironic_inspector_database_pool_size: 10
 #ironic_inspector_database_pool_timeout:
-ironic_inspector_database_use_db_reconnect: true
+ironic_inspector_database_use_db_reconnect: True
 
 # How to contact Ironic API to define the server
 ironic_inspector_ironic_url: "http://127.0.0.1:6385/"
@@ -54,7 +54,7 @@ ironic_inspector_ironic_os_endpoint_type: "internalURL"
 
 # Force download always the IPA ramdisk and kernel
 ironic_inspector_ipa_download: True
-ironic_inspector_ipa_images_path: "/var/lib/ironic/images"
+ironic_inspector_ipa_deploy_path: "/var/lib/ironic/images"
 ironic_inspector_ipa_ramdisk_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem-stable-{{ ironic_inspector_release }}.cpio.gz"
 ironic_inspector_ipa_ramdisk_checksum: "sha1:435f974d6cd21101a140151af1a9fc239835f901"
 ironic_inspector_ipa_ramdisk: "coreos_production_pxe_image-oem.cpio.gz"
@@ -64,6 +64,10 @@ ironic_inspector_ipa_kernel: "coreos_production_pxe.vmlinuz"
 ironic_inspector_ipa_callback_url: "http://{{ ansible_default_ipv4.address }}:{{ ironic_inspector_listen_port }}/v1/continue"
 ironic_inspector_ipa_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
 ironic_inspector_ipa_tftproot: "/var/lib/ironic/tftpboot"
+# If manage tftproot, it will create the pxelinux.cfg folder and default entry
+# to automatically PXE boot all the servers when they boot (if they are not
+# managed by Ironic Conductor
+ironic_inspector_ipa_manage_tftproot: True
 
 # Which MAC addresses to add as ports during introspection. Possible
 # values: all (all MAC addresses), active (MAC addresses of NIC with
@@ -86,14 +90,14 @@ ironic_inspector_processing_disk_partitioning_spacing: True
 ironic_inspector_processing_log_bmc_address: True
 
 # Name of the driver used by the enroll hook
-ironic_inspector_discovery_enroll_node_driver: "inspector"
+ironic_inspector_discovery_enroll_node_driver: "agent_ipmitool"
 
 # Define auth_uri to use keystone authentication, otherwise
 # noauth will be assumed
 ironic_inspector_keystone_authtoken_auth_uri:
 ironic_inspector_keystone_authtoken_region_name: "RegionOne"
 ironic_inspector_keystone_authtoken_auth_version: 2
-ironic_inspector_keystone_authtoken_delay_auth_decision: false
+ironic_inspector_keystone_authtoken_delay_auth_decision: False
 ironic_inspector_keystone_authtoken_identity_uri:
 ironic_inspector_keystone_authtoken_service_user: "admin"
 ironic_inspector_keystone_authtoken_service_password: "admin"
@@ -101,7 +105,7 @@ ironic_inspector_keystone_authtoken_service_tenant_name: "admin"
 
 # Manage FW on the PXE host, disabled
 ironic_inspector_firewall_manage: False
-ironic_inspector_firewall_interface: "eth0"
+ironic_inspector_firewall_interface: "{{ ansible_default_ipv4.interface }}"
 ironic_inspector_firewall_update_period: 15
 ironic_inspector_firewall_chain: "ironic-inspector"
 

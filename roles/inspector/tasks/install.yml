@@ -107,6 +107,7 @@
   when: ironic_init_system == 'systemd'
   tags: ["systemd", "init"]
 
+
 # Force restart all the sevices (database, messaging) if they were installed or reinstalled
 - meta: flush_handlers
 

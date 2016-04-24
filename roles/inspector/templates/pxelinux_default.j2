@@ -1,8 +1,7 @@
 default introspect
 
 label introspect
-kernel {{ ironic_inspector_ipa_images_path }}/{{ ironic_inspector_ipa_kernel }}
-append initrd={{ ironic_inspector_ipa_images_path }}/{{ ironic_inspector_ipa_ramdisk }} ipa-inspection-callback-url={{ ironic_inspector_ipa_callback_url }} systemd.journald.forward_to_console=yes {{ ironic_inspector_ipa_pxe_append_params | join(' ') }}
-
+kernel {{ ironic_inspector_ipa_kernel }}
+append initrd={{ ironic_inspector_ipa_ramdisk }} ipa-inspection-callback-url={{ ironic_inspector_ipa_callback_url }} systemd.journald.forward_to_console=yes {{ ironic_inspector_ipa_pxe_append_params | join(' ') }}
 ipappend 3
 
