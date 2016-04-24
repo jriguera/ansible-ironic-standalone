@@ -56,7 +56,7 @@
     baremetal_mac | length != 17 and
     baremetal_mac is defined
 
-- name: Define the IPMI console port
+- name: Define the IPMI web console port for shellinabox
   set_fact: baremetal_console_port="{{ baremetal_ipmi_ip.split('.')[-1]|int + 10000 }}"
   when: >
     baremetal_ipmi_ip is defined and
