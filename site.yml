@@ -61,11 +61,16 @@
       ironic_database_mysql_password: "{{ baremetal_server_database_pass }}"
       ironic_database_mysql_db: "{{ baremetal_server_database_name }}"
       ironic_pxe_images_path: "{{ baremetal_server_images_path }}"
-      ironic_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
+      # To configure web console with shellinabox
+      ironic_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin", "console=tty0", "console=ttyS0,115200n8"]
       ironic_deploy_http_url: "http://10.0.0.10/deploy"
       ironic_deploy_http_root: "{{ baremetal_server_images_deploy_path }}"
       ironic_deploy_erase_devices_priority: 0
       ironic_enabled_drivers: ["pxe_ipmitool", "agent_ipmitool", "agent_vbox"]
+      # Inspeccion enabled (add also the role)
+      ironic_inspector_enabled: True
+      ironic_inspector_service_url: "http://10.0.0.10:5050"
+      # For ironic webclient
       ironic_cors_domains:
         ironic_webclient:
           allowed_origin: "http://localhost:8080"
@@ -74,10 +79,10 @@
     - role: inspector
       ironic_inspector_enabled: True
       ironic_inspector_ipa_download: False
-      ironic_inspector_ipa_tftproot: "{{ ironic_pxe_tftp_root }}"
-      ironic_inspector_ipa_images_path: "{{ ironic_pxe_images_path }}"
+      ironic_inspector_ipa_manage_tftproot: True
+      ironic_inspector_ipa_deploy_path: "{{ baremetal_server_images_deploy_path }}"
       ironic_inspector_ironic_url: "http://10.0.0.10:6385/"
-      ironic_inspector_ipa_callback_url: "http://10.0.0.10:{{ ironic_inspector_listen_port }}/v1/continue"
+      ironic_inspector_ipa_callback_url: "http://10.0.0.10:5050/v1/continue"
       ironic_inspector_database_mysql_host: "localhost"
       ironic_inspector_database_mysql_userid: "{{ baremetal_server_inspector_database_user }}"
       ironic_inspector_database_mysql_password: "{{ baremetal_server_inspector_database_pass }}"
