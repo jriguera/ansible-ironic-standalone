@@ -8,7 +8,7 @@
 - name: Define the MD5 checksum URI if needed
   set_fact: _baremetal_image_checksum_path="{{ baremetal_image | regex_replace('^(.*)\.(.*)$', '\\1.md5') }}"
 
-- name: Get the url image MD5 checksum if needed
+- name: Get the url image MD5 checksum
   command: curl -qs -f "{{ _baremetal_image_checksum_path }}"
   register: _baremetal_image_checksum
   ignore_errors: yes
@@ -18,8 +18,8 @@
   set_fact: baremetal_image_checksum="{{ _baremetal_image_checksum.stdout_lines[0].split() | first }}"
   when: _baremetal_image_checksum|success
 
-- name: Workout the checksum with the image url if needed
-  shell: set -o pipefail && curl -qs "{{ baremetal_image }}" | md5sum
+- name: Workout the checksum with the image url
+  shell: set -o pipefail && curl -qs -f "{{ baremetal_image }}" | md5sum
   args:
     executable: /bin/bash
   register: _baremetal_image_checksum
@@ -32,4 +32,7 @@
   set_fact: baremetal_image_checksum="{{ _baremetal_image_checksum.stdout_lines[0].split() | first }}"
   when: _baremetal_image_checksum|success
 
+- name: Check MD5 image checksum is defined
+  fail: msg="MD5 image checksum not defined. Check if the image exists on the repository"
+  when: not _baremetal_image_checksum|success
 
