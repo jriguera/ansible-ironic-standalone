@@ -12,6 +12,7 @@ This repository uses tags!
 |------|-------------------|----------------|--------------|
 | v1.x | Kilo (2015.4)     | 2015.1.n       | -            |
 | v2.x | Liberty (2015.10) | 4.2.n          | v1.x -> v2.x |
+| v3.x | Mitaka (2016.5)   | 5.1.n          | v2.x -> v3.x |
 
 
 
@@ -73,7 +74,7 @@ Notices:
  
  * This version switched to MySQL 5.6 instead of MySQL 5.5. The migration is
  safe, because the *mysql* role stops the previous version, deletes 
- *ib_logfiles* and it starts MySQL again. Next version will use MySQL 5.7 as 
+ *ib_logfiles* and it starts MySQL again. Next versions will use MySQL 5.7 as 
  it becomes the default version in most of the recent distributions.
  
  * There is a new web interface installed with the role `webclient`. It 
@@ -86,10 +87,18 @@ Notices:
  without connecting the server. The approach is just to have a kind of
  repository compatible with HTTP API calls.
 
- * The next version (3.x from Mitaka) supports the Ironic Inspector package 
+ * Version 3.x (from Mitaka) supports the Ironic Inspector package 
  (deployed with a new role) which provides automatic discovery for new baremetal
  servers, of course, you can stil use the `add-baremetal` or `del-baremetal` 
  with your servers.
+ 
+ * Support for shellinabox, it means you can open web console using a web 
+ browser to see the installation process after requesting it 
+ `ironic node-get-console <node-uuid>`. The ports are automatically assigned
+ by `add-baremetal` playbook based on the last part of the IPMI IP address
+ plus 10000 (e.g. a server with IPMI IP address: 10.100.200.33 will get
+ defined its port as 10033). This funcion is automatically defined with
+ `add-baremetal`.
 
  * The two playbooks to define and delete servers in Ironic are completely 
  functional but, the main purpose of them is to make easy and show the entire 
