@@ -28,6 +28,9 @@
     - name: "id"
       prompt: "Server Name"
       private: no
+    - name: "deploy"
+      prompt: "Deploy or Define the server (deploy, define)"
+      private: no
 
   pre_tasks:
     - name: Include network definitions
@@ -61,14 +64,10 @@
         ironic
         --os-auth-token="{{ baremetal_ironic_token }}"
         --ironic-url="{{ baremetal_ironic_url }}"
-        node-list | awk -F '|' "/{{ baremetal_name }}/ { print \$2 }"
+        node-list | awk -F '|' "/ {{ baremetal_name }} /{ print \$2 }"
       register: __baremetal_new
       ignore_errors: yes
       delegate_to: "{{ baremetal_client }}"
-
-    - name: Checking if server name is already used
-      fail: msg="Server name '{{ baremetal_name }}' already defined!"
-      when: __baremetal_new.stdout|trim != ''
 
     - name: Define the new baremetal node
       shell: >
@@ -82,13 +81,18 @@
         -i ipmi_terminal_port="{{ baremetal_console_port }}"
         -i deploy_kernel="{{ baremetal_deploy_kernel }}"
         -i deploy_ramdisk="{{ baremetal_deploy_ramdisk }}"
-        | awk "/ uuid / { print \$4 }"
+        | awk "/ uuid /{ print \$4 }"
       register: __baremetal_defined
       delegate_to: "{{ baremetal_client }}"
+      when: __baremetal_new.stdout|trim == ''
 
-    - name: Get the server UUID
-      set_fact: baremetal_uuid="{{ __baremetal_defined.stdout }}"
-      when: __baremetal_defined|success
+    - name: Get the new server UUID 
+      set_fact: baremetal_uuid="{{ __baremetal_defined.stdout | trim }}"
+      when: __baremetal_new.stdout|trim == ''
+
+    - name: Get the current server UUID
+      set_fact: baremetal_uuid="{{ __baremetal_new.stdout | trim }}"
+      when: __baremetal_new.stdout|trim != ''
 
 
   roles:
@@ -128,7 +132,7 @@
         --os-auth-token="{{ baremetal_ironic_token }}"
         --ironic-url="{{ baremetal_ironic_url }}"
         port-create -n "{{ baremetal_uuid }}" -a "{{ baremetal_mac }}"
-      when: baremetal_mac is defined and baremetal_mac
+      when: baremetal_mac is defined and baremetal_mac and __baremetal_defined|success
       delegate_to: "{{ baremetal_client }}"
 
     - name: Add reference to config-drive in metadata info
@@ -160,4 +164,6 @@
         --ironic-url="{{ baremetal_ironic_url }}"
         node-set-provision-state {{ _baremetal_configdrive_param }} "{{ baremetal_uuid }}" active
       delegate_to: "{{ baremetal_client }}"
+      when: deploy | trim == "deploy"
+
 
