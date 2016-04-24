@@ -70,7 +70,7 @@ ironic_api_port: 6385
 
 # Ironic-conductor options:
 ironic_conductor_workers_pool_size: 100
-ironic_conductor_api_url: "http://127.0.0.1:6385/"
+ironic_conductor_api_url: "http://{{ ansible_default_ipv4.address }}:6385/"
 ironic_conductor_sync_power_state_interval: 60
 ironic_conductor_check_provision_state_interval: 60
 ironic_conductor_deploy_callback_timeout: 1800
@@ -135,8 +135,9 @@ ironic_disk_utils_efi_system_partition_size: 200
 ironic_disk_utils_dd_block_size: "1M"
 
 # Inspector options:
-#ironic_inspector_service_url:
-#ironic_inspector_status_check_period: 60
+ironic_inspector_enabled: False
+ironic_inspector_service_url: "http://{{ ansible_default_ipv4.address }}:5050"
+ironic_inspector_status_check_period: 60
 
 # Glance options
 # Allowed values: swift, radosgw

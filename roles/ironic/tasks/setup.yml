@@ -67,7 +67,7 @@
   when: ironic_isolinux_bin is not defined
 
 
-# Include tasks for conductor
+# Include other tasks for conductor
 - include: setup_console.yml
   when: ironic_conductor
   tags: ["conductor", "console"]
@@ -75,4 +75,8 @@
 - include: setup_pxe.yml
   when: ironic_conductor
   tags: ["conductor", "pxe"]
+
+- include: setup_inspector.yml
+  when: ironic_conductor and ironic_inspector_enabled
+  tags: ["conductor", "inspector"]
 

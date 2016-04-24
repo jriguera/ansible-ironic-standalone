@@ -1246,7 +1246,7 @@ dhcp_provider=none
 ### Options defined in ironic.drivers.modules.inspector
 
 # whether to enable inspection using ironic-inspector (boolean value)
-{% if ironic_inspector_service_url is defined and not ironic_inspector_service_url is none -%}
+{% if ironic_inspector_enabled -%}
 enabled=true
 
 # ironic-discoverd HTTP endpoint. If this is not set, the

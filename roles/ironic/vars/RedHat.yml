@@ -49,3 +49,7 @@ ironic_conductor_packages_console:
   shellinabox:
     state: latest
 
+ironic_conductor_packages_inspector:
+  python-ironic-inspector-client:
+    state: latest
+

@@ -1,0 +1,18 @@
+---
+- name: RedHat - Install inspector client library packages
+  yum:
+    name: "{{ item.key if ('version' not in item.value) else ('%s-%s' % (item.key, item.value['version'])) }}"
+    state: "{{ item.value.state | default('present') }}"
+  with_dict: "{{ ironic_conductor_packages_inspector }}"
+  when: ansible_os_family == 'RedHat'
+  tags: ["install", "redhat", "packages"]
+
+- name: Debian - Install inspector client library packages
+  apt: 
+    name: "{{ item.key if ('version' not in item.value) else ('%s=%s' % (item.key, item.value['version'])) }}"
+    state: "{{ item.value.state | default('present') }}"
+    install_recommends: "{{ ironic_packages_install_recommends }}"
+  with_dict: "{{ ironic_conductor_packages_inspector }}"
+  when: ansible_os_family == 'Debian'
+  tags: ["install", "debian", "packages"]
+
