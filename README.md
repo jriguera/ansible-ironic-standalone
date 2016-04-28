@@ -126,6 +126,92 @@ Aslo, because the baremetal VM client is empty, vagrant will fail saying that
 it was not able to ssh it.
 
 
+# Automatic enroll
+
+
+TODO TODO TODO TODO TODO
+
+
+With this feature, the "enroll" node_not_found_hook now uses all valid 
+MAC's to check node existence, not only the MAC(s) that will be used for 
+creating port(s).
+
+When the baremetal vm boots, it will be load the IPA ramdisk with the 
+instropection mode enabled.
+
+
+After a couple of minutes, the node will be automatically defined in Ironic:
+
+```
+# ironic node-list
++--------------------------------------+------+---------------+-------------+--------------------+-------------+
+| UUID                                 | Name | Instance UUID | Power State | Provisioning State | Maintenance |
++--------------------------------------+------+---------------+-------------+--------------------+-------------+
+| 16510bce-3ebd-4588-bc84-640f0da5f1b2 | None | None          | None        | enroll             | False       |
++--------------------------------------+------+---------------+-------------+--------------------+-------------+
+
+```
+
+Because of the limitations of the virtual environment (running on VirtualBox),
+it does not define all the properties of a real server (IPMI) and the
+enroll process does not work properly.
+
+```
+# ironic node-show 16510bce-3ebd-4588-bc84-640f0da5f1b2
++------------------------+--------------------------------------+
+| Property               | Value                                |
++------------------------+--------------------------------------+
+| chassis_uuid           |                                      |
+| clean_step             | {}                                   |
+| console_enabled        | False                                |
+| created_at             | 2016-04-25T22:48:53+00:00            |
+| driver                 | agent_ipmitool                       |
+| driver_info            | {}                                   |
+| driver_internal_info   | {}                                   |
+| extra                  | {}                                   |
+| inspection_finished_at | None                                 |
+| inspection_started_at  | None                                 |
+| instance_info          | {}                                   |
+| instance_uuid          | None                                 |
+| last_error             | None                                 |
+| maintenance            | False                                |
+| maintenance_reason     | None                                 |
+| name                   | None                                 |
+| power_state            | None                                 |
+| properties             | {}                                   |
+| provision_state        | enroll                               |
+| provision_updated_at   | None                                 |
+| raid_config            |                                      |
+| reservation            | None                                 |
+| target_power_state     | None                                 |
+| target_provision_state | None                                 |
+| target_raid_config     |                                      |
+| updated_at             | None                                 |
+| uuid                   | 16510bce-3ebd-4588-bc84-640f0da5f1b2 |
++------------------------+--------------------------------------+
+
+# ironic node-port-list 16510bce-3ebd-4588-bc84-640f0da5f1b2
++--------------------------------------+-------------------+
+| UUID                                 | Address           |
++--------------------------------------+-------------------+
+| ded9b9aa-9358-41fd-9fe3-6b5dc461f15c | 08:00:27:26:00:8e |
++--------------------------------------+-------------------+
+```
+
+
+
+Ironic and inspector supports automatic discovery of the nodes
+
+
+That means that the DHCP server will reply to all the request, if they 
+are defined the node will boot normally, otherwise it will boot in 
+"discovered" mode.
+
+
+This setup can also be convined with DHCP on IPMI ... 
+
+
+
 
 ## Vagrant
 
