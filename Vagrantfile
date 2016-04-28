@@ -146,6 +146,7 @@ Vagrant.configure(2) do |config|
        # Disable USB
        vb.customize ["modifyvm", :id, "--usb", "on"]
        vb.customize ["modifyvm", :id, "--usbehci", "off"]
+       #vb.customize ["modifyvm", :id, "--boot1", "net", "--boot2", "disk"]
     end
     slave.vm.post_up_message = "Hola mundo"
   end
