@@ -21,6 +21,8 @@
     baremetal_server_images_path: /var/lib/ironic/http/images
     baremetal_server_metadata_path: /var/lib/ironic/http/metadata
     baremetal_server_images_deploy_path: /var/lib/ironic/http/deploy
+    baremetal_server_inspector_enabled: True
+    baremetal_server_inspector_default_pxe: True
 
   roles:
     - role: mysql
@@ -68,7 +70,7 @@
       ironic_deploy_erase_devices_priority: 0
       ironic_enabled_drivers: ["pxe_ipmitool", "agent_ipmitool", "agent_vbox"]
       # Inspeccion enabled (add also the role)
-      ironic_inspector_enabled: True
+      ironic_inspector_enabled: "{{ baremetal_server_inspector_enabled }}"
       ironic_inspector_service_url: "http://10.0.0.10:5050"
       # For ironic webclient
       ironic_cors_domains:
@@ -77,20 +79,23 @@
           allow_credentials: True
 
     - role: inspector
-      ironic_inspector_enabled: True
+      ironic_inspector_debug: True
+      ironic_inspector_enabled: "{{ baremetal_server_inspector_enabled }}"
+      # Enable default PXE for automatic enroll of discovery nodes in Ironic
+      ironic_inspector_discovery_enroll: "{{ baremetal_server_inspector_default_pxe }}"
       ironic_inspector_ipa_download: False
-      ironic_inspector_ipa_manage_tftproot: True
-      ironic_inspector_ipa_deploy_path: "{{ baremetal_server_images_deploy_path }}"
-      ironic_inspector_ironic_url: "http://10.0.0.10:6385/"
-      ironic_inspector_ipa_callback_url: "http://10.0.0.10:5050/v1/continue"
+      ironic_inspector_api_url: "http://10.0.0.10:5050/v1/"
+      ironic_inspector_ironic_api_url: "http://10.0.0.10:6385/"
       ironic_inspector_database_mysql_host: "localhost"
       ironic_inspector_database_mysql_userid: "{{ baremetal_server_inspector_database_user }}"
       ironic_inspector_database_mysql_password: "{{ baremetal_server_inspector_database_pass }}"
       ironic_inspector_database_mysql_db: "{{ baremetal_server_inspector_database_name }}"
+      ironic_inspector_ipa_deploy_path: "{{ baremetal_server_images_deploy_path }}"
 
     - role: dnsmasq
       dnsmasq_conf_domain: "{{ baremetal_server_dhcp_domain }}"
       dnsmasq_conf_dhcp:
+        # enp0s8 for Centos 7, eth1 for Ubuntu
         eth1:
           range: "{{ baremetal_server_dhcp_params }}"
           ignore_names: True
