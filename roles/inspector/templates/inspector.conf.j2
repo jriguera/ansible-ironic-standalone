@@ -345,7 +345,7 @@ allow_headers={{ values["allow_headers"] | join(',') }}
 
 # The name of the Ironic driver used by the enroll hook when creating
 # a new node in Ironic. (string value)
-enroll_node_driver={{ ironic_inspector_discovery_enroll_node_driver | default('fake') }}
+enroll_node_driver={{ ironic_inspector_discovery_enroll_driver | default('fake') }}
 
 
 
@@ -386,7 +386,7 @@ auth_strategy=noauth
 
 # Ironic API URL, used to set Ironic API URL when auth_strategy option
 # is noauth to work with standalone Ironic without keystone. (string value)
-ironic_url="{{ ironic_inspector_ironic_url | default('http://localhost:6385/') }}"
+ironic_url="{{ ironic_inspector_ironic_api_url | default('http://127.0.0.1:6385/') }}"
 
 # Ironic service type. (string value)
 os_service_type={{ ironic_inspector_ironic_os_service_type | default('baremetal') }}
@@ -628,7 +628,7 @@ ramdisk_logs_dir={{ ironic_inspector_processing_ramdisk_logs_dir }}
 always_store_ramdisk_logs={{ ironic_inspector_processing_always_store_ramdisk_logs | default(false) | ternary('true','false') }}
 {% endif %}
 
-{% if ironic_inspector_processing_node_not_found_hook is defined and not ironic_inspector_processing_node_not_found_hook is none -%}
+{% if ironic_inspector_discovery_enroll and ironic_inspector_processing_node_not_found_hook is not none -%}
 # The name of the hook to run when inspector receives inspection
 # information from a node it isn't already aware of. This hook is
 # ignored by default. (string value)

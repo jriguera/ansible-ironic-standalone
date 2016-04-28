@@ -1,0 +1,20 @@
+---
+# Rules to apply when a new node is discovered
+# http://docs.openstack.org/developer/ironic-inspector/http-api.html
+# https://github.com/openstack/ironic-inspector/blob/master/doc/source/usage.rst
+
+# Define the IPMI seetings for the new nodes
+ironic_inspector_discovery_enroll_ipmi:
+
+  - description: "Set IPMI driver_info if no credentials"
+    conditions:
+      - op: "is-empty"
+        field: "node://driver_info.ipmi_username"
+    actions:
+      - action: "set-attribute"
+        path: "driver_info/ipmi_username"
+        value: "{{ ironic_inspector_discovery_enroll_ipmi_username }}"
+      - action: "set-attribute"
+        path: "driver_info/ipmi_password"
+        value: "{{ ironic_inspector_discovery_enroll_ipmi_password }}"
+

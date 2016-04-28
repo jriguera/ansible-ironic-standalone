@@ -1,4 +1,6 @@
 ---
+# http://docs.openstack.org/developer/ironic-inspector/
+
 # Take the package given by the distribution (True for Xenial, False otherwise)
 ironic_inspector_os_packages: False
 
@@ -10,6 +12,7 @@ ironic_inspector_debug: False
 ironic_inspector_trace: False
 
 # Main settings
+ironic_inspector_api_url: "http://127.0.0.1:5050/v1/"
 ironic_inspector_listen_address: "0.0.0.0"
 ironic_inspector_listen_port: 5050
 ironic_inspector_timeout: 3600
@@ -35,24 +38,13 @@ ironic_inspector_database_pool_size: 10
 ironic_inspector_database_use_db_reconnect: True
 
 # How to contact Ironic API to define the server
-ironic_inspector_ironic_url: "http://127.0.0.1:6385/"
+ironic_inspector_ironic_api_url: "http://127.0.0.1:6385/"
 ironic_inspector_ironic_os_service_type: "baremetal"
 ironic_inspector_ironic_os_endpoint_type: "internalURL"
 
-# CORS: http://docs.openstack.org/developer/oslo.middleware/cors.html
-#ironic_inspector_cors_allowed_origin: "*"
-#ironic_inspector_cors_allow_credentials: True
-#ironic_inspector_cors_expose_headers: ["Content-Type", "Cache-Control", "Content-Language", "Expires", "Last-Modified", "Pragma"]
-#ironic_inspector_cors_max_age: 3600
-#ironic_inspector_cors_allow_methods: ["GET", "POST", "PUT", "HEAD", "PATCH", "DELETE", "OPTIONS"]
-#ironic_inspector_cors_allow_headers: ["X-Auth-Token", "X-OpenStack-Ironic-Inspector-API-Minimum-Version", "X-OpenStack-Ironic-Inspector-API-Maximum-Version", "X-OpenStack-Ironic-Inspector-API-Version"]
-# CORS subdomains
-#ironic_inspector_cors_domains:
-#  localhost:
-#     allowed_origin: "http://localhost:8080"
-#     allow_credentials: True
-
-# Force download always the IPA ramdisk and kernel
+# Manage the rules defined in the discovery_rules*.yml files
+ironic_inspector_discovery_manage_rules: True
+# IPA ramdisk and kernel definition for inspection
 ironic_inspector_ipa_download: True
 ironic_inspector_ipa_deploy_path: "/var/lib/ironic/images"
 ironic_inspector_ipa_ramdisk_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem-stable-{{ ironic_inspector_release }}.cpio.gz"
@@ -61,13 +53,24 @@ ironic_inspector_ipa_ramdisk: "coreos_production_pxe_image-oem.cpio.gz"
 ironic_inspector_ipa_kernel_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe-stable-{{ ironic_inspector_release }}.vmlinuz"
 ironic_inspector_ipa_kernel_checksum: "sha1:7c1f31fba3747197fc8356f03aa4ad7372ba643e"
 ironic_inspector_ipa_kernel: "coreos_production_pxe.vmlinuz"
-ironic_inspector_ipa_callback_url: "http://{{ ansible_default_ipv4.address }}:{{ ironic_inspector_listen_port }}/v1/continue"
+ironic_inspector_ipa_callback_url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/continue"
 ironic_inspector_ipa_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
 ironic_inspector_ipa_tftproot: "/var/lib/ironic/tftpboot"
-# If manage tftproot, it will create the pxelinux.cfg folder and default entry
-# to automatically PXE boot all the servers when they boot (if they are not
-# managed by Ironic Conductor
-ironic_inspector_ipa_manage_tftproot: True
+
+# If enabled it will create the pxelinux.cfg folder with a  default entry
+# to automatically offer PXE boot to all servers when they boot. If they are not
+# managed by Ironic Conductor they will be defined in Ironic in enroll state
+# using the selected driver and the following rules will be applied to define
+# the rest of the parameters of the node.
+ironic_inspector_discovery_enroll: True
+# Default token
+ironic_inspector_discovery_enroll_token: "token"
+ironic_inspector_discovery_enroll_driver: "agent_ipmitool"
+ironic_inspector_discovery_enroll_deploy_kernel: "file://{{ ironic_inspector_ipa_deploy_path }}/{{ ironic_inspector_ipa_kernel }}"
+ironic_inspector_discovery_enroll_deploy_ramdisk: "file://{{ ironic_inspector_ipa_deploy_path }}/{{ ironic_inspector_ipa_ramdisk }}"
+# IPMI settings for new nodes
+ironic_inspector_discovery_enroll_ipmi_username: "admin"
+ironic_inspector_discovery_enroll_ipmi_password: "ipmi"
 
 # Which MAC addresses to add as ports during introspection. Possible
 # values: all (all MAC addresses), active (MAC addresses of NIC with
@@ -81,16 +84,13 @@ ironic_inspector_processing_add_ports: "all"
 ironic_inspector_processing_keep_ports: "all"
 ironic_inspector_processing_overwrite_existing: True
 ironic_inspector_processing_enable_setting_ipmi_credentials: False
-#ironic_inspector_processing_default_processing_hooks: ["ramdisk_error", "root_disk_selection", "scheduler", "validate_interfaces"]
-#ironic_inspector_processing_node_not_found_hook:
+ironic_inspector_processing_default_processing_hooks: ["ramdisk_error", "root_disk_selection", "scheduler", "validate_interfaces"]
+ironic_inspector_processing_node_not_found_hook: "enroll"
 ironic_inspector_processing_ramdisk_logs_dir: "/var/log/ironic-inspector"
 ironic_inspector_processing_always_store_ramdisk_logs: False
 ironic_inspector_processing_store_data_location: "inspection"
 ironic_inspector_processing_disk_partitioning_spacing: True
 ironic_inspector_processing_log_bmc_address: True
-
-# Name of the driver used by the enroll hook
-ironic_inspector_discovery_enroll_node_driver: "agent_ipmitool"
 
 # Define auth_uri to use keystone authentication, otherwise
 # noauth will be assumed
@@ -120,4 +120,18 @@ ironic_inspector_swift_password:
 ironic_inspector_swift_tenant_name: "admin"
 ironic_inspector_swift_os_service_type: "object-store"
 ironic_inspector_swift_os_endpoint_type: "internalURL"
+
+
+# CORS: http://docs.openstack.org/developer/oslo.middleware/cors.html
+#ironic_inspector_cors_allowed_origin: "*"
+#ironic_inspector_cors_allow_credentials: True
+#ironic_inspector_cors_expose_headers: ["Content-Type", "Cache-Control", "Content-Language", "Expires", "Last-Modified", "Pragma"]
+#ironic_inspector_cors_max_age: 3600
+#ironic_inspector_cors_allow_methods: ["GET", "POST", "PUT", "HEAD", "PATCH", "DELETE", "OPTIONS"]
+#ironic_inspector_cors_allow_headers: ["X-Auth-Token", "X-OpenStack-Ironic-Inspector-API-Minimum-Version", "X-OpenStack-Ironic-Inspector-API-Maximum-Version", "X-OpenStack-Ironic-Inspector-API-Version"]
+# CORS subdomains
+#ironic_inspector_cors_domains:
+#  localhost:
+#     allowed_origin: "http://localhost:8080"
+#     allow_credentials: True
 

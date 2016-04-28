@@ -2,9 +2,12 @@
 ironic_inspector_os_repo_url: "http://rdo.fedorapeople.org/openstack-{{ ironic_inspector_release }}/rdo-release-{{ ironic_inspector_release }}.rpm"
 ironic_inspector_os_repo_key:
 
+ironic_inspector_service_name: openstack-ironic-inspector
+ironic_inspector_pidfile: /var/run/ironic-inspector/ironic-inspector.pid
+
 ironic_inspector_packages:
   openstack-selinux:
     state: latest
-  ironic-inspector:
+  openstack-ironic-inspector:
     state: latest
 

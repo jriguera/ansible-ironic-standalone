@@ -1,0 +1,40 @@
+---
+# Rules to apply when a new node is discovered
+# http://docs.openstack.org/developer/ironic-inspector/http-api.html
+# https://github.com/openstack/ironic-inspector/blob/master/doc/source/usage.rst
+
+# Default rules to apply when a new node is defined (enroll)
+
+ironic_inspector_discovery_enroll_deploy:
+
+  - description: "Set initial driver_info if not defined on node"
+    conditions:
+      - op: "is-empty"
+        field: "node://driver_info"
+    actions:
+      - action: "set-attribute"
+        path: "driver_info/deploy_kernel"
+        value: "{{ ironic_inspector_discovery_enroll_deploy_kernel }}"
+      - action: "set-attribute"
+        path: "driver_info/deploy_ramdisk"
+        value: "{{ ironic_inspector_discovery_enroll_deploy_ramdisk }}"
+
+  - description: "Set driver_info.deploy_ramdisk if empty"
+    conditions:
+      - op: "is-empty"
+        field: "node://driver_info.deploy_ramdisk"
+    actions:
+      - action: "set-attribute"
+        path: "driver_info/deploy_ramdisk"
+        value: "{{ ironic_inspector_discovery_enroll_deploy_ramdisk }}"
+
+  - description: "Set driver_info.deploy_kernel if empty"
+    conditions:
+      - op: "is-empty"
+        field: "node://driver_info.deploy_kernel"
+    actions:
+      - action: "set-attribute"
+        path: "driver_info/deploy_kernel"
+        value: "{{ ironic_inspector_discovery_enroll_deploy_kernel }}"
+
+

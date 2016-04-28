@@ -56,7 +56,7 @@
 
   when: >
     ironic_inspector_ipa_tftproot is not none
-    and ironic_inspector_ipa_manage_tftproot
+    and ironic_inspector_discovery_enroll
 
 # Out of the block to be able to disable it
 - name: Delete pxelinux.cfg/default

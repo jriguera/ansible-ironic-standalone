@@ -20,3 +20,7 @@
 - include: configure.yml
   tags: ["inspector", "configure"]
 
+- include: configure_rules.yml
+  when: ironic_inspector_discovery_manage_rules
+  tags: ["inspector", "configure_rules"]
+

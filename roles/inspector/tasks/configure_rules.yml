@@ -1,0 +1,117 @@
+---
+# Load from files
+- include_vars: defaults/discovery_rules_deploy.yml
+- include_vars: defaults/discovery_rules_ipmi.yml
+- include_vars: defaults/discovery_rules.yml
+
+
+- name: Get list of current discovery rules
+  uri:
+    url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules"
+    HEADER_X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
+    method: GET
+    body_format: json
+    return_content: yes
+  register: __inspector_discovery_current_rules
+
+- name: Save the list of current rules
+  set_fact: _ironic_inspector_discovery_rules="{{ __inspector_discovery_current_rules.json.rules | map(attribute='description') | list }}"
+  when: __inspector_discovery_current_rules|success
+
+
+# Enable only in case of automatic enroll is available
+- block:
+  - name: Apply discovery rules for deploy ramdisk
+    uri: 
+      url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules"
+      HEADER_X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
+      body: "{{ item | to_json }}"
+      method: POST
+      body_format: json
+    when: >
+      ironic_inspector_discovery_enroll_deploy is defined
+      and ironic_inspector_discovery_enroll_deploy is not none
+      and item.description not in _ironic_inspector_discovery_rules
+    with_items: "{{ ironic_inspector_discovery_enroll_deploy }}"
+    no_log: True
+
+  - name: Apply discovery rules for IPMI
+    uri: 
+      url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules"
+      HEADER_X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
+      body: "{{ item | to_json }}"
+      method: POST
+      body_format: json
+    when: >
+      ironic_inspector_discovery_enroll_ipmi is defined
+      and ironic_inspector_discovery_enroll_ipmi is not none
+      and item.description not in _ironic_inspector_discovery_rules
+    with_items: "{{ ironic_inspector_discovery_enroll_ipmi }}"
+    no_log: True
+
+  when: ironic_inspector_discovery_enroll
+
+
+
+# The additonal rules can be applied even if not automatic enroll
+- name: Apply additional discovery rules
+  uri: 
+    url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules"
+    HEADER_X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
+    body: "{{ item | to_json }}"
+    method: POST
+    body_format: json
+  when: >
+    ironic_inspector_discovery_enroll_rules is defined
+    and ironic_inspector_discovery_enroll_rules is not none
+    and item.description not in _ironic_inspector_discovery_rules
+  with_items: "{{ ironic_inspector_discovery_enroll_rules }}"
+  no_log: True
+
+
+# Delete rules
+- block:
+  - name: Update list of defined discovery rules
+    uri:
+      url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules"
+      HEADER_X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
+      method: GET
+      body_format: json
+      return_content: yes
+    register: __inspector_discovery_current_rules
+
+  - name: Delete discovery rules by UUID
+    uri:
+      url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules/{{ item }}"
+      HEADER_X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
+      method: DELETE
+    when: item in (__inspector_discovery_current_rules.json.rules | map(attribute='uuid') | list)
+    with_items: "{{ ironic_inspector_discovery_enroll_rules_delete | selectattr('uuid', 'defined') | map(attribute='uuid') | list }}"
+
+# - name: Delete discovery rules by description
+#   uri: 
+#     url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules/{{ __inspector_discovery_current_rules.json.rules | selectattr('description', 'equalto', item) | map(attribute='uuid') | list | first }}"
+#     HEADER_X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
+#     method: DELETE
+#   when: item in (__inspector_discovery_current_rules.json.rules | map(attribute='description') | list)
+#   with_items: "{{ ironic_inspector_discovery_enroll_rules_delete | selectattr('description', 'defined') | map(attribute='description') | list }}"
+
+  when: >
+    ironic_inspector_discovery_enroll_rules_delete is defined
+    and ironic_inspector_discovery_enroll_rules_delete is not none
+
+
+# Just list the rules
+- name: Get final list of current defined rules
+  uri:
+    url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules"
+    HEADER_X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
+    method: GET
+    body_format: json
+    return_content: yes
+  register: __inspector_discovery_current_rules
+
+- name: List all discovery rules
+  debug: msg="{{ __inspector_discovery_current_rules.json.rules | map(attribute='description') | list }}"
+  when: __inspector_discovery_current_rules|success
+

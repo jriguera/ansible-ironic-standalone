@@ -74,6 +74,14 @@
   ignore_errors: yes
   when: _ironic_inspector_reinstalled
 
+- name: Create pid folder
+  file:
+    path: "{{ ironic_inspector_pidfile | dirname }}"
+    owner: "{{ ironic_inspector_user }}"
+    group: "{{ ironic_inspector_group }}"
+    mode: 0755
+    state: directory
+
 - name: Get init system type
   command: cat /proc/1/comm
   register: __ironic_inspector_init_system
@@ -99,6 +107,9 @@
 
   - name: Delete upstart configuration
     file: path="/etc/init/{{ ironic_inspector_service_name }}.conf" state=absent
+
+  - name: Delete dnsmasq configuration
+    file: path="{{ ironic_inspector_config_dir }}/dnsmasq.conf" state=absent
 
   - name: Reload systemd
     command: systemctl daemon-reload

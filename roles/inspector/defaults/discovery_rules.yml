@@ -1,0 +1,28 @@
+---
+# Rules to apply when a new node is discovered
+# http://docs.openstack.org/developer/ironic-inspector/http-api.html
+# https://github.com/openstack/ironic-inspector/blob/master/doc/source/usage.rst
+
+# Define your additional discovery rules
+ironic_inspector_discovery_enroll_rules:
+
+  - description: "Set initial extra discovery data if not defined on node"
+    conditions:
+      - op: "is-empty"
+        field: "node://extra"
+    actions:
+      - action: "set-attribute"
+        path: "extra/disks"
+        value: "{data[inventory][disks]}"
+      - action: "set-attribute"
+        path: "extra/cpu"
+        value: "{data[inventory][cpu]}"
+      - action: "set-attribute"
+        path: "extra/system_vendor"
+        value: "{data[inventory][system_vendor]}"
+
+
+# Define rules to be deleted (by uuid)
+ironic_inspector_discovery_enroll_rules_delete:
+#  - uuid: "9ed96141-dc44-4c0c-ad77-ff2c4e7cb521"
+
