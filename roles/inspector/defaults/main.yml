@@ -53,7 +53,6 @@ ironic_inspector_ipa_ramdisk: "coreos_production_pxe_image-oem.cpio.gz"
 ironic_inspector_ipa_kernel_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe-stable-{{ ironic_inspector_release }}.vmlinuz"
 ironic_inspector_ipa_kernel_checksum: "sha1:7c1f31fba3747197fc8356f03aa4ad7372ba643e"
 ironic_inspector_ipa_kernel: "coreos_production_pxe.vmlinuz"
-ironic_inspector_ipa_callback_url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/continue"
 ironic_inspector_ipa_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
 ironic_inspector_ipa_tftproot: "/var/lib/ironic/tftpboot"
 
