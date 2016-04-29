@@ -34,8 +34,9 @@
 
     # Ironic API server and Ironic Conductor with HTTP repo
     - role: ironic
+      ironic_debug: False
       ironic_my_ip: "{{ ansible_default_ipv4.address }}"
-      ironic_conductor_api_url: "http://{{ ansible_default_ipv4.address }}:6385/"
+      ironic_conductor_api_url: "{{ baremetal_server_ironic_api }}"
       ironic_pxe_tftp_server: "{{ ansible_default_ipv4.address }}"
       ironic_oslo_messaging_rabbit_host: "{{ ansible_default_ipv4.address }}"
       ironic_oslo_messaging_rabbit_userid: "{{ baremetal_server_msg_user }}"
@@ -46,24 +47,36 @@
       ironic_database_mysql_password: "{{ baremetal_server_database_pass }}"
       ironic_database_mysql_db: "{{ baremetal_server_database_name }}"
       ironic_pxe_images_path: "{{ baremetal_server_images_path }}"
-      ironic_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
+      ironic_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin", "console=tty0", "console=ttyS0,115200n8"]
       ironic_deploy_http_url: "http://{{ ansible_default_ipv4.address }}/deploy"
       ironic_deploy_http_root: "{{ baremetal_server_images_deploy_path }}"
       ironic_enabled_drivers: ["pxe_ipmitool", "agent_ipmitool"]
+      ironic_conductor_clean_nodes: false
+      ironic_conductor_sync_power_state_interval: 120
+      # Inspeccion enabled (add also the role)
+      ironic_inspector_enabled: "{{ baremetal_server_inspector_enabled }}"
+      ironic_inspector_service_url: "{{ baremetal_server_inspector_api }}"
       ironic_cors_domains:
         ironic_webclient:
           allowed_origin: "http://{{ ansible_default_ipv4.address }}"
           allow_credentials: True
 
     - role: inspector
-      ironic_inspector_enabled: True
+      ironic_inspector_debug: False
+      ironic_inspector_enabled: "{{ baremetal_server_inspector_enabled }}"
+      # Enable default PXE for automatic enroll of discovery nodes in Ironic
+      ironic_inspector_discovery_enroll: "{{ baremetal_server_inspector_default_pxe }}"
       ironic_inspector_ipa_download: False
-      ironic_inspector_ironic_url: "http://{{ ansible_default_ipv4.address }}:6385/"
+      ironic_inspector_api_url: "{{ baremetal_server_inspector_api }}"
+      ironic_inspector_ironic_api_url: "{{ baremetal_server_ironic_api }}"
       ironic_inspector_database_mysql_host: "{{ ansible_default_ipv4.address }}"
       ironic_inspector_database_mysql_userid: "{{ baremetal_server_inspector_database_user }}"
       ironic_inspector_database_mysql_password: "{{ baremetal_server_inspector_database_pass }}"
       ironic_inspector_database_mysql_db: "{{ baremetal_server_inspector_database_name }}"
-      
+      ironic_inspector_ipa_deploy_path: "{{ baremetal_server_images_deploy_path }}"
+      ironic_inspector_ipa_tftproot: "{{ ironic_pxe_tftp_root }}"
+      ironic_inspector_ipa_images_path: "{{ ironic_pxe_images_path }}"
+
     - role: dnsmasq
       dnsmasq_conf_domain: "{{ baremetal_server_dhcp_domain }}"
       dnsmasq_conf_dhcp:
