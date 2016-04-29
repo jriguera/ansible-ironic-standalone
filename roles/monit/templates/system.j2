@@ -12,7 +12,7 @@ check system {{ ansible_fqdn }}
 
 {% for fs in ansible_mounts %}
 
-check filesystem {{ fs.mount | replace('/', 'root', 1) | replace('/', '_') }} with path {{ fs.device }}
+check filesystem {{ fs.mount | replace('/', '', 1) | replace('/', '_') | regex_replace('^$', 'root') }} with path {{ fs.device }}
     if space usage > 85% then alert
     if inode usage > 90% then alert
     group system
