@@ -69,7 +69,7 @@
 
 
 - name: Restart Ironic-Inspector daemon for the new configuration
-  service: name="{{ ironic_inspector_service_name }}" state=restarted 
+  service: name="{{ ironic_inspector_service_name }}" state=restarted sleep=5
   when: _ironic_inspector_updated
 
 - name: Ensure Ironic-Inspector is started or stopped as required

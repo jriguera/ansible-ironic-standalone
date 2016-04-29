@@ -5,6 +5,10 @@
 - include_vars: defaults/discovery_rules.yml
 
 
+- name: Wait 15 seconds until Ironic-Inspector is ready
+  command: sleep 10
+  when: _ironic_inspector_updated
+
 - name: Get list of current discovery rules
   uri:
     url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules"
