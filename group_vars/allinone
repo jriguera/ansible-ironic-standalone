@@ -40,12 +40,6 @@ webclient_webdir_owner: "{{ nginx_user }}"
 webclient_webdir_group: "{{ ironic_group }}"
 
 
-# Inspector
-ironic_inspector_ipa_tftproot: "{{ ironic_pxe_tftp_root }}"
-ironic_inspector_ipa_images_path: "{{ ironic_pxe_images_path }}"
-ironic_inspector_ipa_callback_url: "http://{{ ironic_pxe_tftp_server }}:{{ ironic_inspector_listen_port }}/v1/continue"
-
-
 monit_monitoring_list:
   - name: mysql
     target: "{{ mysql_pidfile }}"
