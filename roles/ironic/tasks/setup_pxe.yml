@@ -112,16 +112,6 @@
     not ironic_pxe_ipxe_boot_script is none
   register: __ironic_ipxe_template
 
-
-- include: setup_ipa.yml
-  when: >
-    ironic_deploy_http_root is defined and
-    not ironic_deploy_http_root is none and
-    ironic_deploy_http_url is defined and
-    not ironic_deploy_http_url is none
-  tags: ["ipa"]
-
-
 # Get pxelinux from syslinux
 # http://www.syslinux.org/wiki/index.php?title=Library_modules#All_Syslinux_variants_need_an_additional_ldlinux_module
 - name: Copy syslinux binaries to PXE folder
