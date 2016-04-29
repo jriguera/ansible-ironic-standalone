@@ -1252,7 +1252,7 @@ enabled=true
 # ironic-discoverd HTTP endpoint. If this is not set, the
 # ironic-discoverd client default (http://127.0.0.1:5050) will
 # be used. (string value)
-service_url={{ ironic_inspector_service_url }}
+service_url={{ ironic_inspector_service_url | regex_replace('^(https?://)([^:^/]*)(:\\d*)?(.*)?$', '\\1\\2\\3') }}
 
 # period (in seconds) to check status of nodes on inspection
 # (integer value)
