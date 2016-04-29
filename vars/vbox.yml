@@ -2,14 +2,13 @@
 # Main variables file for the add/del baremetal playbooks
 # Here are defined parameters for a specific ironic server
 
-baremetal_client: "{{ groups.client[0] }}"
-baremetal_conductor_server: "10.0.0.10"
-baremetal_ironic_url: "http://{{ groups.ironic[0] }}:6385"
-baremetal_configdrive: True
-baremetal_configdrive_base_url: "http://{{ baremetal_conductor_server }}/metadata"
+baremetal_domain="local"
+baremetal_nameservers=[ "8.8.8.8" ]
+baremetal_configdrive_base_url="{{ baremetal_server_repository_url }}/metadata"
 
 # Default network assigned to the servers if no
 # baremetal_network_list is defined
 baremetal_network_dhcp_list:
    - device: "eth0"
      bootproto: "dhcp"
+

@@ -9,7 +9,7 @@ baremetal_deploy_ramdisk: "file://{{ baremetal_server_images_deploy_path }}/core
 
 # Depends on the image
 baremetal_image_type: "Debian"
-baremetal_image: "http://{{ baremetal_conductor_server }}/images/trusty.qcow2"
+baremetal_image: "{{ baremetal_server_repository_url }}/images/trusty.qcow2"
 baremetal_image_checksum:
 baremetal_image_kernel:
 baremetal_image_ramdisk:

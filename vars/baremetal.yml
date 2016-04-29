@@ -2,13 +2,9 @@
 # Main variables file for the add/del baremetal playbooks
 # Here are defined parameters for a specific ironic server
 
-baremetal_client: "{{ groups.client[0] }}"
-# "{{ hostvars[groups.conductor[0]]['ansible_eth0']['ipv4']['address'] }}"
-baremetal_conductor_server: "{{ hostvars.conductor.ansible_ssh_host }}"
-# "http://{{ hostvars[groups.api[0]]['ansible_eth0']['ipv4']['address'] }}:6385"
-baremetal_ironic_url: "http://{{ hostvars.api.ansible_ssh_host }}:6385"
-baremetal_configdrive: True
-baremetal_configdrive_base_url: "http://{{ baremetal_conductor_server }}/metadata"
+baremetal_domain="springer-sbm.com"
+baremetal_nameservers=[ "194.171.67.135", "194.171.67.234" ]
+baremetal_configdrive_base_url="{{ baremetal_server_repository_url }}/metadata"
 
 # Default network assigned to the servers if no
 # baremetal_network_list is defined
