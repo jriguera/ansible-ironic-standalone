@@ -14,16 +14,6 @@
   when: not baremetal_name is defined
 
 
-# Define date for metadata purposes
-
-- name: Get the current date
-  command: date '+%FT%T%z'
-  register: _baremetal_datetime 
-
-- name: Define the date
-  set_fact: baremetal_datetime="{{ _baremetal_datetime.stdout }}"
-
-
 # Assign network definitions for configdrive depending on the variables
 # defined on the network vars file
 

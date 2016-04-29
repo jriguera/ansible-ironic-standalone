@@ -5,11 +5,13 @@
 # http://docs.ansible.com/ansible/os_ironic_module.html
 
 - name: Poweroff and delete servers using Ironic
-  hosts: conductor
+  hosts: ironic
   become: True
   gather_facts: False
   vars_files:
     - vars/baremetal.yml
+  vars:
+      baremetal_client: "{{ groups.client[0] }}"
 
   vars_prompt:
     - name: "id"
@@ -27,7 +29,7 @@
       shell: >
         ironic
         --os-auth-token="{{ baremetal_ironic_token }}"
-        --ironic-url="{{ baremetal_ironic_url }}"
+        --ironic-url="{{ baremetal_server_ironic_api }}"
         node-list | awk -F '|' "/{{ baremetal_name }}/ { print \$2,\$5 }"
       register: __baremetal_new
       ignore_errors: yes
@@ -41,7 +43,7 @@
       command: >
         ironic
         --os-auth-token="{{ baremetal_ironic_token }}"
-        --ironic-url="{{ baremetal_ironic_url }}"
+        --ironic-url="{{ baremetal_server_ironic_api }}"
         node-set-power-state "{{ baremetal_name }}" off
       when: __baremetal_new.stdout.split() | last | trim  == 'on'
       delegate_to: "{{ baremetal_client }}"
@@ -55,7 +57,7 @@
       command: >
         ironic
         --os-auth-token="{{ baremetal_ironic_token }}"
-        --ironic-url="{{ baremetal_ironic_url }}"
+        --ironic-url="{{ baremetal_server_ironic_api }}"
         node-delete "{{ baremetal_name }}"
       delegate_to: "{{ baremetal_client }}"
 
@@ -63,3 +65,4 @@
       file:
         path: "{{ baremetal_server_configdrive_path }}/{{ __baremetal_new.stdout.split() | first | trim }}"
         state: absent
+

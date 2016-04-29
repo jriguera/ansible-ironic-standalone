@@ -11,6 +11,7 @@
   vars_files:
     - vars/vbox.yml
   vars:
+      baremetal_client: "{{ groups.client[0] }}"
       configdrive_os_family: "{{ baremetal_image_type }}"
       configdrive_uuid: "{{ baremetal_uuid }}"
       configdrive_fqdn: "{{ baremetal_name }}.{{ baremetal_domain }}"
@@ -30,13 +31,14 @@
     - name: "deploy"
       prompt: "Deploy or Define the server (deploy, define)"
       private: no
+      default: "deploy"
 
   pre_tasks:
     - name: Include network definitions
       include_vars: "servers/{{ id }}.yml"
 
     - name: Include image definitions
-      include_vars: "vars/vbox_image-{{ baremetal_os }}.yml"
+      include_vars: "images/{{ baremetal_os }}.yml"
     
     - include: tasks/baremetal_md5.yml
       when: >
@@ -62,7 +64,7 @@
       shell: >
         ironic
         --os-auth-token="{{ baremetal_ironic_token }}"
-        --ironic-url="{{ baremetal_ironic_url }}"
+        --ironic-url="{{ baremetal_server_ironic_api }}"
         node-list | awk -F '|' "/ {{ baremetal_name }} /{ print \$2 }"
       register: __baremetal_new
       ignore_errors: yes
@@ -72,7 +74,7 @@
       shell: >
         ironic
         --os-auth-token="{{ baremetal_ironic_token }}"
-        --ironic-url="{{ baremetal_ironic_url }}"
+        --ironic-url="{{ baremetal_server_ironic_api }}"
         node-create -n "{{ baremetal_name }}" -d "{{ baremetal_driver }}"
         -i virtualbox_host="{{ baremetal_ipmi_ip }}"
         -i virtualbox_vmname="{{ baremetal_name }}"
@@ -102,19 +104,20 @@
       command: > 
         ironic 
         --os-auth-token="{{ baremetal_ironic_token }}" 
-        --ironic-url="{{ baremetal_ironic_url }}"
+        --ironic-url="{{ baremetal_server_ironic_api }}"
         node-update "{{ baremetal_uuid }}" add
             instance_info/image_source="{{ baremetal_image }}"
             instance_info/image_checksum="{{ baremetal_image_checksum }}"
-            extra/deploy_date="{{ baremetal_datetime }}"
-            extra/deploy_host="{{ inventory_hostname }}"
+            extra/deploy_date="{{ ansible_date_time.iso8601 }}"
+            extra/deploy_host="{{ ansible_hostname }}"
+            extra/deploy_user="{{ ansible_user }}"
       delegate_to: "{{ baremetal_client }}"
       
     - name: Define the kernel and ramdisk for the image
       command: >
         ironic 
         --os-auth-token="{{ baremetal_ironic_token }}"
-        --ironic-url="{{ baremetal_ironic_url }}"
+        --ironic-url="{{ baremetal_server_ironic_api }}"
         node-update "{{ baremetal_uuid }}" add
             instance_info/kernel="{{ baremetal_image_kernel }}"
             instance_info/ramdisk="{{ baremetal_image_ramdisk }}"
@@ -126,7 +129,7 @@
       command: > 
         ironic 
         --os-auth-token="{{ baremetal_ironic_token }}"
-        --ironic-url="{{ baremetal_ironic_url }}"
+        --ironic-url="{{ baremetal_server_ironic_api }}"
         port-create -n "{{ baremetal_uuid }}" -a "{{ baremetal_mac }}"
       when: baremetal_mac is defined and baremetal_mac and __baremetal_defined|success
       delegate_to: "{{ baremetal_client }}"
@@ -135,7 +138,7 @@
       command: > 
         ironic 
         --os-auth-token="{{ baremetal_ironic_token }}" 
-        --ironic-url="{{ baremetal_ironic_url }}"
+        --ironic-url="{{ baremetal_server_ironic_api }}"
         node-update "{{ baremetal_uuid }}" add
             extra/configdrive="{{ baremetal_configdrive_base_url }}/{{ baremetal_uuid }}"
       when: >
@@ -157,7 +160,7 @@
       command: >
         ironic
         --os-auth-token="{{ baremetal_ironic_token }}"
-        --ironic-url="{{ baremetal_ironic_url }}"
+        --ironic-url="{{ baremetal_server_ironic_api }}"
         node-set-provision-state {{ _baremetal_configdrive_param }} "{{ baremetal_uuid }}" active
       delegate_to: "{{ baremetal_client }}"
       when: deploy | trim == "deploy"
