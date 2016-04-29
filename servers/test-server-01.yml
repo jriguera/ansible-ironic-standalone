@@ -13,7 +13,7 @@ baremetal_ip: 10.100.100.10
 baremetal_netmask: 255.255.255.0
 baremetal_gw: 10.100.100.1
 
-# Image name, defined in vars/baremetal_image-<name>.yml
+# Image name, defined in images/<name>.yml
 baremetal_os: trusty
 
 # If you change the interface name to eth1 (for example)
