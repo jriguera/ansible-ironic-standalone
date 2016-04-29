@@ -80,7 +80,7 @@
     - role: dnsmasq
       dnsmasq_conf_domain: "{{ baremetal_server_dhcp_domain }}"
       dnsmasq_conf_dhcp:
-        eth0:
+        - device: "{{ ansible_default_ipv4.interface }}"
           range: "{{ baremetal_server_dhcp_params }}"
           ignore_names: True
           generate_names: True

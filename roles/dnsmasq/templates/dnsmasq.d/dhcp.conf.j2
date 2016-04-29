@@ -46,7 +46,8 @@ dhcp-no-override
 # for lease and optionally a lease time. If you have more than one network, 
 # you will need to repeat this for each network on which you want to supply DHCP
 # service.
-{% for (key, values) in dnsmasq_conf_dhcp.iteritems() -%}
+{% for values in dnsmasq_conf_dhcp -%}
+{% set key=values["device"] %}
 dhcp-range=set:{{ key }},{{ values["range"] | join(',') }}
 
 {% if values["option"] is defined -%}

@@ -3,17 +3,19 @@
 # Configuration file for dnsmasq.
 # TFPT configuration
 
-{% if dnsmasq_conf_dhcp is defined and dnsmasq_conf_dhcp is iterable  -%}
+{% if dnsmasq_conf_dhcp -%}
 # Enable the TFTP server function.
-enable-tftp={% for (i, v) in dnsmasq_conf_dhcp.iteritems() if v["tftp"] is defined -%}{{ i }}{% if not loop.last -%},{% endif %}{% endfor %}
+enable-tftp={% for v in dnsmasq_conf_dhcp if v["tftp"] is defined -%}{{ v["device"] }}{% if not loop.last -%},{% endif %}{% endfor %}
 
-{% for (if, values) in dnsmasq_conf_dhcp.iteritems() %}
+{% for values in dnsmasq_conf_dhcp %}
+{% set key=values["device"] %}
 {% if values["tftp"] is defined %}
 # Look for files to transfer using TFTP relative to the given directory.
-tftp-root={{ values["tftp"] }},{{ if }}
+tftp-root={{ values["tftp"] }},{{ key }}
 {% endif %}
 {% endfor %}
 {% endif %}
+
 
 {% if dnsmasq_conf_tftp_secure is defined and dnsmasq_conf_tftp_secure -%}
 # Enable TFTP secure mode: without this, any file which is readable by the 
