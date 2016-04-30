@@ -62,6 +62,7 @@ ironic_inspector_ipa_tftproot: "/var/lib/ironic/tftpboot"
 # using the selected driver and the following rules will be applied to define
 # the rest of the parameters of the node.
 ironic_inspector_discovery_enroll: True
+ironic_inspector_discovery_ipa_collectors: ["default"]
 # Default token
 ironic_inspector_discovery_enroll_token: "token"
 ironic_inspector_discovery_enroll_driver: "agent_ipmitool"
