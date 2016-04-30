@@ -76,6 +76,7 @@
       ironic_inspector_ipa_deploy_path: "{{ baremetal_server_images_deploy_path }}"
       ironic_inspector_ipa_tftproot: "{{ ironic_pxe_tftp_root }}"
       ironic_inspector_ipa_images_path: "{{ ironic_pxe_images_path }}"
+      ironic_inspector_ipa_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin", "console=tty0", "console=ttyS0,115200n8"]
 
     - role: dnsmasq
       dnsmasq_conf_domain: "{{ baremetal_server_dhcp_domain }}"
