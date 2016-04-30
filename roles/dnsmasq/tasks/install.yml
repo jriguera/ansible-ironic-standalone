@@ -42,6 +42,7 @@
   yum:
     name: "{{ item.key if ('version' not in item.value) else ('%s-%s' % (item.key, item.value['version'])) }}"
     state: "{{ item.value.state | default('present') }}"
+    update_cache: "{{ dnsmasq_packages_update_cache | ternary('yes', 'no') }}"
   with_dict: "{{ dnsmasq_packages }}"
   when: ansible_os_family == 'RedHat'
   register: __dnsmasq_installed_rh
@@ -52,6 +53,8 @@
     name: "{{ item.key if ('version' not in item.value) else ('%s=%s' % (item.key, item.value['version'])) }}"
     state: "{{ item.value.state | default('present') }}"
     install_recommends: "{{ dnsmasq_packages_install_recommends }}"
+    update_cache: "{{ dnsmasq_packages_update_cache | ternary('yes', 'no') }}"
+    cache_valid_time: "{{ dnsmasq_packages_update_cache }}"
   with_dict: "{{ dnsmasq_packages }}"
   when: ansible_os_family == 'Debian'
   register: __dnsmasq_installed_debian

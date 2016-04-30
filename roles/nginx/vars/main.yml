@@ -2,8 +2,14 @@
 # Overwrite these variables in Debian or RedHat files
 nginx_os_repo_url:
 nginx_os_repo_key:
+nginx_packages_install_recommends: true
+# Upgrade the database if older than these seconds
+# Time is only valid in Debian, set to 0/False to disable
+nginx_packages_update_cache: 1800
 
 nginx_daemon: nginx
+nginx_user: "ningx"
+nginx_group: "nginx"
 
 nginx_pidfile: /var/run/nginx.pid
 nginx_config_dir: /etc/nginx
@@ -14,7 +20,3 @@ nginx_confd_dir: /etc/nginx/conf.d
 nginx_auth_dir: /etc/nginx/auth.d
 nginx_default_server_path: /etc/nginx/sites-enabled/default
 
-nginx_user: "ningx"
-nginx_group: "nginx"
-
-nginx_packages_install_recommends: true

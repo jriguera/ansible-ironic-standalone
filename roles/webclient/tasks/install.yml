@@ -53,3 +53,4 @@
 
 - name: Setup package version fact
   set_fact: webclient_package_version="{{ ( __webclient_package_json.stdout | from_json )['version'] }}"
+

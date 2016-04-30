@@ -1,7 +1,10 @@
 ---
 dnsmasq_os_repo_url:
 dnsmasq_os_repo_key:
-dnsmasq_packages_install_recommends: true
+dnsmasq_packages_install_recommends: True
+# Upgrade the database if older than these seconds
+# Time is only valid in Debian, set to 0/False to disable
+dnsmasq_packages_update_cache: 1800
 
 dnsmasq_daemon: dnsmasq
 dnsmasq_user: dnsmasq

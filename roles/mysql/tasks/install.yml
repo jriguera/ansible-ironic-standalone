@@ -49,6 +49,7 @@
   yum:
     name: "{{ item.key if ('version' not in item.value) else ('%s-%s' % (item.key, item.value['version'])) }}"
     state: "{{ item.value.state | default('present') }}"
+    update_cache: "{{ mysql_packages_update_cache | ternary('yes', 'no') }}"
   with_dict: "{{ mysql_packages_dict }}"
   when: ansible_os_family == 'RedHat'
   register: __mysql_installed_rh
@@ -59,6 +60,8 @@
     name: "{{ item.key if ('version' not in item.value) else ('%s=%s' % (item.key, item.value['version'])) }}"
     state: "{{ item.value.state | default('present') }}"
     install_recommends: "{{ mysql_packages_install_recommends }}"
+    update_cache: "{{ mysql_packages_update_cache | ternary('yes', 'no') }}"
+    cache_valid_time: "{{ mysql_packages_update_cache }}"
   with_dict: "{{ mysql_packages_dict }}"
   when: ansible_os_family == 'Debian'
   register: __mysql_installed_debian

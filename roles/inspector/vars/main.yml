@@ -2,6 +2,10 @@
 ironic_inspector_release: "mitaka"
 ironic_inspector_os_repo_url:
 ironic_inspector_os_repo_key:
+ironic_inspector_packages_install_recommends: True
+# Upgrade the database if older than these seconds
+# Time is only valid in Debian, set to 0/False to disable
+ironic_inspector_packages_update_cache: 1800
 
 ironic_inspector_service_name: ironic-inspector
 ironic_inspector_pidfile: /var/run/ironic-inspector/ironic-inspector.pid

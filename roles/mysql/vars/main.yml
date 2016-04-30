@@ -4,6 +4,10 @@ mysql_version: "5.6"
 mysql_os_repo_url:
 mysql_os_repo_key:
 mysql_packages_install_recommends: True
+# Upgrade the database if older than these seconds
+# Time is only valid in Debian, set to 0/False to disable
+mysql_packages_update_cache: 1800
+# Install packages from distro
 mysql_os_packages: True
 
 mysql_user: mysql
