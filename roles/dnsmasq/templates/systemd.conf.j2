@@ -1,3 +1,4 @@
 [Service]
-ExecStartPost=/bin/sh -c 'pgrep -u {{ dnsmasq_user }} dnsmasq > {{ dnsmasq_pidfile }}'
-ExecStopPost=/usr/bin/rm -f {{ dnsmasq_pidfile }}
+ExecStartPost=/bin/sh -c 'sleep 1 && pgrep -u {{ dnsmasq_user }} dnsmasq > {{ dnsmasq_pidfile }}'
+ExecStopPost=/bin/rm -f {{ dnsmasq_pidfile }}
+
