@@ -77,14 +77,6 @@
   ignore_errors: yes
   when: _ironic_inspector_reinstalled
 
-- name: Create pid folder
-  file:
-    path: "{{ ironic_inspector_pidfile | dirname }}"
-    owner: "{{ ironic_inspector_user }}"
-    group: "{{ ironic_inspector_group }}"
-    mode: 0755
-    state: directory
-
 - name: Get init system type
   command: cat /proc/1/comm
   register: __ironic_inspector_init_system
@@ -107,6 +99,14 @@
       dest: "/etc/systemd/system/{{ ironic_inspector_service_name }}.service.d/service.conf"
       mode: 0644
     register: __ironic_inspector_systemd
+
+  - name: Create pid folder
+    file:
+      path: "{{ ironic_inspector_pidfile | dirname }}"
+      owner: "{{ ironic_inspector_user }}"
+      group: "{{ ironic_inspector_group }}"
+      mode: 0775
+      state: directory
 
   - name: Delete upstart configuration
     file: path="/etc/init/{{ ironic_inspector_service_name }}.conf" state=absent
