@@ -1,9 +1,6 @@
 ---
 rabbitmq_enabled_on_startup: True
 
-# Install from upstream repos or directly from operating system packages
-rabbitmq_os_packages: False
-
 # Main options
 rabbitmq_ssl: False
 rabbitmq_env: True
