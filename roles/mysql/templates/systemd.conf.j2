@@ -1,0 +1,4 @@
+[Service]
+ExecStartPost=/bin/sh -c 'sleep 5 && pgrep -u {{ mysql_user }} mysqld > {{ mysql_pidfile }}'
+ExecStopPost=/bin/rm -f {{ mysql_pidfile }}
+
