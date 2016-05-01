@@ -1,17 +1,34 @@
 ---
-mysql_version: "5.6"
+# Defaults to the official version of the distribution
+mysql_version: "{{
+    '5.7' if
+            (ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '16')
+            or (ansible_distribution == 'Debian' and ansible_distribution_major_version == '8')
+            or (ansible_os_family == 'RedHat' and ansible_distribution_major_version == '7')
+    else '5.6'
+}}"
+# Install from upstream repos or directly from operating system packages
+# except for RH/Centos -overwritten in vars files- because it has been replaced
+# by MariaDB
+mysql_os_packages: "{{
+    True if
+            (ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '16')
+            or (ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '14')
+            or (ansible_distribution == 'Debian' and ansible_distribution_major_version == '8')
+    else False
+}}"
+# Upgrade the database if older than these seconds
+# Time is only valid in Debian, set to 0/False to disable
+mysql_packages_update_cache: 1800
 
 mysql_os_repo_url:
 mysql_os_repo_key:
 mysql_packages_install_recommends: True
-# Upgrade the database if older than these seconds
-# Time is only valid in Debian, set to 0/False to disable
-mysql_packages_update_cache: 1800
-# Install packages from distro
-mysql_os_packages: True
 
 mysql_user: mysql
 mysql_group: mysql
 
+mysql_socket: /var/run/mysqld/mysqld.sock
+mysql_pidfile: /var/run/mysqld/mysqld.pid
 mysql_datadir: /var/lib/mysql
 

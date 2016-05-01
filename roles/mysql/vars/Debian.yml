@@ -4,8 +4,6 @@ mysql_os_repo_key:
 
 mysql_daemon: mysql
 mysql_config_file: /etc/mysql/my.cnf
-mysql_socket: /var/run/mysqld/mysqld.sock
-mysql_pidfile: /var/run/mysqld/mysqld.pid
 
 mysql_packages_dict:
   mysql-server-{{ mysql_version }}:

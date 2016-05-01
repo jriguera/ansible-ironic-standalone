@@ -33,6 +33,19 @@
     mode: 0644
   when: mysql_slow_query_log
 
+- name: Create MySQL socket folder
+  file:
+    path: "{{ mysql_socket | dirname }}"
+    owner: "{{ mysql_user }}"
+    group: "{{ mysql_group }}"
+    state: directory
+    mode: 0755
+  when:
+    (mysql_socket | dirname != '/var/run')
+    and (mysql_socket | dirname != '/run')
+    and (mysql_socket | dirname !=  mysql_pidfile | dirname)
+    and (mysql_socket | dirname !=  mysql_datadir)
+
 
 - block:
   - name: Stop MySQL to flush innodb log files

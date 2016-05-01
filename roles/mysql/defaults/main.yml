@@ -1,15 +1,10 @@
 ---
 # Enable mysql daemon
-mysql_enabled_on_startup: true
-
-# Install from upstream repos or directly from operating system packages
-# except for RH/Centos -overwritten in vars files- because it has been changed
-# by MariaDB
-mysql_os_packages: True
+mysql_enabled_on_startup: True
 
 # Other settings
 mysql_nice: 0
-mysql_performance_schema: true
+mysql_performance_schema: True
 mysql_init_connect: "SET NAMES utf8"
 mysql_wait_timeout: 28800
 mysql_root_username: "root"
@@ -19,12 +14,15 @@ mysql_root_password: "root"
 mysql_port: 3306
 mysql_bind: "0.0.0.0"
 
+# Run mysql_upgrade on package upgrades?
+mysql_upgrade_on_reinstall: True
+
 # Logging settings
-mysql_log_error: "/var/log/mysql/error.log"
+mysql_log_error: "/var/log/mysql/mysqld.log"
 mysql_syslog_tag: "mysql"
 
 # Slow query log settings
-mysql_slow_query_log: false
+mysql_slow_query_log: False
 mysql_slow_query_log_file: "/var/log/mysql/mysql-slow.log"
 mysql_slow_query_time: 3
 
@@ -94,6 +92,10 @@ mysql_max_connections: 200
 # interrupted without a successful connection, the server blocks that host 
 # from further connections. USE a FW for this! This is not to protect a server!
 mysql_max_connect_errors: 200
+
+# Password policy: https://dev.mysql.com/doc/refman/5.7/en/password-expiration-sandbox-mode.html
+mysql_validate_password_policy: "LOW"
+mysql_validate_password_length: "4"
 
 # Replication settings (replication is only enabled if master/user have values)
 mysql_server_id: "{{ ansible_default_ipv4.address | replace('.', ', ') | list | last  }}"

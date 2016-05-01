@@ -45,17 +45,18 @@
 - name: Setup previous installed fact
   set_fact: _mysql_previous="{{ __mysql_pidfile.stat.exists }}"
 
-- name: RedHat - Install required packages
+- name: "RedHat - Install required packages for mysql {{ mysql_version }}"
   yum:
     name: "{{ item.key if ('version' not in item.value) else ('%s-%s' % (item.key, item.value['version'])) }}"
     state: "{{ item.value.state | default('present') }}"
     update_cache: "{{ mysql_packages_update_cache | ternary('yes', 'no') }}"
+    enablerepo: "{{ mysql_os_repo }}"
   with_dict: "{{ mysql_packages_dict }}"
   when: ansible_os_family == 'RedHat'
   register: __mysql_installed_rh
   tags: ["redhat", "packages"]
 
-- name: Debian - Install required packages
+- name: "Debian - Install required packages for mysql {{ mysql_version }}"
   apt: 
     name: "{{ item.key if ('version' not in item.value) else ('%s=%s' % (item.key, item.value['version'])) }}"
     state: "{{ item.value.state | default('present') }}"
@@ -86,12 +87,42 @@
 - name: Set init system type
   set_fact: mysql_init_system="{{ __mysql_init_system.stdout }}"
 
+
+- block:
+  - name: Create custom systemd folder configuration
+    file:
+      path: "/etc/systemd/system/{{ mysql_daemon }}.service.d"
+      state: directory
+      mode: 0755
+
+  - name: Define custom systemd properties
+    template:
+      src: systemd.conf.j2
+      dest: "/etc/systemd/system/{{ mysql_daemon }}.service.d/service.conf"
+      mode: 0644
+    register: __mysql_systemd
+
+  - name: Create pid folder
+    file:
+      path: "{{ mysql_pidfile | dirname }}"
+      owner: "{{ mysql_user }}"
+      group: "{{ mysql_group }}"
+      mode: 0755
+      state: directory
+
+  - name: Delete init.d scripts
+    file: path="/etc/init.d/{{ mysql_daemon }}" state=absent
+
+  - name: Reload systemd
+    command: systemctl daemon-reload
+    when: __mysql_systemd|changed
+
+  when: mysql_init_system == "systemd"
+  tags: ["systemd", "init"]
+
+
 # Always ...
 - name: Delete upstart configuration
   file: path="/etc/init/{{ mysql_daemon }}.conf" state=absent  
   tags: ["systemd", "init"]
-
-- name: Delete init.d scripts
-  file: path="/etc/init.d/{{ mysql_daemon }}" state=absent
-  when: mysql_init_system == "systemd"
 
