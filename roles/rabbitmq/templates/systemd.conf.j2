@@ -1,3 +1,4 @@
 [Service]
-ExecStartPost=/bin/sh -c 'pgrep -u {{ rabbitmq_user }} beam > {{ rabbitmq_pidfile }}'
-ExecStopPost=/usr/bin/rm -f {{ rabbitmq_pidfile }}
+ExecStartPost=/bin/sh -c 'sleep 3 && pgrep -u {{ rabbitmq_user }} beam > {{ rabbitmq_pidfile }}'
+ExecStopPost=/bin/rm -f {{ rabbitmq_pidfile }}
+
