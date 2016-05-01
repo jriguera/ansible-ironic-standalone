@@ -12,6 +12,9 @@
 - include: secure.yml
   tags: ["mysql", "secure"]
 
+- include: upgrade.yml
+  tags: ["mysql", "upgrade"]
+
 - include: databases.yml
   tags: ["mysql", "databases"]
 
