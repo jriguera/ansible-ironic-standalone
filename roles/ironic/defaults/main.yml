@@ -1,11 +1,10 @@
 ---
-# Take the package given by the distribution (True for Xenial, False otherwise)
-ironic_os_packages: False
-
 # Enable Ironic-Conductor?
 ironic_conductor: True
 # Enable Ironic-API?
 ironic_api: True
+# Run ironic-dbsync?
+ironic_run_dbsync: True
 
 ironic_enabled_on_startup: True
 ironic_debug: False
@@ -22,7 +21,6 @@ ironic_state_path: "{{ ironic_var_dir }}"
 ironic_host: "{{ inventory_hostname }}"
 ironic_publish_errors: True
 ironic_fatal_deprecations: False
-ironic_rpc_conn_pool_size: 30
 ironic_executor_thread_pool_size: 64
 #ironic_notification_driver: [ "messaging" ]
 #ironic_notification_topics: "notifications"
@@ -111,6 +109,7 @@ ironic_keystone_authtoken_auth_version: "v3.0"
 ironic_oslo_concurrency_lock_path: "/var/lock/ironic"
 ironic_oslo_messaging_amqp_container_name:
 ironic_oslo_messaging_amqp_idle_timeout: 0
+ironic_oslo_messaging_rabbit_rpc_conn_pool_size: 30
 ironic_oslo_messaging_rabbit_amqp_durable_queues: False
 ironic_oslo_messaging_rabbit_amqp_auto_delete: False
 ironic_oslo_messaging_rabbit_host: "localhost"

@@ -33,16 +33,17 @@
   set_fact: _ironic_updated="{{ __ironic_updated_conf.changed or __ironic_policy_file.changed }}"
 
 
+# Only Ironic-API is in charge of maintain the DB
 - block:
   - name: Create initial database schema
     command: ironic-dbsync --config-file "{{ ironic_config_file }}" create_schema
-    when: not _ironic_previous
-    notify: restart api
+    when: ironic_run_dbsync and not _ironic_previous
     become_user: "{{ ironic_user }}"
+    notify: restart api
 
   - name: Update database schema
     command: ironic-dbsync --config-file "{{ ironic_config_file }}" upgrade
-    when: _ironic_previous
+    when: ironic_run_dbsync and _ironic_previous
     become_user: "{{ ironic_user }}"
     notify: restart api
 
@@ -65,16 +66,16 @@
   when: ironic_conductor and _ironic_updated
 
 - name: Start Ironic-API daemon and ensure it is enabled on boot
-  service: 
+  service:
     name: "{{ ironic_api_service_name }}"
-    state: started 
     enabled: "{{ ironic_enabled_on_startup | ternary('yes', 'no') }}"
+    state: started
   when: ironic_api
 
 - name: Start Ironic-Conductor daemon and ensure it is enabled on boot
-  service: 
-    name: "{{ ironic_conductor_service_name }}" 
-    state: started 
+  service:
+    name: "{{ ironic_conductor_service_name }}"
     enabled: "{{ ironic_enabled_on_startup | ternary('yes', 'no') }}"
+    state: started
   when: ironic_conductor
 

@@ -13,9 +13,6 @@
 # Size of executor thread pool. (integer value)
 executor_thread_pool_size={{ ironic_executor_thread_pool_size | default('64') }}
 
-# Size of RPC connection pool. (integer value)
-rpc_conn_pool_size={{ ironic_rpc_conn_pool_size | default('30') }}
-
 # Seconds to wait for a response from a call. (integer value)
 #rpc_response_timeout=60
 
@@ -918,6 +915,9 @@ trace={{ ironic_trace | ternary('true','false') }}
 {% if ironic_rpc_backend == 'rabbit' -%}
 [oslo_messaging_rabbit]
 ### Options defined in oslo.messaging
+
+# Size of RPC connection pool. (integer value)
+rpc_conn_pool_size={{ ironic_oslo_messaging_rabbit_rpc_conn_pool_size | default('30') }}
 
 # Use durable queues in AMQP. (boolean value)
 # Deprecated group/name - [DEFAULT]/amqp_durable_queues
