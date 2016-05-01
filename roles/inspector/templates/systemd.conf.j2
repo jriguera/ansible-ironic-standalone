@@ -1,3 +1,4 @@
 [Service]
-ExecStartPost=/bin/sh -c 'pgrep -u {{ ironic_inspector_user }} ironic-inspecto > {{ ironic_inspector_pidfile }}'
-ExecStopPost=/usr/bin/rm -f {{ ironic_inspector_pidfile }}
+ExecStartPost=/bin/sh -c 'sleep 5 && pgrep -u {{ ironic_inspector_user }} ironic-inspecto > {{ ironic_inspector_pidfile }}'
+ExecStopPost=/bin/rm -f {{ ironic_inspector_pidfile }}
+
