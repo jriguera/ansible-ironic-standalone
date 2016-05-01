@@ -1,12 +1,11 @@
 ---
 # http://docs.openstack.org/developer/ironic-inspector/
 
-# Take the package given by the distribution (True for Xenial, False otherwise)
-ironic_inspector_os_packages: False
-
 # Enable or disable inspector daemon and pxe configuration
 ironic_inspector_enabled: True
 ironic_inspector_enabled_on_startup: True
+# Run ironic-dbsync?
+ironic_inspector_run_dbsync: True
 
 ironic_inspector_debug: False
 ironic_inspector_trace: False
