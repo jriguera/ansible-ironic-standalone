@@ -79,7 +79,7 @@
           allow_credentials: True
 
     - role: inspector
-      ironic_inspector_debug: True
+      ironic_inspector_debug: False
       ironic_inspector_enabled: "{{ baremetal_server_inspector_enabled }}"
       # Enable default PXE for automatic enroll of discovery nodes in Ironic
       ironic_inspector_discovery_enroll: "{{ baremetal_server_inspector_default_pxe }}"
@@ -91,12 +91,15 @@
       ironic_inspector_database_mysql_password: "{{ baremetal_server_inspector_database_pass }}"
       ironic_inspector_database_mysql_db: "{{ baremetal_server_inspector_database_name }}"
       ironic_inspector_ipa_deploy_path: "{{ baremetal_server_images_deploy_path }}"
+      ironic_inspector_ipa_tftproot: "{{ ironic_pxe_tftp_root }}"
+      ironic_inspector_ipa_images_path: "{{ ironic_pxe_images_path }}"
+      ironic_inspector_ipa_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin", "console=tty0", "console=ttyS0,115200n8"]
 
     - role: dnsmasq
       dnsmasq_conf_domain: "{{ baremetal_server_dhcp_domain }}"
       dnsmasq_conf_dhcp:
         # enp0s8 for Centos 7, eth1 for Ubuntu
-        eth1:
+        - device: "{{ ansible_default_ipv4.interface }}"
           range: "{{ baremetal_server_dhcp_params }}"
           ignore_names: True
           generate_names: True
@@ -149,25 +152,25 @@
       monit_monitoring_list:
         - name: mysql
           target: "{{ mysql_pidfile }}"
-          script: "/usr/sbin/service mysql %"
+          script: "/usr/sbin/service {{ mysql_daemon }} %"
         - name: rabbitmq
           target: "{{ rabbitmq_pidfile }}"
-          script: "/usr/sbin/service rabbitmq-server %"
+          script: "/usr/sbin/service {{ rabbitmq_daemon }} %"
         - name: ironic-api
           target: "{{ ironic_api_pidfile }}"
-          script: "/usr/sbin/service ironic-api %"
+          script: "/usr/sbin/service {{ ironic_api_service_name }} %"
         - name: ironic-conductor
           target: "{{ ironic_conductor_pidfile }}"
-          script: "/usr/sbin/service ironic-conductor %"
+          script: "/usr/sbin/service {{ ironic_conductor_service_name }} %"
         - name: ironic-inspector
           target: "{{ ironic_inspector_pidfile }}"
-          script: "/usr/sbin/service ironic-inspector %"
+          script: "/usr/sbin/service {{ ironic_inspector_service_name }} %"
         - name: dnsmasq
           target: "{{ dnsmasq_pidfile }}"
-          script: "/usr/sbin/service dnsmasq %"
+          script: "/usr/sbin/service {{ dnsmasq_daemon }} %"
         - name: nginx
           target: "{{ nginx_pidfile }}"
-          script: "/usr/sbin/service nginx %"
+          script: "/usr/sbin/service {{ nginx_daemon }} %"
 
 #  tasks:
 #
