@@ -7,7 +7,7 @@
 - name: Poweroff and delete servers using Ironic
   hosts: ironic
   become: True
-  gather_facts: False
+  gather_facts: True
   vars_files:
     - vars/baremetal.yml
   vars:
@@ -25,19 +25,28 @@
     - include: tasks/baremetal_prepare.yml
 
   tasks:
-    - name: List the defined servers
+    - name: Get a list of defined servers
       shell: >
         ironic
         --os-auth-token="{{ baremetal_ironic_token }}"
         --ironic-url="{{ baremetal_server_ironic_api }}"
-        node-list | awk -F '|' "/{{ baremetal_name }}/ { print \$2,\$5 }"
+        node-list | awk -F '|' '/ {{ baremetal_name }} / {  printf("%s\n%s\n%s", $2, $5, $6) }'
       register: __baremetal_new
       ignore_errors: yes
       delegate_to: "{{ baremetal_client }}"
 
     - name: Checking if server name exists
       fail: msg="Server name '{{ baremetal_name }}' does not exist!"
-      when: __baremetal_new.stdout|trim  == ''
+      when: __baremetal_new.stdout | trim  == ''
+
+    - name: Define server facts
+      set_fact: _baremetal_new="{{ __baremetal_new.stdout_lines }}"
+
+    - name: Checking if server status is correct
+      fail: msg="Server name '{{ baremetal_name }}' is not in <available> or <enroll> status"
+      when: >
+        not (_baremetal_new[2] | trim == 'available'
+            or _baremetal_new[2] | trim == 'enroll')
 
     - name: Power off the server
       command: >
@@ -45,15 +54,15 @@
         --os-auth-token="{{ baremetal_ironic_token }}"
         --ironic-url="{{ baremetal_server_ironic_api }}"
         node-set-power-state "{{ baremetal_name }}" off
-      when: __baremetal_new.stdout.split() | last | trim  == 'on'
+      when: _baremetal_new[1].split() | last | trim  == 'on'
       delegate_to: "{{ baremetal_client }}"
 
     - name: Pause half a minute
       pause: seconds=30 prompt="Giving some time to stop the server ..."
-      when: __baremetal_new.stdout.split() | last | trim == 'on'
+      when: _baremetal_new[1].split() | last | trim == 'on'
       delegate_to: "{{ baremetal_client }}"
 
-    - name: Delete the server
+    - name: Delete the server definition from Ironic
       command: >
         ironic
         --os-auth-token="{{ baremetal_ironic_token }}"
@@ -61,8 +70,8 @@
         node-delete "{{ baremetal_name }}"
       delegate_to: "{{ baremetal_client }}"
 
-    - name: Delete config-drive
+    - name: Delete config-drive from the repository
       file:
-        path: "{{ baremetal_server_configdrive_path }}/{{ __baremetal_new.stdout.split() | first | trim }}"
+        path: "{{ baremetal_server_metadata_path }}/{{ _baremetal_new[0] | trim }}"
         state: absent
 
