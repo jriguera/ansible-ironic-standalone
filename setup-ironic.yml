@@ -52,7 +52,7 @@
       ironic_deploy_http_root: "{{ baremetal_server_images_deploy_path }}"
       ironic_enabled_drivers: ["pxe_ipmitool", "agent_ipmitool"]
       ironic_conductor_clean_nodes: false
-      ironic_conductor_sync_power_state_interval: 120
+      ironic_conductor_sync_power_state_interval: 90
       # Inspeccion enabled (add also the role)
       ironic_inspector_enabled: "{{ baremetal_server_inspector_enabled }}"
       ironic_inspector_service_url: "{{ baremetal_server_inspector_api }}"
