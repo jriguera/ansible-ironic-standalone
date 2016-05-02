@@ -1,34 +1,47 @@
 # Ansible-Ironic-Standalone
 
 A set of roles to set-up an OpenStack Ironic node in standalone mode, 
-just ready to deploy servers like cobbler but more powerful!
+just ready to deploy physical servers like other sofware (e.g. cobbler) 
+but ... more powerful!
 
 Have a look at the wiki to know more about this setup: 
 https://github.com/jriguera/ansible-ironic-standalone/wiki
 
 This repository uses tags!
 
-| Tag  | Openstack Release | Ironic version |   Upgrade    |
-|------|-------------------|----------------|--------------|
-| v1.x | Kilo (2015.4)     | 2015.1.n       | -            |
-| v2.x | Liberty (2015.10) | 4.2.n          | v1.x -> v2.x |
-| v3.x | Mitaka (2016.5)   | 5.1.n          | v2.x -> v3.x |
+| Tag  | Openstack Release | Ironic version |   Upgrade                  |
+|------|-------------------|----------------|----------------------------|
+| v1.x | Kilo (2015.4)     | 2015.1.n       |             -              |
+| v2.x | Liberty (2015.10) | 4.2.n          |        v1.x -> v2.x        |
+| v3.x | Mitaka (2016.5)   | 5.1.n          | v1.x -> v3.x, V2.x -> V3.x |
 
 
 
 # Requirements
 
-Ansible 2.0. There is no backwards compatibility with previous ansible versions,
-but it is safe running the roles against a previous installation deploy with 
-Ansible 1.9
+Just Ansible 2.0. Due to some nasty bugs in ansible 2, it is recommended update
+to the latest version, specially for running on Ubuntu Xenial.
 
-The rest requirements are managed by the roles, they were tested on Ubuntu 
-Trusty (14.04) and Centos 7.2. They use the official repos, so no development 
-packages are installed, just official packages!
+There is no backwards compatibility with previous ansible versions, but it is 
+safe run the roles against a previous installation deployed with  Ansible 1.9. 
+For the client playbooks `add-baremetal` and `del-baremetal` you also have to 
+install the Ironic client package on the server where they will run. No local 
+dependencies are required to run `setup-ironic` (except Ansible 2.0).
 
-Roles used:
+Every requirements on the server are managed by the roles, they were tested on
+Ubuntu Trusty (14.04), Xenial (16.04) and Centos 7.2. The roles use the official 
+OpenStack repositories for each distro (ubuntu-cloud and RDO -except for Ubuntu
+Xenial which does not require external repositories, MySQL is not officially 
+included in Centos 7, the official MySQL repository is used), no development 
+packages are installed. Ubuntu Xenial and Centos 7.2 use MySQL 5.7, while 
+Trusty uses MySQL 5.6.
 
- * `roles/mysql` to setup a MySQL server (version 5.6) and databases.
+
+# Project structure
+
+The core of the project are the following roles:
+
+ * `roles/mysql` to setup a MySQL server (versions 5.6 or 5.7) and databases.
  * `roles/rabbitmq` to setup a message queue using RabbitMQ.
  * `roles/monit` (optional) for basic monitoring of the system and controll 
     the processes with Monit.
@@ -38,61 +51,74 @@ Roles used:
  * `roles/nginx` (optional) to setup HTTP image repo server (for IPA).
  * `roles/webclient` (optional) to setup ironic_webclient application
  
-Notice that those roles have no dependecies between each other, so you 
-can reuse them in other projects, they have more functionalities than 
-the required for this setup. Also, they were created/adapted following 
-devops practices.
+These roles have no dependencies between each other, so you can reuse them in 
+other projects, they have more functionalities than the required for this 
+set-up. Moreover, you can easily add new roles here to offer more 
+functionalities, for example, to give support for MariaDB, just create the new
+role and call it from the playbook, if variables have changed repect to MySQL
+you will need to touch the playbook, that's all. Those roles were 
+created/adapted following devops practices in mind (idempotency, same 
+structure, ...).
+
+Also, be carefull with interrupting a role when is running. Those roles define
+a sort of stateful functionality (setting facts within their internal tasks), 
+ususally to check if the packages were (re)installed or upgraded or if there 
+were a previous configuration file. The reason for this behaviour is to perform 
+actions in special cases (e.g. create Ironic DB's for first time, run 
+`myslq_upgrade` when a new version was reinstalled). If you run into problems 
+when they run for first time, just uninstall the packages and delete the main 
+configuration file to get a clean installation and try again.
 
 
+There are 4 main playbooks here:
 
-# Running it
-
-There are 4 main playbooks defined in the repo
-
- * `setup-ironic` to deploy a real server to configure all the software. 
+ * `setup-ironic` to deploy a real server configuring all the software. 
  Probably you will have to adapt some parameters there like dnsmasq 
- interfaces (e.g. *eth0* vs *em1*). The rest of the parameters 
- (IPs, DNS, ...) are defined in the ansible inventory (*hosts/ironic*) and/or 
- in *group_vars* files.
+ interfaces (e.g. *eth1*, *em1* ...). The rest of the parameters 
+ (IP's, DNS, ...) are defined in the Ansible inventory (see *hosts/allinone*)
+ and/or in *group_vars* folder.
  * `add-baremetal` to manually define and deploy a server with Ironic. 
  When it runs, it will ask you for an id (name) which has to match to a file 
- with the server parameters (IPMI, networks, bonding ...) in *servers* folder 
- (optionally you can also define a *.cloudconfig* configuration in the same 
- way).
- * `del-baremetal` to delete a server defined in Ironic. When it runs, it will 
- halt the server and remove it from Ironic. It does not trigger additional 
- cleaning steps like wipe the disks.
- * `site.yml` and `add-vbox.yml` just for a demo with Vagrant, see `Vagrantfile`
+ with a server parameters definition (IPMI, networks, bonding ...) in *servers*
+ folder (optionally you can also define a *.cloudconfig* configuration in the
+ same way).
+ * `del-baremetal` to delete a server defined in Ironic with the previous
+ playbook. When it runs, it will power off the server and remove it from Ironic.
+ It does not trigger additional cleaning steps like wipe the disks.
+ * `site.yml` and `add-vbox.yml` just for a demo with Vagrant, see below.
 
 
-Notices:
+Notes:
 
- * This set-up is installing all the requirements for `pxe_ipmitool` driver, 
- but now it is only focused on the `agent_ipmitool` driver, it requires a 
- HTTP server (*nginx* role) and a speciall image called Ironic Python Agent 
- (IPA), which is downloaded automatically.
+ * Although this set-up installs all the requirements for `pxe_ipmitool` driver, 
+ now it is only focused on the `agent_ipmitool` driver, which requires a 
+ HTTP server (*nginx* role) and a special deploy image running Ironic Python 
+ Agent (IPA), which is downloaded automatically within the *ironic* role.
  
- * This version switched to MySQL 5.6 instead of MySQL 5.5. The migration is
+ * This version switched to MySQL 5.6 instead of MySQL 5.5 on Ubuntu Trusty
+ (14.04), The rest of supported distributions will use MySQL 5.7. The migration is
  safe, because the *mysql* role stops the previous version, deletes 
- *ib_logfiles* and it starts MySQL again. Next versions will use MySQL 5.7 as 
- it becomes the default version in most of the recent distributions.
+ `ib_logfiles`, starts MySQL again and runs `mysql_upgrade`.
  
- * There is a new web interface installed with the role `webclient`. It 
- is https://github.com/openstack/ironic-webclient , is not completely functional
- but it helps showing the nodes currently defined in Ironic and it does not
- waste resources (it is javascript running on your browser).
+ * There is a new web interface installed with the role `webclient`. It is taken
+ from https://github.com/openstack/ironic-webclient , is not completely functional
+ yet, but it helps showing the nodes currently defined in Ironic and it does not
+ waste resources (it is only javascript running on your browser). With 
+ Vagrant, go to http://localhost:8080/www (URI is /www).
 
- * `setup-ironic` configures the `nginx` role to support webdav on the HTTP
- repos for images and metadata, so you can `PUT` the files with curl,
+ * `setup-ironic` configures the `nginx` role to support WebDAV on the HTTP
+ repository for images and metadata, so you can `PUT` the files with curl,
  without connecting the server. The approach is just to have a kind of
- repository compatible with HTTP API calls.
+ repository compatible with HTTP API calls. Of course it supports basic access 
+ authentication. In the future Nginx will proxy the Ironic API via WSGI.
 
- * Version 3.x (from Mitaka) supports the Ironic Inspector package 
- (deployed with a new role) which provides automatic discovery for new baremetal
- servers, of course, you can stil use the `add-baremetal` or `del-baremetal` 
- with your servers.
+ * Version 3.x (from Mitaka) supports the Ironic Inspector package (deployed 
+ with the new role *inspector* ) which provides instropection and if the variable 
+ *ironic_inspector_discovery_enroll* is True will also provide automatic 
+ discovery for new baremetal servers. Of course, you can stil use the 
+ `add-baremetal` or `del-baremetal` to manually define the nodes.
  
- * Support for shellinabox, it means you can open web console using a web 
+ * Support for *shellinabox*, it means you can open web console using a web 
  browser to see the installation process after requesting it 
  `ironic node-get-console <node-uuid>`. The ports are automatically assigned
  by `add-baremetal` playbook based on the last part of the IPMI IP address
@@ -104,43 +130,165 @@ Notices:
  functional but, the main purpose of them is to make easy and show the entire 
  process. You can use them in production, but they are not *elegant*, they 
  depend on the Ironic client locally installed to do all the actions but you 
- could use the ansible modules for that!).
+ could use the new Ansible modules for that!).
+
+ * The services installed by `setup-ironic` are managed with Monit (yes even on 
+ the systemd systems!). So when you stop a process not via Monit, it be started
+ again!, use the command line and remember, Monit has a web interface ... 
+ use it!
+
+ * Because of the amount of packages and also because it downloads the official
+ Coreos IPA image automatically (~250 MB) you will need a decent internet 
+ connection and about 30 minutes to get everything deployed. Be patient.
 
 
-Remember that all the services installed by `setup-ironic` are managed with 
-Monit (yes even on the systemd systems!). So if you stop a process, 
-Monit will start it again!. Monit has a web interface ... just use it!
+## Running on Vagrant
 
+There is a Vagrantfile to demo the entire sofware using VM's in your computer.
+First of all, be patient. Then, due to the fact that this software was created
+to manage physical servers, it is a bit difficult to simulate the behaviour with
+VM's -have a look at the Vagrantfile-. The automatic enrollment of nodes does 
+not work properly on VirtualBox because the client VM (*baremetal*) has no IPMI
+settings and no real memory (*dmidecode* fails on the IPA image) and without 
+those parameters Ironic Inspector refuses to apply the enroll rules. 
 
-There is a Vagrantfile to demo the entire sofware using VMs in your computer. 
-In this case, instead of using the `add-baremetal` playbook you have to use 
-`add-vbox` (only because of the conductor driver type: IPMI for real servers vs 
-VBoxService for Virtualbox). Be aware it will create two VMs: one with 2GB 
-(called *ironic*) and other with 6GB (called *baremetal*, the pxe client), yes! 
-6GB for the client, due to the fact IPA stores the image in tmpfs in memory ...).
-Do not worry, the second server wont get the 6GB inmediatelly, so you can stop 
-it if you do not want to entirely run the demo (only the Ironic server). Vagrant 
-will define the internal network and will try to launch locally the VboxService
-to allow Ironic to controll the client baremetal (in the same way as IPMI works).
-Aslo, because the baremetal VM client is empty, vagrant will fail saying that
+If you want to test the traditional functionality: defining all the baremetal
+parameters and deploy with configdrive, instead of using the `add-baremetal` 
+playbook you have to use  `add-vbox` (only because of the conductor driver 
+type: IPMI for real servers vs VBoxService for Virtualbox). Be aware it will 
+create two VMs: one with 2GB (called *ironic*) and other with 6GB (called 
+*baremetal*, the pxe client), yes! 6GB for the client, due to the fact IPA 
+stores the image in tmpfs in memory ... well, with the new Mitaka version
+that is not needed anymore, but it is here because of the previous versions and 
+do not worry, it will not get the 6GB inmediatelly. Anyway, you can stop it if 
+you do not want to entirely run the demo (only the Ironic server). Vagrant will 
+define the internal network and will try to launch locally the VboxService to 
+allow Ironic to controll the client baremetal (in the same way as IPMI works). 
+Also, because the baremetal VM client is empty, vagrant will fail saying that 
 it was not able to ssh it.
 
-
-# Automatic enroll
-
-
-TODO TODO TODO TODO TODO
+Ready?
 
 
-With this feature, the "enroll" node_not_found_hook now uses all valid 
-MAC's to check node existence, not only the MAC(s) that will be used for 
-creating port(s).
+### vagrant up
 
-When the baremetal vm boots, it will be load the IPA ramdisk with the 
-instropection mode enabled.
+Type `vagrant up` to run all the setup (playbook and roles: `site.yml`), 
+after that just launch `vagrant ssh ironic` to have a look at the configuration.
+
+Vagrant tries to update the VM and install some python dependencies for 
+VirtualBox driver (*agent_vbox*), after that, it runs the roles and finally 
+it configures Python Ironic client and Ansible inside the vm. Those tasks are 
+not included in the `setup-ironic` playbook because they are not needed in a 
+real production server.
+
+Vagrant will launch two VM's, first the Ironic server and then a PXE client
+(called *baremetal*), when the last one boots it will ask you something about
+a start-up disk on a CDROM drive, just click start and after that just power off
+the VM (it is not needed at this time, it will be automatically launched by 
+Ironic when needed).
+
+When vagrant finish, you will have those ports available:
+
+ * http://127.0.0.1:15672 - RabbitMQ (ironic:rabbitmq)
+ * mysql://127.0.0.1:3306 - MySQL (ironic:mysql)
+ * http://127.0.0.1:6385 - Ironic API
+ * http://127.0.0.1:8080 - Nginx http image repository
+ * http://127.0.0.1:2812 - Monit (admin:admin) 
 
 
-After a couple of minutes, the node will be automatically defined in Ironic:
+Remember you also have to create the images (see below) and copy them to 
+`{{ ironic_pxe_images_path }}` (`/var/lib/ironic/http/images/` or just use
+curl with PUT -it is a webdav repository!) on the server and reference them 
+as `http://<server>/images/image.bin`. These references are managed in the 
+`add-baremetal`, `add-vbox` and `del-baremetal` playbooks together with the 
+local references to the IPA images on the Ironic Conductor (they have to be 
+referenced locally).
+
+Also remember that the client needs these environment variables to get it
+working:
+```
+export OS_AUTH_TOKEN=" "
+export IRONIC_URL=http://localhost:6385/
+```
+They are automatically defined by in the vagrant provisioning (but not on the
+roles/playbooks!), so you can log in `vagrant ssh ironic` and then type 
+`ironic driver-list` to check if it is working.
+
+
+## Creating Images
+
+If you want to easily create QCOW2 images with LVM and bonding support, have a
+look to: https://github.com/jriguera/packer-ironic-images. Once the images are
+created, *PUT* them to the HTTP repository:
+
+ * `curl -T trusty.qcow2 http://localhost:8080/images/`
+ * `curl -T trusty.meta http://localhost:8080/images/`
+
+
+Otherwise, you can also build images using the OpenStack tools 
+`ramdisk-image-create` and  `disk-image-create` (install them from the 
+repo: https://github.com/openstack/diskimage-builder ):
+
+```
+# Create the initial ramdkisk (not needed with agent_ipmitool driver)
+# Just useful for pxe_ipmitool driver!
+export ELEMENTS_PATH="/home/jriguera/diskimage-builder/elements" 
+ramdisk-image-create ubuntu deploy-ironic grub-install -o my-deploy-ramdisk
+ 
+# Create the final Ubuntu image to deploy on baremetal host disk 
+# (with ConfigDrive support!!)
+DIB_CLOUD_INIT_DATASOURCES="ConfigDrive, OpenStack" \
+disk-image-create ubuntu baremetal dhcp-all-interfaces -o trusty
+```
+
+Once the images were created, copy them to the HTTP server, so in this example,
+copy `trusty.*` (image, ramdisk and kernel) to `/var/lib/ironic/http/images/`
+on the Ironic server, and the deploy ramdisk kernel and image to 
+`/var/lib/ironic/http/deploy/`. Remember you can also just use curl to *PUT*
+the files.
+
+
+## Production set-up
+
+Deploying this setup on a physical server is the reason why it was created. Get
+to a datacenter, take a server, install Ubuntu and run the playbook. 
+Define the Ansible inventory file in `hosts` folder and run `setup-ironic.yml` 
+using it. *allinone* is a good example for inventory, just change the the names
+and IP's. "All in one" setup is capable of manage at least 100 physical servers. 
+
+Ironic Inspector is a new daemon which provides automatic server discovery, 
+enrollment and hardware inspection. You can disable automatic discovery and 
+enroll by switching the variable `ironic_inspector_enabled=False` (which only 
+defines a default PXE entry). The variable `ironic_inspector_discovery_enroll=True` 
+defines a set of Inspector rules to apply to new discovered servers (see 
+`roles/inspector/default/discovery_rules*`). You can disable whenever you want 
+Ironic Inspector by just changing to the variable `ironic_inspector_enabled` 
+and re-run the playbook.
+
+You can manage everything with one network interface (depending on your 
+network configuration), but you can also enable a second interface to offer 
+DHCP for IPMI, which, together with Ironic Inspector can make the job of add
+new physical servers in a datacenter really easy (well, there are some issues
+with Inspector to get/set the IPMI address: it does not work on all brands, but
+you can give a try ;-)
+
+The settings for MySQL are good enough for a normal server nowadays, taking into
+account the workload of the databases, but you can fine tune them. Moreover, if
+you already have a external MySQL and/or RabbitMQ, you can remove each those
+roles from the playbook and change the database and/or RabbitMQ variables to 
+point to the proper server. In the same way, you can split the API vs Conductor
+services in different servers to create a cluster of Conductors.
+
+
+## Automatic enrollment with Ironic Inspector
+
+That means that the DHCP server will reply to every request, if the MAC address
+is already defined the node will be managed by Ironic in the same way as always,
+otherwise it will boot in *discovered* mode. When the baremetal VM boots, it 
+will load the Coreos IPA ramdisk with the instropection mode enabled. With this 
+feature,the *enroll* modes checks all valid MAC's to check node existence, if 
+it is not found, after a couple of minutes, the node will be automatically 
+defined in Ironic:
 
 ```
 # ironic node-list
@@ -153,8 +301,10 @@ After a couple of minutes, the node will be automatically defined in Ironic:
 ```
 
 Because of the limitations of the virtual environment (running on VirtualBox),
-it does not define all the properties of a real server (IPMI) and the
-enroll process does not work properly.
+it does not define all the properties of a real server (IPMI) and the 
+enroll process does not work properly. On a physical server you should see 
+something like, after the rules defined in `roles/inspector/defaults/discovery_rules*`
+were applied:
 
 ```
 # ironic node-show 16510bce-3ebd-4588-bc84-640f0da5f1b2
@@ -198,123 +348,33 @@ enroll process does not work properly.
 +--------------------------------------+-------------------+
 ```
 
-
-
-Ironic and inspector supports automatic discovery of the nodes
-
-
-That means that the DHCP server will reply to all the request, if they 
-are defined the node will boot normally, otherwise it will boot in 
-"discovered" mode.
-
-
-This setup can also be convined with DHCP on IPMI ... 
-
-
-
-
-## Vagrant
-
-Just type: `vagrant up` to run all the setup (playbook and roles: `site.yml`), 
-after that just launch `vagrant ssh ironic` to have a look at the configuration.
-
-Vagrant tries to update the VM and install some python dependencies for vbox 
-driver, after that, it runs the roles and finally it configures ironic client
-and ansible inside the vm. Those tasks are not included in the `setup-ironic` 
-playbook because they are not needed in a real production server.
-
-Vagrant will launch 2 VMs, first the Ironic server and then a PXE client
-(called `baremetal`), when the last one boots it will ask you something about
-a start-up disk on a CDROM drive, just click start and after that just power off
- the VM (it is not needed at this time, it will be automatically launched by 
-Ironic when needed).
-
-
-When vagrant will be finished, you will have those ports available:
-
- * http://127.0.0.1:15672 - RabbitMQ (ironic:rabbitmq)
- * mysql://127.0.0.1:3306 - MySQL (ironic:mysql)
- * http://127.0.0.1:6385 - Ironic API
- * http://127.0.0.1:8080 - Nginx http image repository
- * http://127.0.0.1:2812 - Monit (admin:admin) 
-
-
-Remember you also have to create the images (see below) and copy them to 
-`{{ ironic_pxe_images_path }}` (`/var/lib/ironic/http/images/` or just use
-curl with PUT -it is a webdav repository!) on the server and reference them 
-as `http://server/images/image.bin`. These references are managed in the 
-`add-baremetal`, `add-vbox` and `del-baremetal` playbooks together with the 
-local references to the IPA images on the Ironic Conductor (they have to be 
-referenced locally).
-
-Also remember that the client needs these environment variables to get it
-working:
-```
-export OS_AUTH_TOKEN=" "
-export IRONIC_URL=http://localhost:6385/
-```
-They are automatically defined by in the vagrant provisioning (but not on the
-roles/playbooks!), so you can log in `vagrant ssh ironic` and then type 
-`ironic driver-list` to check if it is working.
-
-
-
-## Creating Images
-
-If you want to create images easily with LVM and bonding support, have a look 
-to: https://github.com/jriguera/packer-ironic-images. Create the images and
-`PUT` to the HTTP repository:
-
- * `curl -T trusty.qcow2 http://localhost:8080/images/`
- * `curl -T trusty.md5 http://localhost:8080/images/`
-
-
-Otherwise, you can also build images using the Openstack tools 
-`ramdisk-image-create` and  `disk-image-create` (install them from the 
-repo: https://github.com/openstack/diskimage-builder ):
-
-```
-# Create the initial ramdkisk (not needed with agent_ipmitool driver)
-# Just useful for pxe_ipmitool driver!
-export ELEMENTS_PATH="/home/jriguera/diskimage-builder/elements" 
-ramdisk-image-create ubuntu deploy-ironic grub-install -o my-deploy-ramdisk
- 
-# Create the final Ubuntu image to deploy on baremetal host disk 
-# (with ConfigDrive support!!)
-DIB_CLOUD_INIT_DATASOURCES="ConfigDrive, OpenStack" \
-disk-image-create ubuntu baremetal dhcp-all-interfaces -o trusty
-```
-
-Once the images were created, copy them to the HTTP server, so in this example,
-copy `trusty.*` (image, ramdisk and kernel) to `/var/lib/ironic/http/images/`
-on the Ironic server, and the deploy ramdisk kernel and image to 
-`/var/lib/ironic/http/deploy/`. Remember you can also just use curl to *PUT*
-the files.
-
+Then you can tell Ironic to move the node to the `manage` state and it will
+check if all the parameters are properly defined, if so, it will set the node up
+as manageable ... Have a look at the Ironic documentation.
 
 
 ## Ironic Client Playbooks
 
 To automatically define (and delete) baremetal servers using the driver
-`agent_ipmitool` (which allows deploy full disk images -with lvm, for example),
-I have created two playbooks which are using the `configdrive` role to create
-the initial cloud-init configuration with the proper network definition. Have a
+`agent_ipmitool` (which allows deploy full disk images -with LVM, for example),
+There are two playbooks which are using the `configdrive` role to create
+the initial Cloud-Init configuration with the proper network definition. Have a
 look at the playbooks and at the `/vars` folder to see how to define the 
-variables for your infrastructure.
+variables for your infrastructure. Also, you can define more Images by creating
+files in `images` folder.
 
-Together with the qcow2 disk images, the configdrive definition is provided to
-the clients via URL, by using the HTTP server running on the Ironic server.
+Together with the QCOW2 disk images, the configdrive definition is provided to
+the clients via URL, from the HTTP server running on the Ironic server.
 
 
-
-### With Vagrant
+### Testing with Vagrant
 
 The static variables are defined in `Vagrantfile` and `site.yml`, pay attention
-to the local IPs and MAC addresses.
+to the local IP and MAC addresses.
 
 First, create a Trusty image as described previously and upload to 
 `http://localhost:8080/images`, then check if the variables defined in 
-`vars/vbox.yml` match the internal IPs of Ironic server. 
+`vars/vbox.yml` match the internal IP of Ironic server. 
 
 Then, `vagrant ssh ironic` and become root `sudo -s` and go to `/vagrant` and
 run `ansible-playbook -i hosts/vbox add-vbox.yml`:
@@ -322,6 +382,7 @@ run `ansible-playbook -i hosts/vbox add-vbox.yml`:
 ```
 root@vagrant-ubuntu-trusty-64:/vagrant# ansible-playbook -i hosts/vbox add-vbox.yml 
 Server Name: vbox
+Deploy or Define the server (deploy, define): deploy
 
 PLAY [Define and deploy physical servers using Ironic] *************************
 
@@ -520,19 +581,22 @@ PLAY RECAP *********************************************************************
 localhost                  : ok=43   changed=20   unreachable=0    failed=0   
 ```
 
-Ironic will contact with VBXWebSrv and start theVM called baremetal. After a
-while it will be installed and rebooting running Ubuntu.
+Ironic will contact with `VBXWebSrv` and start the VM called *baremetal*. After
+a while it will be installed and rebooting running Ubuntu. If you do not type
+*deploy* the server will not be deployed, it will remain ready to deploy, with
+all the settings defined.
 
 
 ### Physical servers
 
-Just run those playbooks:
+Use these playbooks:
 
  * `add-baremetal.yml`: To add a new baremetal server. It will ask for the 
  required parameters.
 ```
-$ ansible-playbook -i hosts/ironic -e id=test-server-01 add-baremetal.yml
+$ ansible-playbook -i hosts/allinone -e id=test-server-01 add-baremetal.yml
 Server Name: test-server-01
+Deploy or Define the server (deploy, define): deploy
 
 PLAY [Define and deploy physical servers using Ironic] ************************ 
 
@@ -601,7 +665,7 @@ skipping: [provisioning]
  
  * `del-baremetal.yml`
 ```
-$ ansible-playbook -i hosts/ironic -e id=test-server-01 del-baremetal.yml 
+$ ansible-playbook -i hosts/allinone -e id=test-server-01 del-baremetal.yml 
 
 PLAY [Poweroff and delete servers using Ironic] ******************************* 
 
