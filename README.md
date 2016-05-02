@@ -187,17 +187,19 @@ a start-up disk on a CDROM drive, just click start and after that just power off
 the VM (it is not needed at this time, it will be automatically launched by 
 Ironic when needed).
 
-When vagrant finish, you will have those ports available:
+When vagrant finish, you will have those enpoints available:
 
  * http://127.0.0.1:15672 - RabbitMQ (ironic:rabbitmq)
  * mysql://127.0.0.1:3306 - MySQL (ironic:mysql)
  * http://127.0.0.1:6385 - Ironic API
- * http://127.0.0.1:8080 - Nginx http image repository
+ * http://127.0.0.1:8080/www - Ironic WebClient
+ * http://127.0.0.1:8080/images - Image HTTP repository (WebDAV)
+ * http://127.0.0.1:8080/metadata - ConfigDrive HTTP repository (WebDAV)
  * http://127.0.0.1:2812 - Monit (admin:admin) 
 
 
 Remember you also have to create the images (see below) and copy them to 
-`{{ ironic_pxe_images_path }}` (`/var/lib/ironic/http/images/` or just use
+`ironic_pxe_images_path` (`/var/lib/ironic/http/images/` or just use
 curl with PUT -it is a webdav repository!) on the server and reference them 
 as `http://<server>/images/image.bin`. These references are managed in the 
 `add-baremetal`, `add-vbox` and `del-baremetal` playbooks together with the 
