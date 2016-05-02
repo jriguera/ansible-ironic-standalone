@@ -16,22 +16,22 @@
       configdrive_uuid: "{{ baremetal_uuid }}"
       configdrive_fqdn: "{{ baremetal_name }}.{{ baremetal_domain }}"
       configdrive_name: "{{ baremetal_name }}"
-      configdrive_config_dir: "{{ baremetal_server_configdrive_path }}"
-      configdrive_volume_path: "{{ baremetal_server_configdrive_path }}"
+      configdrive_config_dir: "{{ baremetal_server_metadata_path }}"
+      configdrive_volume_path: "{{ baremetal_server_metadata_path }}"
       configdrive_network_device_list: "{{ baremetal_network_device_list }}"
       configdrive_ssh_public_key: "{{ baremetal_ssh_key }}"
       configdrive_meta:
-        deploy_date: "{{ baremetal_datetime }}"
-        deploy_host: "{{ inventory_hostname }}"
+        deploy_date: "{{ ansible_date_time.iso8601  }}"
+        deploy_host: "{{ ansible_hostname }}"
 
   vars_prompt:
     - name: "id"
       prompt: "Server Name"
       private: no
     - name: "deploy"
-      prompt: "Deploy or Define the server (deploy, define)"
+      prompt: "Deploy the server (y) or just just define it (n)?"
       private: no
-      default: "deploy"
+      default: "y"
 
   pre_tasks:
     - name: Include network definitions
@@ -112,7 +112,6 @@
             instance_info/image_checksum="{{ baremetal_image_checksum }}"
             extra/deploy_date="{{ ansible_date_time.iso8601 }}"
             extra/deploy_host="{{ ansible_hostname }}"
-            extra/deploy_user="{{ ansible_user }}"
       delegate_to: "{{ baremetal_client }}"
       
     - name: Define the kernel and ramdisk for the image
@@ -133,7 +132,7 @@
         --os-auth-token="{{ baremetal_ironic_token }}"
         --ironic-url="{{ baremetal_server_ironic_api }}"
         port-create -n "{{ baremetal_uuid }}" -a "{{ baremetal_mac }}"
-      when: baremetal_mac is defined and baremetal_mac and __baremetal_defined|success
+      when: baremetal_mac is defined and baremetal_mac and __baremetal_new.stdout|trim == ''
       delegate_to: "{{ baremetal_client }}"
 
     - name: Add reference to config-drive in metadata info
@@ -165,5 +164,5 @@
         --ironic-url="{{ baremetal_server_ironic_api }}"
         node-set-provision-state {{ _baremetal_configdrive_param }} "{{ baremetal_uuid }}" active
       delegate_to: "{{ baremetal_client }}"
-      when: deploy | trim == "deploy"
+      when: deploy | trim == "y"
 
