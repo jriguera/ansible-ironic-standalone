@@ -16,7 +16,8 @@
   - name: Change permissions
     file:
       path: "{{ item }}"
-      group: "{{ ironic_inspector_group }}"
+      owner: "{{ ironic_inspector_pxe_owner }}"
+      group: "{{ ironic_inspector_pxe_group }}"
       mode: 0664
       state: file
     with_items:
@@ -31,6 +32,8 @@
   file:
     path: "{{ ironic_inspector_ipa_tftproot }}/{{ item }}"
     src: "{{ ironic_inspector_ipa_deploy_path }}/{{ item }}"
+    owner: "{{ ironic_inspector_pxe_owner }}"
+    group: "{{ ironic_inspector_pxe_group }}"
     state: link
   with_items:
       - "{{ ironic_inspector_ipa_ramdisk }}"
@@ -42,7 +45,8 @@
   - name: Create tftproot folder
     file:
       path: "{{ ironic_inspector_ipa_tftproot }}/pxelinux.cfg"
-      group: "{{ ironic_inspector_group }}"
+      owner: "{{ ironic_inspector_pxe_owner }}"
+      group: "{{ ironic_inspector_pxe_group }}"
       mode: 0775
       state: directory
 
@@ -50,7 +54,8 @@
     template:
       src: pxelinux_default.j2
       dest: "{{ ironic_inspector_ipa_tftproot }}/pxelinux.cfg/default"
-      group: "{{ ironic_inspector_group }}"
+      owner: "{{ ironic_inspector_pxe_owner }}"
+      group: "{{ ironic_inspector_pxe_group }}"
       mode: 0664
     when: ironic_inspector_enabled
 

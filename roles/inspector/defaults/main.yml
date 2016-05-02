@@ -70,6 +70,9 @@ ironic_inspector_discovery_enroll_deploy_ramdisk: "file://{{ ironic_inspector_ip
 # IPMI settings for new nodes
 ironic_inspector_discovery_enroll_ipmi_username: "admin"
 ironic_inspector_discovery_enroll_ipmi_password: "ipmi"
+# Ironic owner and group for PXE folder
+ironic_inspector_pxe_owner: "ironic"
+ironic_inspector_pxe_group: "{{ ironic_inspector_group }}"
 
 # Which MAC addresses to add as ports during introspection. Possible
 # values: all (all MAC addresses), active (MAC addresses of NIC with
