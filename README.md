@@ -219,7 +219,9 @@ roles/playbooks!), so you can log in `vagrant ssh ironic` and then type
 
 If you want to easily create QCOW2 images with LVM and bonding support, have a
 look to: https://github.com/jriguera/packer-ironic-images. Once the images are
-created, *PUT* them to the HTTP repository:
+created, *PUT* them to the HTTP repository (pay attention to the change on the 
+file extension for the md5 checksum, it is created with: 
+`md5sum trusty.qcow2 > trusty.meta`):
 
  * `curl -T trusty.qcow2 http://localhost:8080/images/`
  * `curl -T trusty.meta http://localhost:8080/images/`
@@ -280,7 +282,496 @@ point to the proper server. In the same way, you can split the API vs Conductor
 services in different servers to create a cluster of Conductors.
 
 
-## Automatic enrollment with Ironic Inspector
+
+## Ironic Client Playbooks
+
+To automatically define (and delete) baremetal host using the driver
+`agent_ipmitool` (which allows deploy full disk images, for example with LVM),
+There are two playbooks which are using the `configdrive` role to create
+the initial Cloud-Init configuration with the correct network definition.
+Have a look at the playbooks and at the `/vars` folder to see how to define the 
+variables for your infrastructure. Also, you can define more Images by creating
+files in `images` folder and referring them from the baremetal host definition
+file in `servers`.
+
+The configdrive volume generated is provided to the IPA clients from the HTTP 
+server running on the Ironic server.
+
+To understand Ironic states: http://docs.openstack.org/developer/ironic/dev/states.html
+
+
+### Example workflow
+
+Here you can see the typical workflow with the client playbooks. The playbooks
+do not need environment variables, but the Ironic client does:
+
+```
+export OS_AUTH_TOKEN=" "
+export IRONIC_URL=http://<server>:6385/
+```
+
+First, create a Trusty image as described previously and upload to 
+*http://<server>/images*, then check the definition files in `images` and 
+`servers` folders to match the correct settings of your infrastructure.
+
+
+#### Deploying a baremetal server
+
+```
+# ansible-playbook -i hosts/allinone add-baremetal.yml 
+Server Name: test-server-01
+Deploy the server (y) or just just define it (n)? [y]:
+
+PLAY [Define and deploy physical servers using Ironic] *************************
+
+TASK [setup] *******************************************************************
+ok: [ironic]
+
+TASK [Include network definitions] *********************************************
+ok: [ironic]
+
+TASK [Include image definitions] ***********************************************
+ok: [ironic]
+
+TASK [include] *****************************************************************
+included: /home/jriguera/devel/ansible-ironic-standalone/tasks/baremetal_md5.yml for ironic
+
+TASK [Define the MD5 checksum URI if needed] ***********************************
+ok: [ironic]
+
+TASK [Get the url image MD5 checksum] ******************************************
+changed: [ironic]
+ [WARNING]: Consider using get_url module rather than running curl
+
+
+TASK [Load the previous MD5 checksum] ******************************************
+ok: [ironic]
+
+TASK [Workout the checksum with the image url] *********************************
+skipping: [ironic]
+
+TASK [Load the previous MD5 checksum] ******************************************
+skipping: [ironic]
+
+TASK [Check MD5 image checksum is defined] *************************************
+skipping: [ironic]
+
+TASK [Check if servername configdrive exists] **********************************
+ok: [ironic -> localhost]
+
+TASK [Load servername configdrive] *********************************************
+ok: [ironic]
+
+TASK [include] *****************************************************************
+included: /home/jriguera/devel/ansible-ironic-standalone/tasks/baremetal_prepare.yml for ironic
+
+TASK [Define the server domain] ************************************************
+skipping: [ironic]
+
+TASK [Define the server name] **************************************************
+ok: [ironic]
+
+TASK [Define the server name as MAC] *******************************************
+skipping: [ironic]
+
+TASK [Assign network parameters] ***********************************************
+ok: [ironic]
+
+TASK [Assign network parameters with DHCP] *************************************
+skipping: [ironic]
+
+TASK [Check if the network needs an IP address for the server] *****************
+skipping: [ironic]
+
+TASK [Checking if MAC address is correct] **************************************
+skipping: [ironic]
+
+TASK [Define the IPMI web console port for shellinabox] ************************
+ok: [ironic]
+
+TASK [Check if the new node was defined] ***************************************
+changed: [ironic -> localhost]
+
+TASK [Define the new baremetal node] *******************************************
+changed: [ironic -> localhost]
+
+TASK [Get the new server UUID] *************************************************
+ok: [ironic]
+
+TASK [Get the current server UUID] *********************************************
+skipping: [ironic]
+
+TASK [configdrive : Install required packages to create the images] ************
+ok: [ironic] => (item={'value': {u'state': u'latest'}, 'key': u'gzip'})
+ok: [ironic] => (item={'value': {u'state': u'latest'}, 'key': u'coreutils'})
+ok: [ironic] => (item={'value': {u'state': u'latest'}, 'key': u'genisoimage'})
+
+TASK [configdrive : Include OS specific variables] *****************************
+ok: [ironic]
+
+TASK [configdrive : Setup configdrive instance folder] *************************
+ok: [ironic]
+
+TASK [configdrive : Create configdrive metadata folders] ***********************
+changed: [ironic] => (item=openstack/2012-08-10)
+changed: [ironic] => (item=openstack/latest)
+changed: [ironic] => (item=openstack/content)
+
+TASK [configdrive : include] ***************************************************
+included: /home/jriguera/devel/ansible-ironic-standalone/roles/configdrive/tasks/configdrive.yml for ironic
+
+TASK [configdrive : Create configdrive temporary metadata folder] **************
+changed: [ironic] => (item=openstack/_)
+
+TASK [configdrive : Setup temporary folder for include files] ******************
+ok: [ironic]
+
+TASK [configdrive : include] ***************************************************
+skipping: [ironic]
+
+TASK [configdrive : include] ***************************************************
+included: /home/jriguera/devel/ansible-ironic-standalone/roles/configdrive/tasks/network.yml for ironic
+
+TASK [configdrive : Get a list the backend devices] ****************************
+ok: [ironic] => (item=eth0)
+
+TASK [configdrive : Create network_info.json] **********************************
+changed: [ironic] => (item=openstack/2012-08-10)
+changed: [ironic] => (item=openstack/latest)
+
+TASK [configdrive : Create the network configuration folders] ******************
+changed: [ironic] => (item=/etc/network/interfaces.d/)
+
+TASK [configdrive : Setup resolver file resolv.conf] ***************************
+skipping: [ironic]
+
+TASK [configdrive : Setup static hosts file] ***********************************
+skipping: [ironic]
+
+TASK [configdrive : Setup network/interfaces for Debian] ***********************
+changed: [ironic]
+
+TASK [configdrive : Setup undefined backend devices] ***************************
+changed: [ironic] => (item=eth0)
+
+TASK [configdrive : Setup all defined devices] *********************************
+changed: [ironic] => (item={u'domain': u'springer-sbm.com', u'nameservers': [u'8.8.8.8'], u'bond_mode': u'1', u'netmask': u'255.255.255.0', u'address': u'10.230.44.253', u'device': u'bond0', u'type': u'bond', u'gateway': u'10.230.44.1', u'backend': [u'eth0']})
+
+TASK [configdrive : Setup route configuration for RedHat] **********************
+skipping: [ironic] => (item={u'domain': u'springer-sbm.com', u'nameservers': [u'8.8.8.8'], u'bond_mode': u'1', u'netmask': u'255.255.255.0', u'address': u'10.230.44.253', u'device': u'bond0', u'type': u'bond', u'gateway': u'10.230.44.1', u'backend': [u'eth0']}) 
+
+TASK [configdrive : List the include files on temporary folder] ****************
+changed: [ironic]
+
+TASK [configdrive : Get the list of include files on temporary folder] *********
+ok: [ironic]
+
+TASK [configdrive : Move files to destination from temporary folder] ***********
+changed: [ironic] => (item=(0, u'/etc/network/interfaces'))
+changed: [ironic] => (item=(1, u'/etc/network/interfaces.d/ifcfg-eth0'))
+changed: [ironic] => (item=(2, u'/etc/network/interfaces.d/ifcfg-bond0'))
+
+TASK [configdrive : Delete temporary folder] ***********************************
+changed: [ironic]
+
+TASK [configdrive : Create meta_data.json] *************************************
+changed: [ironic] => (item=openstack/2012-08-10)
+changed: [ironic] => (item=openstack/latest)
+
+TASK [configdrive : Copy metadata file user_data] ******************************
+changed: [ironic] => (item=openstack/2012-08-10)
+changed: [ironic] => (item=openstack/latest)
+
+TASK [configdrive : Create configdrive volume file] ****************************
+changed: [ironic]
+
+TASK [configdrive : Cleanup instance configdrive folder] ***********************
+skipping: [ironic]
+
+TASK [Define the install image for the node] ***********************************
+changed: [ironic -> localhost]
+
+TASK [Define the kernel and ramdisk for the image] *****************************
+skipping: [ironic]
+
+TASK [Create the MAC address ports for the new node] ***************************
+changed: [ironic -> localhost]
+
+TASK [Add reference to config-drive in metadata info] **************************
+changed: [ironic -> localhost]
+
+TASK [Define the configdrive parameter] ****************************************
+ok: [ironic -> localhost]
+
+TASK [Define the configdrive parameter when enabled configdrive] ***************
+ok: [ironic -> localhost]
+
+TASK [Active and deploy the server] ********************************************
+changed: [ironic -> localhost]
+
+PLAY RECAP *********************************************************************
+ironic                     : ok=42   changed=19   unreachable=0    failed=0   
+```
+
+After a while it will be installed and rebooting running Ubuntu. If you do not type
+*y* (or enter) the server will not be deployed, it will remain as *available*,
+ready to deploy. Be aware that from this situation is not enough telling Ironic
+to deploy the server, you have to provide the link to the Config-drive volume
+on the HTTP repository (to do it quickly, just run again the playbook ;-)
+
+```
+# ironic node-list
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| UUID                                 | Name              | Instance UUID | Power State | Provisioning State | Maintenance |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| 9d97a5e8-bb1c-48a1-afae-8f1d249ee37a | pe-test-server-01 | None          | power on    | active             | False       |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+```
+
+If you want to redeploy the node to get a fresh install, just do it!:
+
+```
+# ironic node-set-provision-state pe-test-server-01 rebuild
+# ironic node-list
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| UUID                                 | Name              | Instance UUID | Power State | Provisioning State | Maintenance |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| 9d97a5e8-bb1c-48a1-afae-8f1d249ee37a | pe-test-server-01 | None          | power on    | deploying          | False       |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+# ironic node-list
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| UUID                                 | Name              | Instance UUID | Power State | Provisioning State | Maintenance |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| 9d97a5e8-bb1c-48a1-afae-8f1d249ee37a | pe-test-server-01 | None          | power on    | wait call-back     | False       |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+
+[ after 10 minutes ... ]
+
+# ironic node-list
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| UUID                                 | Name              | Instance UUID | Power State | Provisioning State | Maintenance |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| 9d97a5e8-bb1c-48a1-afae-8f1d249ee37a | pe-test-server-01 | None          | power on    | wait call-back     | False       |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+
+[ ... ]
+
+# ironic node-list
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| UUID                                 | Name              | Instance UUID | Power State | Provisioning State | Maintenance |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| 9d97a5e8-bb1c-48a1-afae-8f1d249ee37a | pe-test-server-01 | None          | power on    | deploying          | False       |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+
+[ ... ]
+
+# ironic node-list
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| UUID                                 | Name              | Instance UUID | Power State | Provisioning State | Maintenance |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| 9d97a5e8-bb1c-48a1-afae-8f1d249ee37a | pe-test-server-01 | None          | power on    | active             | False       |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+```
+
+While the server is being deployed you can request a SOL console to see the
+output (this functionality depends on your the capabilities/properties of your
+hardware):
+
+```
+# ironic node-set-console-mode pe-test-server-01 on
+# ironic node-get-console pe-test-server-01
++-----------------+------------------------------------------------------------------+
+| Property        | Value                                                            |
++-----------------+------------------------------------------------------------------+
+| console_enabled | True                                                             |
+| console_info    | {u'url': u'http://10.230.44.252:10204', u'type': u'shellinabox'} |
++-----------------+------------------------------------------------------------------+
+```
+Open the link in your browser and you should see the output of the console.
+
+
+Now, you can move the status to *deleted*, to make the server *available* again
+(which is different than removing the server from Ironic):
+
+```
+# ironic node-set-provision-state pe-test-server-01 deleted
+# ironic node-list
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| UUID                                 | Name              | Instance UUID | Power State | Provisioning State | Maintenance |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| 9d97a5e8-bb1c-48a1-afae-8f1d249ee37a | pe-test-server-01 | None          | power on    | deleting           | False       |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+
+[ after a couple of minutes ... ]
+
+# ironic node-list
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| UUID                                 | Name              | Instance UUID | Power State | Provisioning State | Maintenance |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| 9d97a5e8-bb1c-48a1-afae-8f1d249ee37a | pe-test-server-01 | None          | power off   | cleaning           | False       |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+# ironic node-list
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| UUID                                 | Name              | Instance UUID | Power State | Provisioning State | Maintenance |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| 9d97a5e8-bb1c-48a1-afae-8f1d249ee37a | pe-test-server-01 | None          | power off   | available          | False       |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+```
+
+The server does a intermediate transition to the cleaning state (which is disabled
+by default in this setup, because of the amount of time that some operations can
+take, e.g wiping the disks).
+
+From the *available* state you can move to *manageable* state in order to launch
+a hardware inspection:
+
+```
+# ironic node-set-provision-state pe-test-server-01 manage
+# ironic node-list
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| UUID                                 | Name              | Instance UUID | Power State | Provisioning State | Maintenance |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| 9d97a5e8-bb1c-48a1-afae-8f1d249ee37a | pe-test-server-01 | None          | power off   | manageable         | False       |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+# ironic node-set-provision-state pe-test-server-01 inspect
+# ironic node-list
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| UUID                                 | Name              | Instance UUID | Power State | Provisioning State | Maintenance |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| 9d97a5e8-bb1c-48a1-afae-8f1d249ee37a | pe-test-server-01 | None          | power off   | inspecting         | False       |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+
+[ after about 6 minutes, automatically switch back to the state ... ]
+
+# ironic node-list
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| UUID                                 | Name              | Instance UUID | Power State | Provisioning State | Maintenance |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+| 9d97a5e8-bb1c-48a1-afae-8f1d249ee37a | pe-test-server-01 | None          | power off   | manageable         | False       |
++--------------------------------------+-------------------+---------------+-------------+--------------------+-------------+
+```
+
+... and now the *properties* field has been populated. You could get more server
+properties in the extra section (not showed here) depending on the introspection
+rules defined on the Ironic Inspector service:
+
+```
+# ironic node-show pe-test-server-01
++------------------------+-------------------------------------------------------------------------+
+| Property               | Value                                                                   |
++------------------------+-------------------------------------------------------------------------+
+| chassis_uuid           |                                                                         |
+| clean_step             | {}                                                                      |
+| console_enabled        | True                                                                    |
+| created_at             | 2016-05-02T11:22:46+00:00                                               |
+| driver                 | agent_ipmitool                                                          |
+| driver_info            | {u'ipmi_terminal_port': 10204, u'ipmi_username': u'ADMIN',              |
+|                        | u'deploy_kernel':                                                       |
+|                        | u'file:///var/lib/ironic/http/deploy/coreos_production_pxe.vmlinuz',    |
+|                        | u'ipmi_address': u'10.230.40.204', u'deploy_ramdisk':                   |
+|                        | u'file:///var/lib/ironic/http/deploy/coreos_production_pxe_image-       |
+|                        | oem.cpio.gz', u'ipmi_password': u'******'}                              |
+| driver_internal_info   | {u'agent_url': u'http://10.230.44.159:9999', u'is_whole_disk_image':    |
+|                        | True, u'agent_last_heartbeat': 1462190484}                              |
+| extra                  | {u'deploy_host': u'pe-prod-dogo-ironic-01', u'deploy_date':             |
+|                        | u'2016-05-02T11:22:43Z', u'configdrive':                                |
+|                        | u'http://10.230.44.252//metadata/9d97a5e8-bb1c-48a1-afae-8f1d249ee37a'} |
+| inspection_finished_at | 2016-05-02T12:18:49+00:00                                               |
+| inspection_started_at  | None                                                                    |
+| instance_info          | {}                                                                      |
+| instance_uuid          | None                                                                    |
+| last_error             | None                                                                    |
+| maintenance            | False                                                                   |
+| maintenance_reason     | None                                                                    |
+| name                   | pe-test-server-01                                                       |
+| power_state            | power off                                                               |
+| properties             | {u'memory_mb': u'73728', u'cpu_arch': u'x86_64', u'local_gb': u'277',   |
+|                        | u'cpus': u'16'}                                                         |
+| provision_state        | manageable                                                              |
+| provision_updated_at   | 2016-05-02T12:18:49+00:00                                               |
+| raid_config            |                                                                         |
+| reservation            | None                                                                    |
+| target_power_state     | None                                                                    |
+| target_provision_state | None                                                                    |
+| target_raid_config     |                                                                         |
+| updated_at             | 2016-05-02T12:18:52+00:00                                               |
+| uuid                   | 9d97a5e8-bb1c-48a1-afae-8f1d249ee37a                                    |
++------------------------+-------------------------------------------------------------------------+
+```
+
+#### Removing a baremetal server from Ironic
+
+In the *available* and *enroll* states you can definitely remove the server
+from Ironic by using the `del-baremetal.yml` playbook:
+
+```
+# ansible-playbook -i hosts/allinone del-baremetal.yml
+Server Name: test-server-01
+
+PLAY [Poweroff and delete servers using Ironic] ********************************
+
+TASK [setup] *******************************************************************
+ok: [ironic]
+
+TASK [Include network definitions] *********************************************
+ok: [ironic]
+
+TASK [include] *****************************************************************
+included: /home/jriguera/devel/ansible-ironic-standalone/tasks/baremetal_prepare.yml for ironic
+
+TASK [Define the server domain] ************************************************
+skipping: [ironic]
+
+TASK [Define the server name] **************************************************
+ok: [ironic]
+
+TASK [Define the server name as MAC] *******************************************
+skipping: [ironic]
+
+TASK [Assign network parameters] ***********************************************
+ok: [ironic]
+
+TASK [Assign network parameters with DHCP] *************************************
+skipping: [ironic]
+
+TASK [Check if the network needs an IP address for the server] *****************
+skipping: [ironic]
+
+TASK [Checking if MAC address is correct] **************************************
+skipping: [ironic]
+
+TASK [Define the IPMI web console port for shellinabox] ************************
+ok: [ironic]
+
+TASK [List the defined servers] ************************************************
+changed: [ironic -> localhost]
+
+TASK [Checking if server name exists] ******************************************
+skipping: [ironic]
+
+TASK [Power off the server] ****************************************************
+skipping: [ironic]
+
+TASK [Pause half a minute] *****************************************************
+skipping: [ironic]
+
+TASK [Delete the server] *******************************************************
+changed: [ironic -> localhost]
+
+TASK [Delete config-drive] *****************************************************
+changed: [ironic]
+
+PLAY RECAP *********************************************************************
+ironic                     : ok=9    changed=3    unreachable=0    failed=0   
+
+# ironic node-list
++------+------+---------------+-------------+--------------------+-------------+
+| UUID | Name | Instance UUID | Power State | Provisioning State | Maintenance |
++------+------+---------------+-------------+--------------------+-------------+
++------+------+---------------+-------------+--------------------+-------------+
+```
+
+### Automatic enrollment with Ironic Inspector
 
 That means that the DHCP server will reply to every request, if the MAC address
 is already defined the node will be managed by Ironic in the same way as always,
@@ -353,28 +844,11 @@ check if all the parameters are properly defined, if so, it will set the node up
 as manageable ... Have a look at the Ironic documentation.
 
 
-## Ironic Client Playbooks
-
-To automatically define (and delete) baremetal servers using the driver
-`agent_ipmitool` (which allows deploy full disk images -with LVM, for example),
-There are two playbooks which are using the `configdrive` role to create
-the initial Cloud-Init configuration with the proper network definition. Have a
-look at the playbooks and at the `/vars` folder to see how to define the 
-variables for your infrastructure. Also, you can define more Images by creating
-files in `images` folder.
-
-Together with the QCOW2 disk images, the configdrive definition is provided to
-the clients via URL, from the HTTP server running on the Ironic server.
-
 
 ### Testing with Vagrant
 
 The static variables are defined in `Vagrantfile` and `site.yml`, pay attention
 to the local IP and MAC addresses.
-
-First, create a Trusty image as described previously and upload to 
-`http://localhost:8080/images`, then check if the variables defined in 
-`vars/vbox.yml` match the internal IP of Ironic server. 
 
 Then, `vagrant ssh ironic` and become root `sudo -s` and go to `/vagrant` and
 run `ansible-playbook -i hosts/vbox add-vbox.yml`:
@@ -382,330 +856,29 @@ run `ansible-playbook -i hosts/vbox add-vbox.yml`:
 ```
 root@vagrant-ubuntu-trusty-64:/vagrant# ansible-playbook -i hosts/vbox add-vbox.yml 
 Server Name: vbox
-Deploy or Define the server (deploy, define): deploy
+Deploy the server (y) or just just define it (n)? [y]:
 
 PLAY [Define and deploy physical servers using Ironic] *************************
 
 TASK [setup] *******************************************************************
-ok: [localhost]
+ok: [ironic]
 
-TASK [Include network definitions] *********************************************
-ok: [localhost]
-
-TASK [Include image definitions] ***********************************************
-ok: [localhost]
-
-TASK [include] *****************************************************************
-included: /vagrant/tasks/baremetal_md5.yml for localhost
-
-TASK [Define the MD5 checksum URI if needed] ***********************************
-ok: [localhost]
-
-TASK [Get the url image MD5 checksum if needed] ********************************
-changed: [localhost]
- [WARNING]: Consider using get_url module rather than running curl
-
-
-TASK [Load the previous MD5 checksum] ******************************************
-ok: [localhost]
-
-TASK [Workout the checksum with the image url if needed] ***********************
-skipping: [localhost]
-
-TASK [Load the previous MD5 checksum] ******************************************
-skipping: [localhost]
-
-TASK [Check if servername configdrive exists] **********************************
-ok: [localhost -> localhost]
-
-TASK [Load servername configdrive] *********************************************
-skipping: [localhost]
-
-TASK [include] *****************************************************************
-included: /vagrant/tasks/baremetal_prepare.yml for localhost
-
-TASK [Define the server domain] ************************************************
-skipping: [localhost]
-
-TASK [Define the server name] **************************************************
-ok: [localhost]
-
-TASK [Define the server name as MAC] *******************************************
-skipping: [localhost]
-
-TASK [Get the current date] ****************************************************
-changed: [localhost]
-
-TASK [Define the date] *********************************************************
-ok: [localhost]
-
-TASK [Assign network parameters] ***********************************************
-ok: [localhost]
-
-TASK [Assign network parameters with DHCP] *************************************
-skipping: [localhost]
-
-TASK [Check if the network needs an IP address for the server] *****************
-skipping: [localhost]
-
-TASK [Checking if MAC address is correct] **************************************
-skipping: [localhost]
-
-TASK [Define the IPMI console port] ********************************************
-ok: [localhost]
-
-TASK [Check MD5 image checksum defined] ****************************************
-skipping: [localhost]
-
-TASK [Check if the new node was defined] ***************************************
-changed: [localhost -> localhost]
-
-TASK [Checking if server name is already used] *********************************
-skipping: [localhost]
-
-TASK [Define the new baremetal node] *******************************************
-changed: [localhost -> localhost]
-
-TASK [Get the server UUID] *****************************************************
-ok: [localhost]
-
-TASK [configdrive : Install required packages to create the images] ************
-ok: [localhost] => (item={'value': {u'state': u'latest'}, 'key': u'gzip'})
-ok: [localhost] => (item={'value': {u'state': u'latest'}, 'key': u'coreutils'})
-ok: [localhost] => (item={'value': {u'state': u'latest'}, 'key': u'genisoimage'})
-
-TASK [configdrive : Include OS specific variables] *****************************
-ok: [localhost]
-
-TASK [configdrive : Setup configdrive instance folder] *************************
-ok: [localhost]
-
-TASK [configdrive : Create configdrive metadata folders] ***********************
-changed: [localhost] => (item=openstack/2012-08-10)
-changed: [localhost] => (item=openstack/latest)
-changed: [localhost] => (item=openstack/content)
-
-TASK [configdrive : include] ***************************************************
-included: /vagrant/roles/configdrive/tasks/configdrive.yml for localhost
-
-TASK [configdrive : Create configdrive temporary metadata folder] **************
-changed: [localhost] => (item=openstack/_)
-
-TASK [configdrive : Setup temporary folder for include files] ******************
-ok: [localhost]
-
-TASK [configdrive : include] ***************************************************
-skipping: [localhost]
-
-TASK [configdrive : include] ***************************************************
-included: /vagrant/roles/configdrive/tasks/network.yml for localhost
-
-TASK [configdrive : Get a list the backend devices] ****************************
-ok: [localhost] => (item=eth0)
-
-TASK [configdrive : Create network_info.json] **********************************
-changed: [localhost] => (item=openstack/2012-08-10)
-changed: [localhost] => (item=openstack/latest)
-
-TASK [configdrive : Create the network configuration folders] ******************
-changed: [localhost] => (item=/etc/network/interfaces.d/)
-
-TASK [configdrive : Setup resolver file resolv.conf] ***************************
-skipping: [localhost]
-
-TASK [configdrive : Setup static hosts file] ***********************************
-skipping: [localhost]
-
-TASK [configdrive : Setup network/interfaces for Debian] ***********************
-changed: [localhost]
-
-TASK [configdrive : Setup undefined backend devices] ***************************
-changed: [localhost] => (item=eth0)
-
-TASK [configdrive : Setup all defined devices] *********************************
-changed: [localhost] => (item={u'domain': u'vbox.local', u'nameservers': [u'8.8.8.8'], u'bond_mode': u'1', u'netmask': u'255.255.255.0', u'address': u'10.100.100.10', u'device': u'bond0', u'type': u'bond', u'gateway': u'10.100.100.1', u'backend': [u'eth0']})
-
-TASK [configdrive : Setup route configuration for RedHat] **********************
-skipping: [localhost] => (item={u'domain': u'vbox.local', u'nameservers': [u'8.8.8.8'], u'bond_mode': u'1', u'netmask': u'255.255.255.0', u'address': u'10.100.100.10', u'device': u'bond0', u'type': u'bond', u'gateway': u'10.100.100.1', u'backend': [u'eth0']}) 
-
-TASK [configdrive : List the include files on temporary folder] ****************
-changed: [localhost]
-
-TASK [configdrive : Get the list of include files on temporary folder] *********
-ok: [localhost]
-
-TASK [configdrive : Move files to destination from temporary folder] ***********
-changed: [localhost] => (item=(0, u'/etc/network/interfaces.d/ifcfg-bond0'))
-changed: [localhost] => (item=(1, u'/etc/network/interfaces.d/ifcfg-eth0'))
-changed: [localhost] => (item=(2, u'/etc/network/interfaces'))
-
-TASK [configdrive : Delete temporary folder] ***********************************
-changed: [localhost]
-
-TASK [configdrive : Create meta_data.json] *************************************
-changed: [localhost] => (item=openstack/2012-08-10)
-changed: [localhost] => (item=openstack/latest)
-
-TASK [configdrive : Copy metadata file user_data] ******************************
-skipping: [localhost] => (item=openstack/2012-08-10) 
-skipping: [localhost] => (item=openstack/latest) 
-
-TASK [configdrive : Create configdrive volume file] ****************************
-changed: [localhost]
-
-TASK [configdrive : Cleanup instance configdrive folder] ***********************
-skipping: [localhost]
-
-TASK [Define the install image for the node] ***********************************
-changed: [localhost -> localhost]
-
-TASK [Define the kernel and ramdisk for the image] *****************************
-skipping: [localhost]
-
-TASK [Create the MAC address ports for the new node] ***************************
-changed: [localhost -> localhost]
-
-TASK [Add reference to config-drive in metadata info] **************************
-changed: [localhost -> localhost]
-
-TASK [Define the configdrive parameter] ****************************************
-ok: [localhost -> localhost]
-
-TASK [Define the configdrive parameter when enabled configdrive] ***************
-ok: [localhost -> localhost]
-
-TASK [Active and deploy the server] ********************************************
-changed: [localhost -> localhost]
+[ ... ] 
 
 PLAY RECAP *********************************************************************
-localhost                  : ok=43   changed=20   unreachable=0    failed=0   
+ironic                     : ok=42   changed=19   unreachable=0    failed=0   
 ```
 
 Ironic will contact with `VBXWebSrv` and start the VM called *baremetal*. After
 a while it will be installed and rebooting running Ubuntu. If you do not type
-*deploy* the server will not be deployed, it will remain ready to deploy, with
-all the settings defined.
-
-
-### Physical servers
-
-Use these playbooks:
-
- * `add-baremetal.yml`: To add a new baremetal server. It will ask for the 
- required parameters.
-```
-$ ansible-playbook -i hosts/allinone -e id=test-server-01 add-baremetal.yml
-Server Name: test-server-01
-Deploy or Define the server (deploy, define): deploy
-
-PLAY [Define and deploy physical servers using Ironic] ************************ 
-
-TASK: [Include network definitions] ******************************************* 
-ok: [provisioning]
-
-TASK: [Include image definitions] ********************************************* 
-ok: [provisioning]
-
-TASK: [Define the MD5 checksum URI if needed] ********************************* 
-ok: [provisioning]
-
-TASK: [Get the url image MD5 checksum if needed] ****************************** 
-changed: [provisioning]
-
-TASK: [Load the previous MD5 checksum] **************************************** 
-ok: [provisioning]
-
-TASK: [Workout the checksum with the image url if needed] ********************* 
-skipping: [provisioning]
-
-TASK: [Load the previous MD5 checksum] **************************************** 
-skipping: [provisioning]
-
-TASK: [Get the file image MD5 checksum if needed] ***************************** 
-skipping: [provisioning]
-
-TASK: [Load the url MD5 checksum is needed] *********************************** 
-skipping: [provisioning]
-
-TASK: [Workout the checksum with the image if needed] ************************* 
-skipping: [provisioning]
-
-TASK: [Load the url MD5 checksum is needed] *********************************** 
-skipping: [provisioning]
-
-TASK: [Check if servername configdrive exists] ******************************** 
-ok: [provisioning -> 127.0.0.1]
-
-TASK: [Load servername configdrive] ******************************************* 
-ok: [provisioning]
-
-TASK: [Define the server domain] ********************************************** 
-skipping: [provisioning]
-
-TASK: [Define the server name] ************************************************ 
-ok: [provisioning]
-
-TASK: [Define the server name as MAC] ***************************************** 
-skipping: [provisioning]
-
-TASK: [Get the current date] ************************************************** 
-changed: [provisioning]
-
-TASK: [Define the date] ******************************************************* 
-ok: [provisioning]
-
-TASK: [Assign network parameters] ********************************************* 
-ok: [provisioning]
-
-TASK: [Assign network parameters with DHCP] *********************************** 
-skipping: [provisioning]
-
-[...]
-```
- 
- * `del-baremetal.yml`
-```
-$ ansible-playbook -i hosts/allinone -e id=test-server-01 del-baremetal.yml 
-
-PLAY [Poweroff and delete servers using Ironic] ******************************* 
-
-TASK: [List the defined servers] ********************************************** 
-changed: [pe-prod-ironic-01 -> localhost]
-
-TASK: [Checking if server name exists] **************************************** 
-skipping: [pe-prod-ironic-01]
-
-TASK: [Power off the server] ************************************************** 
-changed: [pe-prod-ironic-01 -> localhost]
-
-TASK: [Pause 1 minute] ******************************************************** 
-(^C-c = continue early, ^C-a = abort)
-[pe-prod-ironic-01]
-Pausing for 60 seconds
-^C
-Action? (a)bort/(c)ontinue: 
-ok: [pe-prod-ironic-01 -> localhost]
-
-TASK: [Delete the server] ***************************************************** 
-changed: [pe-prod-ironic-01 -> localhost]
-
-TASK: [Delete config-drive] *************************************************** 
-changed: [pe-prod-ironic-01]
-
-PLAY RECAP ******************************************************************** 
-pe-prod-ironic-01          : ok=5    changed=4    unreachable=0    failed=0   
-```
-
-
-## Variables
-
-Have a look at `site.yml` for vagrant setup and `setup-ironic.yml` with the 
-inventory defined in `hosts` and `group_vars` folders for a real setup.
-Monit is optional, if you do not need it, just remove the role.
+*y* (or enter) the server will not be deployed, it will remain as *available*,
+ready to deploy. Be aware, from this situation is not enough telling Ironic
+to deploy the server, you have to provide the link to the Config-drive volume
+on the HTTP repository.
 
 
 
-# Bugs
+# Known Bugs
 
 On Centos 7.2, depeding on the repositories you are using, Ironic daemons can
 fail to start, showing:
