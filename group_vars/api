@@ -2,8 +2,8 @@
 monit_monitoring_list:
   - name: ironic-api
     target: "{{ ironic_api_pidfile }}"
-    script: "/usr/sbin/service ironic-api %"
+    script: "/usr/sbin/service {{ ironic_api_service_name }} %"
     rules:
-      - "if failed port 6385 type tcp then restart"
+      - "if failed port {{ ironic_api_port }} type tcp then restart"
       - "if 3 restarts within 3 cycles then timeout"
 

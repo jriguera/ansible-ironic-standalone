@@ -41,23 +41,24 @@ webclient_webdir_group: "{{ ironic_group }}"
 monit_monitoring_list:
   - name: ironic-conductor
     target: "{{ ironic_conductor_pidfile }}"
-    script: "/usr/sbin/service ironic-conductor %"
+    script: "/usr/sbin/service {{ ironic_conductor_service_name }} %"
     rules:
       - "if 3 restarts within 3 cycles then timeout"
   - name: ironic-inspector
     target: "{{ ironic_inspector_pidfile }}"
-    script: "/usr/sbin/service ironic-inspector %"
+    script: "/usr/sbin/service {{ ironic_inspector_service_name }} %"
     rules:
       - "if 3 restarts within 3 cycles then timeout"
   - name: dnsmasq
     target: "{{ dnsmasq_pidfile }}"
-    script: "/usr/sbin/service dnsmasq %"
+    script: "/usr/sbin/service {{ dnsmasq_daemon }} %"
     rules:
       - "if failed port 53 type tcp protocol dns then restart"
       - "if 3 restarts within 3 cycles then timeout"
   - name: nginx
     target: "{{ nginx_pidfile }}"
-    script: "/usr/sbin/service nginx %"
+    script: "/usr/sbin/service {{ nginx_daemon }} %"
     rules:
       - "if failed port 80 type tcp then restart"
       - "if 3 restarts within 3 cycles then timeout" 
+

@@ -2,8 +2,8 @@
 monit_monitoring_list:
   - name: mysql
     target: "{{ mysql_pidfile }}"
-    script: "/usr/sbin/service mysql %"
+    script: "/usr/sbin/service {{ mysql_daemon }} %"
     rules:
-      - "if failed port {{mysql_port}} protocol mysql then restart"
+      - "if failed port {{ mysql_port }} protocol mysql then restart"
       - "if 3 restarts within 3 cycles then timeout"
 
