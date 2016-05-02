@@ -41,6 +41,8 @@ Vagrant.configure(2) do |config|
     # Every Vagrant development environment requires a box. You can search for
     # boxes at https://atlas.hashicorp.com/search.
     master.vm.box = "ubuntu/trusty64"
+    # For Xenial/Centos, change the vm network settings below!
+    #master.vm.box = "ubuntu/xenial64"
     # On Centos the interfaces are not eth0 ... change the playbooks!
     #master.vm.box = "bento/centos-7.2"
 
@@ -62,6 +64,10 @@ Vagrant.configure(2) do |config|
     # Create a private network, which allows host-only access to the machine
     # using a specific IP.
     master.vm.network "private_network", ip: "10.0.0.10", virtualbox__intnet: "intnet"
+    # With Xenial the previous setting does not work, so, when vagrant up fails ... comment it out
+    # and try this is the workaround:
+    #master.vm.network "private_network", ip: "10.0.0.10", virtualbox__intnet: "intnet", auto_config: false
+    #master.vm.provision 'shell', inline: "echo '127.0.0.1 ubuntu-xenial' >> /etc/hosts; ifconfig enp0s8 10.0.0.10"
 
     # Create a public network, which generally matched to bridged network.
     # Bridged networks make the machine appear as another physical device on
@@ -72,13 +78,14 @@ Vagrant.configure(2) do |config|
     # the path on the host to the actual folder. The second argument is
     # the path on the guest to mount the folder. And the optional third
     # argument is a set of non-required options.
-    master.vm.synced_folder ".", "/vagrant"
+    master.vm.synced_folder ".", "/vagrant", type: "rsync", rsync__exclude: ".vagrant/"
 
     # Provider-specific configuration so you can fine-tune various
     # backing providers for Vagrant. These expose provider-specific options.
     #
     master.vm.provider "virtualbox" do |vb|
       # Customize the amount of memory on the VM:
+      #vb.gui = true
       vb.memory = "2048"
     end
 
@@ -150,6 +157,4 @@ Vagrant.configure(2) do |config|
     end
     slave.vm.post_up_message = "Hola mundo"
   end
-
 end
-
