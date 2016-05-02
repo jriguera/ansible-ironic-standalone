@@ -1,0 +1,30 @@
+---
+# Specific variables for this server
+
+baremetal_ipmi_ip: 10.230.40.205
+baremetal_ipmi_user: ADMIN
+baremetal_ipmi_pass: ADMIN
+baremetal_fqdn: test-02.example.com
+baremetal_mac: E4:1F:13:E6:3D:38
+
+# Main network parameters
+baremetal_ip: 10.230.44.229
+baremetal_netmask: 255.255.255.0
+baremetal_gw: 10.230.44.1
+
+# Image name, defined in images/<name>.yml
+baremetal_os: coreos
+
+# If you change the interface name to eth1 (for example)
+# Remember to change the backend devices!
+
+baremetal_network_list:
+  - device: "eth0"
+    address: "{{ baremetal_ip }}"
+    netmask: "{{ baremetal_netmask }}"
+    gateway: "{{ baremetal_gw }}"
+    nameservers: ["8.8.8.8"]
+    domain: "{{ baremetal_domain }}"
+
+# The rest of the variables for Ironic are not defined here, they are
+# defined on the inventory

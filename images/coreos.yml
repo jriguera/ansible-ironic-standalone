@@ -1,0 +1,15 @@
+---
+# Example to deploy a Coreos Cluster
+baremetal_driver: "agent_ipmitool"
+
+# Folder relative to the servers
+baremetal_deploy_kernel: "file://{{ baremetal_server_images_deploy_path }}/coreos_production_pxe.vmlinuz"
+baremetal_deploy_ramdisk: "file://{{ baremetal_server_images_deploy_path }}/coreos_production_pxe_image-oem.cpio.gz"
+
+# Depends on the image
+baremetal_image_type: "Debian"
+baremetal_image: "http://{{ baremetal_server_repository_url }}/images/coreos_production_openstack_image.qcow2"
+baremetal_image_checksum:
+baremetal_image_kernel:
+baremetal_image_ramdisk:
+baremetal_image_rootsize:
