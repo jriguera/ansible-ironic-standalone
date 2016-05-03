@@ -16,14 +16,14 @@ This repository uses tags!
 | v3.x | Mitaka (2016.5)   | 5.1.n          | v1.x -> v3.x, V2.x -> V3.x |
 
 
-![Ironic WebClient](https://github.com/jriguera/ansible-ironic-standalone/blob/master/doc/ironic_webclient.png)
 
 This is a screenshot of [Ironic WebClient](https://github.com/openstack/ironic-webclient)
 included with the role `webclient`.
 
-Thanks to all OpenStack community for making this integration possible
-by creating every piece of software used in this project!
+![Ironic WebClient](https://github.com/jriguera/ansible-ironic-standalone/blob/master/doc/ironic_webclient.png)
 
+**Thanks to all OpenStack community for making this integration possible
+by creating every piece of software used in this project!**
 
 
 # Requirements
