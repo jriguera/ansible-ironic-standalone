@@ -17,13 +17,15 @@ This repository uses tags!
 
 
 
+## Thanks
+
+Thanks to all OpenStack community for making this integration possible
+by creating every piece of software used in this project!
+
 This is a screenshot of [Ironic WebClient](https://github.com/openstack/ironic-webclient)
 included with the role `webclient`.
 
 ![Ironic WebClient](https://github.com/jriguera/ansible-ironic-standalone/blob/master/doc/ironic_webclient.png)
-
-**Thanks to all OpenStack community for making this integration possible
-by creating every piece of software used in this project!**
 
 
 # Requirements
