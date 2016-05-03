@@ -3,6 +3,16 @@
 # http://docs.openstack.org/developer/ironic-inspector/http-api.html
 # https://github.com/openstack/ironic-inspector/blob/master/doc/source/usage.rst
 
+# NOTE: If you change a rule but not its name, it wont be applied
+# because the Ansible task only checks if it exists by name, not by
+# the content. You can delete all the rules before running ansible with
+# curl -X DELETE http://localhost:5050/v1/rules
+# or fill the UUID of the rules in the variable defined at the bottom
+# of the file discovery_rules.yml. (the intention behind that file is
+# define your custom rules)
+# You can check the rules defined with curl -X GET http://localhost:5050/v1/rules
+
+
 # Define the IPMI seetings for the new nodes
 ironic_inspector_discovery_enroll_ipmi:
 

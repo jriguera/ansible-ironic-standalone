@@ -56,7 +56,6 @@
   when: ironic_inspector_discovery_enroll
 
 
-
 # The additonal rules can be applied even if not automatic enroll
 - name: Apply additional discovery rules
   uri: 
