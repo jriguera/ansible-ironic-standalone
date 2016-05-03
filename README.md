@@ -793,57 +793,152 @@ defined in Ironic:
 
 ```
 
-Because of the limitations of the virtual environment (running on VirtualBox),
-it does not define all the properties of a real server (IPMI) and the 
-enroll process does not work properly. On a physical server you should see 
-something like, after the rules defined in `roles/inspector/defaults/discovery_rules*`
-were applied:
+The inspector role defines a set of rules automatically apply after the 
+inspection. You can modify or add more by re-defining the variables defined 
+in the files `roles/inspector/discovery_rules*.yml`. Be aware If you change
+a rule but not its name, it wont be applied because the Ansible task only 
+checks if it exists by name, not by the content. You can delete all the 
+rules before running ansible with `curl -X DELETE http://<server>:5050/v1/rules`
+or fill the UUID of the rules in the variable defined at the bottom of the 
+file `discovery_rules.yml` (the intention behind that file -and their variables-
+is offering a way define your custom rules). You can check the rules defined 
+with `curl -X GET http://<server>:5050/v1/rules`
+
+
+Let's how it works. Given our node in *manageable* status:
 
 ```
-# ironic node-show 16510bce-3ebd-4588-bc84-640f0da5f1b2
-+------------------------+--------------------------------------+
-| Property               | Value                                |
-+------------------------+--------------------------------------+
-| chassis_uuid           |                                      |
-| clean_step             | {}                                   |
-| console_enabled        | False                                |
-| created_at             | 2016-04-25T22:48:53+00:00            |
-| driver                 | agent_ipmitool                       |
-| driver_info            | {}                                   |
-| driver_internal_info   | {}                                   |
-| extra                  | {}                                   |
-| inspection_finished_at | None                                 |
-| inspection_started_at  | None                                 |
-| instance_info          | {}                                   |
-| instance_uuid          | None                                 |
-| last_error             | None                                 |
-| maintenance            | False                                |
-| maintenance_reason     | None                                 |
-| name                   | None                                 |
-| power_state            | None                                 |
-| properties             | {}                                   |
-| provision_state        | enroll                               |
-| provision_updated_at   | None                                 |
-| raid_config            |                                      |
-| reservation            | None                                 |
-| target_power_state     | None                                 |
-| target_provision_state | None                                 |
-| target_raid_config     |                                      |
-| updated_at             | None                                 |
-| uuid                   | 16510bce-3ebd-4588-bc84-640f0da5f1b2 |
-+------------------------+--------------------------------------+
+# ironic node-show test-server-01
++------------------------+-------------------------------------------------------------------------+
+| Property               | Value                                                                   |
++------------------------+-------------------------------------------------------------------------+
+| chassis_uuid           |                                                                         |
+| clean_step             | {}                                                                      |
+| console_enabled        | False                                                                   |
+| created_at             | 2016-05-03T10:43:55+00:00                                               |
+| driver                 | agent_ipmitool                                                          |
+| driver_info            | {u'ipmi_terminal_port': 10204, u'ipmi_username': u'ADMIN',              |
+|                        | u'deploy_kernel':                                                       |
+|                        | u'file:///var/lib/ironic/http/deploy/coreos_production_pxe.vmlinuz',    |
+|                        | u'ipmi_address': u'10.230.40.204', u'deploy_ramdisk':                   |
+|                        | u'file:///var/lib/ironic/http/deploy/coreos_production_pxe_image-       |
+|                        | oem.cpio.gz', u'ipmi_password': u'******'}                              |
+| driver_internal_info   | {u'agent_url': u'http://10.230.44.150:9999', u'is_whole_disk_image':    |
+|                        | True, u'agent_last_heartbeat': 1462272997}                              |
+| extra                  | {u'deploy_host': u'pe-prod-dogo-ironic-01', u'deploy_date':             |
+|                        | u'2016-05-03T10:43:53Z', u'configdrive':                                |
+|                        | u'http://10.230.44.252//metadata/8f246784-d499-41c2-9a42-63b1f487fde9'} |
+| inspection_finished_at | None                                                                    |
+| inspection_started_at  | None                                                                    |
+| instance_info          | {}                                                                      |
+| instance_uuid          | None                                                                    |
+| last_error             | None                                                                    |
+| maintenance            | False                                                                   |
+| maintenance_reason     | None                                                                    |
+| name                   | test-server-01                                                          |
+| power_state            | power off                                                               |
+| properties             | {}                                                                      |
+| provision_state        | manageable                                                              |
+| provision_updated_at   | 2016-05-03T11:19:54+00:00                                               |
+| raid_config            |                                                                         |
+| reservation            | None                                                                    |
+| target_power_state     | None                                                                    |
+| target_provision_state | None                                                                    |
+| target_raid_config     |                                                                         |
+| updated_at             | 2016-05-03T11:19:57+00:00                                               |
+| uuid                   | 8f246784-d499-41c2-9a42-63b1f487fde9                                    |
++------------------------+-------------------------------------------------------------------------+
+```
 
-# ironic node-port-list 16510bce-3ebd-4588-bc84-640f0da5f1b2
+We can tell ironic to do the inspection:
+
+```
+# ironic node-set-provision-state test-server-01 inspect
+# ironic node-list
++--------------------------------------+----------------+---------------+-------------+--------------------+-------------+
+| UUID                                 | Name           | Instance UUID | Power State | Provisioning State | Maintenance |
++--------------------------------------+----------------+---------------+-------------+--------------------+-------------+
+| 8f246784-d499-41c2-9a42-63b1f487fde9 | test-server-01 | None          | power on    | inspecting         | False       |
++--------------------------------------+----------------+---------------+-------------+--------------------+-------------+
+```
+
+
+After a while, the node will be rebooted, it will run the introspection
+task, the data will be collected and the rules will be applied, after
+that the server will remain powered off. If you ask ironic to show the
+node, you will see a lot of new stuff in the `extra` field and the basic
+attributes in the `properties` field. Also, all the MAC addresses of
+the server were assigned to each port.
+
+```
+# ironic node-show test-server-01
++------------------------+-------------------------------------------------------------------------+
+| Property               | Value                                                                   |
++------------------------+-------------------------------------------------------------------------+
+| chassis_uuid           |                                                                         |
+| clean_step             | {}                                                                      |
+| console_enabled        | False                                                                   |
+| created_at             | 2016-05-03T10:43:55+00:00                                               |
+| driver                 | agent_ipmitool                                                          |
+| driver_info            | {u'ipmi_terminal_port': 10204, u'ipmi_username': u'ADMIN',              |
+|                        | u'deploy_kernel':                                                       |
+|                        | u'file:///var/lib/ironic/http/deploy/coreos_production_pxe.vmlinuz',    |
+|                        | u'ipmi_address': u'10.230.40.204', u'deploy_ramdisk':                   |
+|                        | u'file:///var/lib/ironic/http/deploy/coreos_production_pxe_image-       |
+|                        | oem.cpio.gz', u'ipmi_password': u'******'}                              |
+| driver_internal_info   | {u'agent_url': u'http://10.230.44.150:9999', u'is_whole_disk_image':    |
+|                        | True, u'agent_last_heartbeat': 1462272997}                              |
+| extra                  | {u'disks': u"[{u'rotational': True, u'vendor': u'IBM-ESXS', u'name':    |
+|                        | u'/dev/sda', u'wwn_vendor_extension': None, u'wwn_with_extension':      |
+|                        | u'0x5000c500680510cb', u'model': u'ST600MM0006', u'wwn':                |
+|                        | u'0x5000c500680510cb', u'serial': u'5000c500680510cb', u'size':         |
+|                        | 600127266816}, {u'rotational': True, u'vendor': u'IBM', u'name':        |
+|                        | u'/dev/sdb', u'wwn_vendor_extension': u'0x1b9a4cce1d70c9c5',            |
+|                        | u'wwn_with_extension': u'0x600605b0060547c01b9a4cce1d70c9c5', u'model': |
+|                        | u'ServeRAID M1015', u'wwn': u'0x600605b0060547c0', u'serial':           |
+|                        | u'600605b0060547c01b9a4cce1d70c9c5', u'size': 298999349248}]",          |
+|                        | u'system_vendor': u"{u'serial_number': u'KQ280RG', u'product_name':     |
+|                        | u'System x3650 M3 -[7945AC1]-', u'manufacturer': u'IBM'}", u'cpu':      |
+|                        | u"{u'count': 16, u'frequency': u'2133.598', u'model_name': u'Intel(R)   |
+|                        | Xeon(R) CPU           L5630  @ 2.13GHz', u'architecture': u'x86_64'}",  |
+|                        | u'deploy_host': u'pe-prod-dogo-ironic-01', u'deploy_date':              |
+|                        | u'2016-05-03T10:43:53Z', u'configdrive':                                |
+|                        | u'http://10.230.44.252//metadata/8f246784-d499-41c2-9a42-63b1f487fde9'} |
+| inspection_finished_at | 2016-05-03T11:29:29+00:00                                               |
+| inspection_started_at  | None                                                                    |
+| instance_info          | {}                                                                      |
+| instance_uuid          | None                                                                    |
+| last_error             | None                                                                    |
+| maintenance            | False                                                                   |
+| maintenance_reason     | None                                                                    |
+| name                   | test-server-01                                                          |
+| power_state            | power off                                                               |
+| properties             | {u'memory_mb': u'73728', u'cpu_arch': u'x86_64', u'local_gb': u'277',   |
+|                        | u'cpus': u'16'}                                                         |
+| provision_state        | manageable                                                              |
+| provision_updated_at   | 2016-05-03T11:29:29+00:00                                               |
+| raid_config            |                                                                         |
+| reservation            | None                                                                    |
+| target_power_state     | None                                                                    |
+| target_provision_state | None                                                                    |
+| target_raid_config     |                                                                         |
+| updated_at             | 2016-05-03T11:29:31+00:00                                               |
+| uuid                   | 8f246784-d499-41c2-9a42-63b1f487fde9                                    |
++------------------------+-------------------------------------------------------------------------+
+# ironic node-port-list test-server-01
 +--------------------------------------+-------------------+
 | UUID                                 | Address           |
 +--------------------------------------+-------------------+
-| ded9b9aa-9358-41fd-9fe3-6b5dc461f15c | 08:00:27:26:00:8e |
+| 91849094-8a10-48b0-bd0c-d99963459999 | e4:1f:13:e6:d6:d4 |
+| 17ba3d74-358d-4324-a18a-ea31a67e0681 | 00:0a:cd:26:f1:7a |
+| 1c39125c-f97b-4281-9a1b-409efe116d46 | 00:0a:cd:26:f1:79 |
+| 18519e74-7f59-4037-ba28-f85f07102e16 | e4:1f:13:e6:d6:d6 |
 +--------------------------------------+-------------------+
 ```
 
-Then you can tell Ironic to move the node to the `manage` state and it will
-check if all the parameters are properly defined, if so, it will set the node up
-as manageable ... Have a look at the Ironic documentation.
+If you do it on VirtualBox, because of the limitations of the virtual environment 
+it will not work. The node does not has all the properties of a real server 
+(IPMI) and the enroll process does not work properly. 
 
 
 
