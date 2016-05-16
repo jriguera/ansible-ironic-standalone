@@ -139,7 +139,7 @@
         --os-auth-token="{{ baremetal_ironic_token }}" 
         --ironic-url="{{ baremetal_server_ironic_api }}"
         node-update "{{ baremetal_uuid }}" add
-            extra/configdrive="{{ baremetal_configdrive_base_url }}/{{ baremetal_uuid }}"
+            instance_info/configdrive="{{ baremetal_configdrive_base_url }}/{{ baremetal_uuid }}"
       when: >
         baremetal_configdrive_base_url is defined and
         not baremetal_configdrive_base_url is none and
