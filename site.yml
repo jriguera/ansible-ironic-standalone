@@ -99,7 +99,7 @@
       dnsmasq_conf_domain: "{{ baremetal_server_dhcp_domain }}"
       dnsmasq_conf_dhcp:
         # enp0s8 for Centos 7, eth1 for Ubuntu
-        - device: "{{ ansible_default_ipv4.interface }}"
+        - device: "eth1"
           range: "{{ baremetal_server_dhcp_params }}"
           ignore_names: True
           generate_names: True
