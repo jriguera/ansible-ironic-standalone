@@ -1,6 +1,6 @@
 ---
-webclient_tarball_url: "https://github.com/jriguera/ironic-webclient_packages/releases/download/v1.0.0/ironic-webclient-1.0.0.tgz"
-webclient_tarball_checksum: "sha1:6e341c21c151a842c4d65c45ddef04c02d407885"
+webclient_tarball_url: "https://github.com/jriguera/ironic-webclient_packages/releases/download/v1.0.0_efe6d49/ironic-webclient-1.0.0_efe6d49.tgz"
+webclient_tarball_checksum: "d884764fae7d7672367fed740fceb98addd23924"
 
 # Installation of the tarball
 webclient_basedir: "/var/lib/ironic/webclient"
