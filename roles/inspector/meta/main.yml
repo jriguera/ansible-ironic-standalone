@@ -3,7 +3,7 @@ galaxy_info:
   author: Jose Riguera Lopez (jriguera@gmail.com)
   description: Install and setup OpenStack Ironic Inspector on RedHat/Debian based distributions
   license: Apache 2.0
-  min_ansible_version: 2.0
+  min_ansible_version: 2.1
 
   platforms:
   - name: EL
