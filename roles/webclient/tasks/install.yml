@@ -1,5 +1,5 @@
 ---
-- name: Create webclient basedir
+- name: Create webclient basedir and webdir
   file:
     path: "{{ webclient_basedir }}"
     owner: "{{ webclient_basedir_owner }}"
@@ -14,37 +14,44 @@
     dest: "{{ webclient_basedir }}/ironic_webclient.tgz"
   register: __ironic_tarball
 
-- name: Unarchive webclient tarball
-  unarchive:
-    src: "{{ webclient_basedir }}/ironic_webclient.tgz"
-    dest: "{{ webclient_basedir }}"
-    owner: "{{ webclient_basedir_owner }}"
-    group: "{{ webclient_basedir_group }}"
-    copy: no
-  when: __ironic_tarball|changed
 
-- name: Create webclient webdir
-  file:
-    path: "{{ webclient_webdir }}"
-    group: "{{ webclient_webdir_group }}"
-    owner: "{{ webclient_webdir_owner }}"
-    state: directory
-    mode: 0775
+- block:
+  - name: Unarchive webclient tarball
+    unarchive:
+      src: "{{ webclient_basedir }}/ironic_webclient.tgz"
+      dest: "{{ webclient_basedir }}"
+      owner: "{{ webclient_basedir_owner }}"
+      group: "{{ webclient_basedir_group }}"
+      copy: no
 
-- name: Copy www folder to final destination
-  shell: mv -v * "{{ webclient_webdir }}"
-  when: __ironic_tarball|changed
-  args:
-    chdir: "{{ webclient_basedir }}/package/www/"
+  - name: Delete webdir folder
+    file:
+      state: absent
+      path: "{{ webclient_webdir }}"
 
-- name: Setup permissions of webdir destination
-  file:
-    path: "{{ webclient_webdir }}"
-    group: "{{ webclient_webdir_group }}"
-    owner: "{{ webclient_webdir_owner }}"
-    recurse: true
+  - name: Create webclient webdir
+    file:
+      path: "{{ webclient_webdir }}"
+      group: "{{ webclient_webdir_group }}"
+      owner: "{{ webclient_webdir_owner }}"
+      state: directory
+      mode: 0775
+
+  - name: Copy www folder to final destination
+    shell: mv -v * "{{ webclient_webdir }}"
+    args:
+      chdir: "{{ webclient_basedir }}/package/www/"
+
+  - name: Setup permissions of webdir destination
+    file:
+      path: "{{ webclient_webdir }}"
+      group: "{{ webclient_webdir_group }}"
+      owner: "{{ webclient_webdir_owner }}"
+      recurse: true
+
   when: >
     __ironic_tarball|changed
+
 
 - name: Get json package contents
   command: cat "{{ webclient_basedir }}/package/package.json"
