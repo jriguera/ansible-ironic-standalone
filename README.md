@@ -144,8 +144,8 @@ Notes:
  could use the new Ansible modules for that!).
 
  * The services installed by `setup-ironic` are managed with Monit (yes even on 
- the systemd systems!). So when you stop a process not via Monit, it be started
- again!, use the command line and remember, Monit has a web interface ... 
+ the systemd systems!). So when you stop a process not via Monit, it'll be 
+ started again!, use the command line and remember, Monit has a web interface ... 
  use it!
 
  * Because of the amount of packages and also because it downloads the official
