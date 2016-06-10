@@ -57,8 +57,14 @@
       ironic_inspector_enabled: "{{ baremetal_server_inspector_enabled }}"
       ironic_inspector_service_url: "{{ baremetal_server_inspector_api }}"
       ironic_cors_domains:
-        ironic_webclient:
+        ironic_webclient_ip:
           allowed_origin: "http://{{ ansible_default_ipv4.address }}"
+          allow_credentials: True
+        ironic_webclient_fqdn:
+          allowed_origin: "http://{{ ansible_fqdn }}"
+          allow_credentials: True
+        ironic_webclient_host:
+          allowed_origin: "http://{{ ansible_hostname }}"
           allow_credentials: True
 
     - role: inspector
