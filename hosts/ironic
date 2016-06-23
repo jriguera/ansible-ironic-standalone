@@ -1,3 +1,6 @@
+#
+# This is an example!
+#
 [provisioning:children]
 database
 messaging
@@ -18,39 +21,50 @@ baremetal_server_msg_pass=rabbitmq
 baremetal_server_inspector_database_name=inspector
 baremetal_server_inspector_database_user=inspector
 baremetal_server_inspector_database_pass=mysql
+
+# Ironic parameters
+# Change the IPs!
+baremetal_server_ironic_api="http://10.0.1.10:6385/"
+baremetal_server_inspector_api="http://10.0.1.10:5050/v1/"
+baremetal_server_repository_url="http://10.0.1.10/"
 # Leasing time can be only one hour because the static ips
 # can be defined with configdrive. This is only for the time
 # when the server is being deployed
-baremetal_server_dhcp_params=["10.0.1.100", "10.0.1.200", "1h"]
-baremetal_server_dhcp_domain=pxe.local
-baremetal_server_http_root_path=/var/lib/ironic/http
-baremetal_server_images_path=/var/lib/ironic/http/images
-baremetal_server_images_deploy_path=/var/lib/ironic/http/deploy
-baremetal_server_configdrive_path="/var/lib/ironic/http/metadata"
-# Client variables
+# Change this according to your needs!
+baremetal_server_dhcp_params=["10.0.1.150", "10.0.1.190", "30m"]
+baremetal_server_dhcp_domain="pxe.local"
+baremetal_server_http_root_path="/var/lib/ironic/http"
+baremetal_server_images_path="/var/lib/ironic/http/images"
+baremetal_server_metadata_path="/var/lib/ironic/http/metadata"
+baremetal_server_images_deploy_path="/var/lib/ironic/http/deploy"
+baremetal_server_inspector_enabled=True
+baremetal_server_inspector_default_pxe=True
+
+
+# Client variables (for the add-* and del-* playbooks)
 baremetal_ironic_token=" "
-baremetal_domain=example.com
-baremetal_nameservers=[ "8.8.8.8" ]
+baremetal_configdrive=True
 # Define a ssh key for default cloud user
-baremetal_ssh_key="ssh-rsa AAAAB3NzaC1yc2EAAAADAQAB...tion"
+baremetal_ssh_key="ssh-rsa AAAAU+v.... FLV admin@automation"
+
 
 [client]
 localhost ansible_connection=local
 
 [database]
-database ansible_ssh_host=127.0.0.1 ansible_ssh_port=2222
+database ansible_host=127.0.0.1
 
 [messaging]
-messaging ansible_ssh_host=127.0.0.1 ansible_ssh_port=2222
+messaging ansible_host=127.0.0.1
 
 [ironic]
-ironic ansible_ssh_host=127.0.0.1 ansible_ssh_port=2222
+ironic ansible_host=127.0.0.1
 
 [api]
-api ansible_ssh_host=127.0.0.1 ansible_ssh_port=2222
+api ansible_host=127.0.0.1
 
 [conductor]
-conductor ansible_ssh_host=127.0.0.1 ansible_ssh_port=2222
+conductor ansible_host=127.0.0.1
 
 
 # Splitting the ironic role functionality between api and conductor, 
