@@ -985,65 +985,6 @@ to deploy the server, you have to provide the link to the Config-drive volume
 on the HTTP repository.
 
 
-
-# Known Bugs
-
-On Centos 7.2, depeding on the repositories you are using, Ironic daemons can
-fail to start, showing:
-
-```
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: Traceback (most recent call last):
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: File "/usr/bin/ironic-api", line 6, in <module>
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: from ironic.cmd.api import main
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: File "/usr/lib/python2.7/site-packages/ironic/cmd/api.py", line 28, in <module>
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: from ironic.api import app
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: File "/usr/lib/python2.7/site-packages/ironic/api/app.py", line 22, in <module>
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: from ironic.api import acl
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: File "/usr/lib/python2.7/site-packages/ironic/api/acl.py", line 19, in <module>
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: from ironic.api.middleware import auth_token
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: File "/usr/lib/python2.7/site-packages/ironic/api/middleware/__init__.py", line 15, in <module>
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: from ironic.api.middleware import auth_token
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: File "/usr/lib/python2.7/site-packages/ironic/api/middleware/auth_token.py", line 17, in <module>
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: from keystonemiddleware import auth_token
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: File "/usr/lib/python2.7/site-packages/keystonemiddleware/auth_token/__init__.py", line 217, in <modul
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: from keystoneclient import discover
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: File "/usr/lib/python2.7/site-packages/keystoneclient/discover.py", line 22, in <module>
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: from keystoneclient import session as client_session
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: File "/usr/lib/python2.7/site-packages/keystoneclient/session.py", line 27, in <module>
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: import requests
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: File "/usr/lib/python2.7/site-packages/requests/__init__.py", line 58, in <module>
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: from . import utils
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: File "/usr/lib/python2.7/site-packages/requests/utils.py", line 26, in <module>
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: from .compat import parse_http_list as _parse_list_header
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: File "/usr/lib/python2.7/site-packages/requests/compat.py", line 7, in <module>
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: from .packages import chardet
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: File "/usr/lib/python2.7/site-packages/requests/packages/__init__.py", line 29, in <module>
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: import urllib3
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: File "/usr/lib/python2.7/site-packages/urllib3/__init__.py", line 8, in <module>
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: from .connectionpool import (
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: File "/usr/lib/python2.7/site-packages/urllib3/connectionpool.py", line 33, in <module>
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: from .packages.ssl_match_hostname import CertificateError
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: File "/usr/lib/python2.7/site-packages/urllib3/packages/__init__.py", line 3, in <module>
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: from . import ssl_match_hostname
-abr 17 14:04:00 localhost.localdomain ironic-api[19549]: ImportError: cannot import name ssl_match_hostname
-```
-
-This is because the proper version of urllib3 was not installed, to fix it,
-upgrade the library using pip and restart the daemons with Monit.
-
-```
-# pip install --upgrade urllib3
-Collecting urllib3
-  Downloading urllib3-1.15.1-py2.py3-none-any.whl (92kB)
-    100% |████████████████████████████████| 102kB 3.1MB/s 
-Installing collected packages: urllib3
-  Found existing installation: urllib3 1.13.1
-    Uninstalling urllib3-1.13.1:
-      Successfully uninstalled urllib3-1.13.1
-Successfully installed urllib3-1.15.1
-```
-
-
 # License
 
 Apache 2.0
