@@ -20,7 +20,7 @@ dnsmasq_host_resolvers: [ "127.0.0.1" ]
 # contains at least one '/' character, it is taken to be a filename, and dnsmasq 
 # logs to the given file, instead of syslog. If the facility is '-' then dnsmasq 
 # logs to stderr.
-dnsmasq_conf_log: /var/log/dnsmasq.log
+dnsmasq_conf_log: /var/log/dnsmasq/dnsmasq.log
 
 # Enable asynchronous logging and optionally set the limit on the number of 
 # lines which will be queued by dnsmasq when writing to the syslog is slow.

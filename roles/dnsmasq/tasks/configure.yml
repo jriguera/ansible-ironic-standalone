@@ -15,18 +15,18 @@
     mode: 0755
     state: directory
 
-- name: Create empty log file
+- name: Create Dnsmasq log folder
   file:
-    path: "{{ dnsmasq_conf_log }}"
+    path: "{{ dnsmasq_conf_log | dirname }}"
     owner: "{{ dnsmasq_user }}"
     group: "{{ dnsmasq_group }}"
-    mode: 0644
-    state: touch
+    state: directory
+    mode: 0755
   when: >
     dnsmasq_conf_log is defined and
     dnsmasq_conf_log is not none and
-    dnsmasq_conf_log != '-'
-  changed_when: False
+    dnsmasq_conf_log != '-' and
+    dnsmasq_conf_log | dirname != '/var/log'
 
 
 - block:
