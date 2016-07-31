@@ -295,6 +295,24 @@ point to the proper server. In the same way, you can split the API vs Conductor
 services in different servers to create a cluster of Conductors.
 
 
+## RedHat Enterprise Linux
+
+Due to the fact EPEL repositories are needed in the installation, on RedHat is 
+needed to enable the *optional* repository to use EPEL packages as they depend 
+on packages in that repository. This can be done by enabling the RHEL 
+optional subchannel for RHN-Classic. For certificate-based subscriptions see 
+Red Hat Subscription Management Guide. For EPEL 7, in addition to the 
+*optional* repository (`rhel-7-server-optional-rpms`), you also need to enable 
+the *extras* repository (`rhel-7-server-extras-rpms`).
+
+List all available repos for the system, including disabled repos.
+```
+$ subscription-manager repos --list
+
+$ subscription-manager repos --enable rhel-7-server-optional-rpms
+$ subscription-manager repos --enable rhel-7-server-extras-rpms
+```
+
 
 ## Ironic Client Playbooks
 
