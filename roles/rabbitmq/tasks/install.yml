@@ -98,14 +98,6 @@
       mode: 0644
     register: __rabbitmq_systemd
 
-  - name: Create pid folder
-    file:
-      path: "{{ rabbitmq_pidfile | dirname }}"
-      owner: "{{ rabbitmq_user }}"
-      group: "{{ rabbitmq_group }}"
-      mode: 0775
-      state: directory
-
   - name: Reload systemd
     command: systemctl daemon-reload
     when: __rabbitmq_systemd|changed

@@ -1,4 +1,7 @@
 [Service]
+PermissionsStartOnly=true
+{% if (rabbitmq_pidfile | dirname != '/var/run') and (rabbitmq_pidfile | dirname != '/run') %}
+ExecStartPre=/bin/sh -c 'mkdir -p {{ rabbitmq_pidfile | dirname }} && chown {{ rabbitmq_user }}:{{ rabbitmq_group }} {{ rabbitmq_pidfile | dirname }}'
+{% endif %}
 ExecStartPost=/bin/sh -c 'sleep 3 && pgrep -u {{ rabbitmq_user }} beam > {{ rabbitmq_pidfile }}'
 ExecStopPost=/bin/rm -f {{ rabbitmq_pidfile }}
-
