@@ -5,6 +5,8 @@ rabbitmq_os_repo_key:
 #rabbitmq_os_repo_key: "/etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-{{ ansible_distribution_major_version }}"
 
 rabbitmq_packages:
+  libselinux-python:
+    state: latest
   erlang:
     state: latest
   rabbitmq-server:
