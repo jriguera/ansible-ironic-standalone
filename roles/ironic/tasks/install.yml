@@ -17,6 +17,24 @@
   - name: Debian - Add repository url
     apt_repository: repo="{{ ironic_os_repo_url }}" state=present
 
+  # Aux repository
+  - name: Debian - Import aux repository key
+    apt_key: url="{{ ironic_conductor_os_aux_repo_key }}" state=present
+    when: >
+      not ironic_conductor_os_aux_repo_key is none and
+      ironic_conductor_os_aux_repo_key | search("http://.*")
+    ignore_errors: yes
+
+  - name: Debian - Add aux repository package
+    apt: name="{{ ironic_conductor_os_aux_repo_key }}" state=latest
+    when: >
+      not ironic_conductor_os_aux_repo_key is none and
+      not ironic_conductor_os_aux_repo_key | search("http://.*")
+
+  - name: Debian - Add aux repository url
+    apt_repository: repo="{{ ironic_conductor_os_aux_repo_url }}" state=present
+    when: ironic_conductor_os_aux_repo_url is not none
+
   when: >
     ansible_os_family == 'Debian'
     and not ironic_os_packages
@@ -31,6 +49,15 @@
   - name: RedHat - Import repository key
     rpm_key: key="{{ ironic_os_repo_key }}" state=present
     when: ironic_os_repo_key is not none
+
+  # Aux repository for shellinabox
+  - name: RedHat - Add aux repository
+    yum: name="{{ ironic_conductor_os_aux_repo_url }}" state=present
+    when: ironic_conductor_os_aux_repo_url is not none
+
+  - name: RedHat - Import aux repository key
+    rpm_key: key="{{ ironic_conductor_os_aux_repo_key }}" state=present
+    when: ironic_conductor_os_aux_repo_key is not none
 
   when: >
     ansible_os_family == 'RedHat'

@@ -4,6 +4,10 @@ ironic_os_repo_key:
 
 ironic_conductor_service_name: openstack-ironic-conductor
 ironic_conductor_pidfile: /var/run/ironic/openstack-ironic-conductor.pid
+
+# EPEL repository for auxiliary packages (shellinabox)
+ironic_conductor_os_aux_repo_url: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+ironic_conductor_os_aux_repo_key: "/etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-{{ ansible_distribution_major_version }}"
 ironic_conductor_shellinabox_service_name: shellinaboxd
 
 ironic_api_service_name: openstack-ironic-api
@@ -11,21 +15,22 @@ ironic_api_pidfile: /var/run/ironic/openstack-ironic-api.pid
 
 
 ironic_api_packages:
+  libselinux-python:
+    state: latest
   openstack-selinux:
     state: latest
   openstack-ironic-api:
     state: latest
 
 ironic_conductor_packages:
+  libselinux-python:
+    state: latest
   openstack-selinux:
     state: latest
   openstack-ironic-conductor:
     state: latest
 
-# epel-release for shellinabox
 ironic_conductor_packages_aux:
-  epel-release:
-    state: latest
   ipmitool:
     state: latest
   qemu-img:

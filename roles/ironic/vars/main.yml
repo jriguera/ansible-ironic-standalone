@@ -17,6 +17,10 @@ ironic_packages_update_cache: 1800
 
 ironic_conductor_service_name: ironic-conductor
 ironic_conductor_pidfile: /var/run/ironic/ironic-conductor.pid
+
+# Repository for auxiliary packages (shellinabox)
+ironic_conductor_os_aux_repo_url:
+ironic_conductor_os_aux_repo_key:
 ironic_conductor_shellinabox_service_name: shellinabox
 
 ironic_api_service_name: ironic-api
