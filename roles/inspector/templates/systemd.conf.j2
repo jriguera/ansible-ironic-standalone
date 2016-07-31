@@ -1,4 +1,7 @@
 [Service]
+PermissionsStartOnly=true
+{% if (ironic_inspector_pidfile | dirname != '/var/run') and (ironic_inspector_pidfile | dirname != '/run') %}
+ExecStartPre=/bin/sh -c 'mkdir -p {{ ironic_inspector_pidfile | dirname }} && chown {{ ironic_inspector_user }}:{{ ironic_inspector_group }} {{ ironic_inspector_pidfile | dirname }}'
+{% endif %}
 ExecStartPost=/bin/sh -c 'sleep 5 && pgrep -u {{ ironic_inspector_user }} ironic-inspecto > {{ ironic_inspector_pidfile }}'
 ExecStopPost=/bin/rm -f {{ ironic_inspector_pidfile }}
-

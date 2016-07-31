@@ -100,14 +100,6 @@
       mode: 0644
     register: __ironic_inspector_systemd
 
-  - name: Create pid folder
-    file:
-      path: "{{ ironic_inspector_pidfile | dirname }}"
-      owner: "{{ ironic_inspector_user }}"
-      group: "{{ ironic_inspector_group }}"
-      mode: 0775
-      state: directory
-
   - name: Delete upstart configuration
     file: path="/etc/init/{{ ironic_inspector_service_name }}.conf" state=absent
 
