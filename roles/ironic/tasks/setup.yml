@@ -32,17 +32,6 @@
     ironic_log is defined and 
     ironic_log != 'syslog'
 
-- name: Create lock folder
-  file:
-    path: "{{ ironic_oslo_concurrency_lock_path }}"
-    owner: "{{ ironic_user }}"
-    group: "{{ ironic_group }}"
-    mode: 0755
-    state: directory
-  when: >
-    ironic_oslo_concurrency_lock_path is defined
-    and ironic_oslo_concurrency_lock_path is not none 
-
 - name: Downloading syslinux tarball from url
   get_url:
     checksum: "{{ ironic_pxe_syslinux_tarball_checksum }}"
