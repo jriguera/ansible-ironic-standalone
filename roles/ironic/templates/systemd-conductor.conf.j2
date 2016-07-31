@@ -1,4 +1,7 @@
 [Service]
+PermissionsStartOnly=true
+{% if (ironic_conductor_pidfile | dirname != '/var/run') and (ironic_conductor_pidfile | dirname != '/run') %}
+ExecStartPre=/bin/sh -c 'mkdir -p {{ ironic_conductor_pidfile | dirname }} && chown {{ ironic_user }}:{{ ironic_group }} {{ ironic_conductor_pidfile | dirname }}'
+{% endif %}
 ExecStartPost=/bin/sh -c 'sleep 5 && pgrep -u {{ ironic_user }} ironic-conducto > {{ ironic_conductor_pidfile }}'
 ExecStopPost=/bin/rm -f {{ ironic_conductor_pidfile }}
-

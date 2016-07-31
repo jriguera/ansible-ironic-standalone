@@ -31,14 +31,6 @@
   ignore_errors: yes
   when: _ironic_api_reinstalled
 
-- name: Create pid folder
-  file:
-    path: "{{ ironic_api_pidfile | dirname }}"
-    owner: "{{ ironic_user }}"
-    group: "{{ ironic_group }}"
-    mode: 0755
-    state: directory
-
 
 - block:
   - name: Create custom systemd folder configuration
