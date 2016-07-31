@@ -11,6 +11,8 @@ mysql_config_file: /etc/my.cnf
 mysql_socket: /var/lib/mysql/mysql.sock
 
 mysql_packages_dict:
+  libselinux-python:
+    state: latest
   mysql-community-server:
     version: "{{ mysql_version }}*"
   MySQL-python:
