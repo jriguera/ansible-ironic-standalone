@@ -1,4 +1,6 @@
 [Service]
-ExecStartPost=/bin/sh -c 'sleep 1 && pgrep -u {{ dnsmasq_user }} dnsmasq > {{ dnsmasq_pidfile }}'
+{% if (dnsmasq_pidfile | dirname != '/var/run') and (dnsmasq_pidfile | dirname != '/run') %}
+ExecStartPre=/bin/sh -c 'mkdir -p {{ dnsmasq_pidfile | dirname }}'
+{% endif %}
+ExecStartPost=/bin/sh -c 'sleep 2 && pgrep -u {{ dnsmasq_user }} dnsmasq > {{ dnsmasq_pidfile }}'
 ExecStopPost=/bin/rm -f {{ dnsmasq_pidfile }}
-
