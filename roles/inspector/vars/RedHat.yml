@@ -6,6 +6,8 @@ ironic_inspector_service_name: openstack-ironic-inspector
 ironic_inspector_pidfile: /var/run/ironic-inspector/ironic-inspector.pid
 
 ironic_inspector_packages:
+  libselinux-python:
+    state: latest
   openstack-selinux:
     state: latest
   openstack-ironic-inspector:
