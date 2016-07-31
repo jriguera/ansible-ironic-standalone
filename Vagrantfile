@@ -95,12 +95,12 @@ Vagrant.configure(2) do |config|
     master.vm.provision "shell", inline: <<-SHELL
 	if [ -f /etc/debian_version ]; then
                 export DEBIAN_FRONTEND=noninteractive
-  		apt-get update
-        	sudo apt-get upgrade -y
+                apt-get update
+                sudo apt-get upgrade -y
                 apt-get install -y python python-pip
 	elif [ -f /etc/redhat-release ]; then
-  		yum -y install epel-release
-  		yum -y update
+                yum -y install epel-release
+                yum -y update
                 yum -y install python-pip
 	fi
         # Otherwise ironic-conductor fails to start
@@ -112,7 +112,7 @@ Vagrant.configure(2) do |config|
     config.vm.provision "vbox", type: "local_shell", command: "VBoxManage setproperty websrvauthlibrary null && pgrep vboxwebsrv || vboxwebsrv &> /dev/null"
 
     master.vm.provision "ansible" do |ansible|
-  	ansible.playbook = "site.yml"
+        ansible.playbook = "site.yml"
         #ansible.verbose = "vvv"
         #ansible.raw_arguments = "--list-task"
     end
