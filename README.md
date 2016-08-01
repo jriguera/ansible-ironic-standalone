@@ -16,6 +16,9 @@ This repository uses tags!
 | v3.x | Mitaka (2016.5)   | 5.1.n          | v1.x -> v3.x, V2.x -> V3.x |
 
 
+For more information about Ironic go to:
+http://docs.openstack.org/developer/ironic/deploy/install-guide.html
+
 
 ## Thanks
 
