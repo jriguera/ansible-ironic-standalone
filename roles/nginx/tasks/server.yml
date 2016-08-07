@@ -1,7 +1,10 @@
 ---
 - name: Delete default vhost
   file: path="{{ nginx_default_server_path }}" state=absent
-  when: nginx_remove_default_server
+  when: >
+    nginx_remove_default_server and
+    nginx_default_server_path is defined and
+    not nginx_default_server_path is none
   notify: reload nginx
   tags: ["delete"]
 
@@ -18,6 +21,20 @@
     file: path="{{ nginx_auth_dir }}/{{ item.name }}.conf" state=absent
     with_items: "{{ nginx_server_list }}"
     when: item.delete is defined and item.delete
+
+  # Delete lua files
+  - name: Delete referenced lua files
+    file:
+      path: "{{ nginx_lua_dir }}/{{ item.1 | basename }}"
+      state: absent
+    when: >
+      nginx_lua and
+      (item.0.delete is defined and item.0.delete)
+    with_subelements:
+      - "{{ nginx_server_list }}"
+      - lua_files
+      - flags:
+        skip_missing: True
 
   - name: Delete vhost location authentication file if exists
     file: path="{{ nginx_auth_dir }}/{{ item.0.name }}_{{ item.1.name | hash('md5') }}.conf" state=absent
@@ -90,6 +107,24 @@
       - location_list
       - flags:
         skip_missing: True
+
+  # Copy lua files
+  - name: Copy referenced lua files
+    copy:
+      src: "{{ item.1 }}"
+      dest: "{{ nginx_lua_dir }}/{{ item.1 | basename }}"
+      owner: "{{ nginx_user }}"
+      group: "{{ nginx_group }}"
+      mode: 0644
+    when: >
+      nginx_lua and
+      not (item.0.delete is defined and item.0.delete)
+    with_subelements:
+      - "{{ nginx_server_list }}"
+      - lua_files
+      - flags:
+        skip_missing: True
+    notify: reload nginx
 
   - name: Add vhost servers
     template:

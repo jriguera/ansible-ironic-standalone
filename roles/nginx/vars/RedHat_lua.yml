@@ -1,0 +1,26 @@
+---
+nginx_os_repo_url: "https://copr-be.cloud.fedoraproject.org/results/openresty/openresty/epel-7-$basearch/"
+nginx_os_repo_key: "https://copr-be.cloud.fedoraproject.org/results/openresty/openresty/pubkey.gpg"
+
+nginx_os_packages: False
+
+nginx_pidfile: /usr/local/openresty/nginx/logs/nginx.pid
+nginx_config_dir: /usr/local/openresty/nginx/conf
+nginx_config_file: /usr/local/openresty/nginx/conf/nginx.conf
+nginx_ssl_dir: /usr/local/openresty/nginx/conf/ssl
+nginx_sites_dir: /usr/local/openresty/nginx/conf/sites-enabled
+nginx_confd_dir: /usr/local/openresty/nginx/conf/conf.d
+nginx_auth_dir: /usr/local/openresty/nginx/conf/auth.d
+# nginx_default_server_path:
+nginx_lib_dir: /usr/local/openresty/nginx
+nginx_lua_dir: /usr/local/openresty/nginx/lua
+
+nginx_daemon: openresty
+
+nginx_user: "nobody"
+nginx_group: "nobody"
+
+nginx_packages:
+  openresty:
+    state: latest
+

@@ -9,7 +9,13 @@
 
 - name: Include OS specific variables
   include_vars: "{{ ansible_os_family }}.yml"
+  when: not nginx_lua
   tags: ["distribution", "packages", "service", "nginx"]
+
+- name: Include OS specific variables for lua
+  include_vars: "{{ ansible_os_family }}_lua.yml"
+  when: nginx_lua
+  tags: ["distribution", "packages", "service", "nginx", "lua"]
 
 - include: install.yml
   tags: ["nginx", "install"]

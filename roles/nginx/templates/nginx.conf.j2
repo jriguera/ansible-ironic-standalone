@@ -70,6 +70,21 @@ http {
     access_log off;
 {% endif %}
 
+{% if nginx_lua is defined and nginx_lua %}
+    # Lua options
+    lua_package_path {{ nginx_lua_package_path }};
+    lua_code_cache {{ nginx_lua_code_cache | default('on') }};
+    {% if nginx_lua_init_by is defined %}
+    init_by_lua '{{ nginx_lua_init_by }}';
+    {% endif %}
+    {% if nginx_lua_init_by_file is defined %}
+    init_by_lua_file {{ nginx_lua_dir }}/{{ nginx_lua_init_by_file }};
+    {% endif %}
+    {% if nginx_lua_shared_dict is defined %}
+    lua_shared_dict {{ lua_shared_dict }};
+    {% endif %}
+{% endif %}
+
 {% if nginx_gzip is defined and nginx_gzip %}
     # Gzip module options
     gzip on;

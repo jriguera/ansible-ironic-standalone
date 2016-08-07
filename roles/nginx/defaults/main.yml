@@ -42,6 +42,14 @@ nginx_resolver_timeout: "5s"
 #nginx_access_log_format: '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" "$http_x_forwarded_for"'
 nginx_access_log_params: "buffer=16k"
 
+# Lua
+nginx_lua: false
+nginx_lua_package_path: "{{ nginx_lua_dir }}/?.lua"
+nginx_lua_code_cache: "on"
+#nginx_lua_init_by: 'cjson = require "cjson"'
+#nginx_lua_init_by_file: file.lua
+#nginx_lua_shared_dict: 'dogs 1m'
+
 # Gzip options:
 nginx_gzip: true
 nginx_gzip_comp_level: 1

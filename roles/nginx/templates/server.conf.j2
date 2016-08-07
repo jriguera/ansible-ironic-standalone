@@ -18,6 +18,9 @@ upstream {{ item.name }} {
 {% if item.upstream.keepalive is defined %}
         keepalive {{ item.upstream.keepalive }};
 {% endif %}
+{% if item.upstream.balancer_by_lua_file is defined %}
+        balancer_by_lua_file {{ item.upstream.balancer_by_lua_file }};
+{% endif %}
 }
 {% endif %}
 
@@ -60,7 +63,6 @@ server {
     rewrite {{ rw }};
 {% endfor %}
 {% endif %}
-
 {% if item.return is defined %}
     return {{ item.return }};
 {% endif %}
@@ -73,6 +75,8 @@ server {
 {% elif p == 'auth' %}
         auth_basic "{{ v.title | default('Restricted') }}";
         auth_basic_user_file {{ nginx_auth_dir }}/{{ item.name }}_{{ location.name | hash('md5') }}.conf;
+{% elif p | match('.*_by_lua_file') %}
+        {{ p }} {{ nginx_lua_dir }}/{{ v }};
 {% elif v is string or v is number %}
         {{ p }} {{ v }};
 {% else %}

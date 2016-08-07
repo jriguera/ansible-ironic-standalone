@@ -20,4 +20,6 @@ nginx_confd_dir: /etc/nginx/conf.d
 nginx_auth_dir: /etc/nginx/auth.d
 nginx_default_server_path: /etc/nginx/sites-enabled/default
 nginx_lib_dir: /var/lib/nginx
+nginx_log_dir: /var/log/nginx
+nginx_lua_dir: /var/lib/nginx/lua
 

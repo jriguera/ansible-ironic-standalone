@@ -11,6 +11,9 @@
     - "{{ nginx_sites_dir }}"
     - "{{ nginx_auth_dir }}"
     - "{{ nginx_lib_dir }}"
+    - "{{ nginx_lua_dir }}"
+    - "{{ nginx_config_dir }}"
+    - "{{ nginx_log_dir }}"
 
 - name: Create proxy cache path
   file:
@@ -41,9 +44,22 @@
     owner: "{{ nginx_user }}"
     group: "{{ nginx_group }}"
     mode: 0644
-    validate: 'nginx -t -c %s'
+    validate: '{{ nginx_daemon }} -t -c %s'
   notify: reload nginx
   register: __nginx_updated_global
+
+# Lua
+- name: Copy init by lua file
+  copy:
+    src: "{{ nginx_lua_init_by_file }}"
+    dest: "{{ nginx_lua_dir }}/{{ nginx_lua_init_by_file | basename }}"
+    owner: "{{ nginx_user }}"
+    group: "{{ nginx_group }}"
+    mode: 0644
+  when: >
+    nginx_lua and
+    nginx_lua_init_by_file is defined and
+    not nginx_lua_init_by_file is none
 
 
 # SSL
@@ -57,7 +73,7 @@
       mode: 0640
     when: >
       nginx_ssl_certificate is defined and
-      not nginx_ssl_certificate is none  
+      not nginx_ssl_certificate is none
 
   - name: Copy ssl certificate key
     copy:
