@@ -89,8 +89,8 @@ nginx_server_list: []
 #        try_files: "$uri $uri/ 404"
 #        auth:
 #           title: "Restricted"
-#            users:
-#               jose: $(openssl passwd -apr1 password)
+#           users:
+#              jose: $(openssl passwd -apr1 password)
 
 # Another example with vhost auth
 #nginx_server_list:
