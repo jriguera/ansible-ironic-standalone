@@ -69,12 +69,16 @@ server {
 {% for location in item.location_list %}
     location {{ location.name }} {
 {% for (p, v) in location.iteritems() %}
-{% if p != 'name' and  p != 'auth' %}
-       {{ p }} {{ v }};
-{% endif %}
-{% if p == 'auth' %}
-       auth_basic "{{ v.title | default('Restricted') }}";
-       auth_basic_user_file {{ nginx_auth_dir }}/{{ item.name }}_{{ location.name | hash('md5') }}.conf;
+{% if p == 'name' %}
+{% elif p == 'auth' %}
+        auth_basic "{{ v.title | default('Restricted') }}";
+        auth_basic_user_file {{ nginx_auth_dir }}/{{ item.name }}_{{ location.name | hash('md5') }}.conf;
+{% elif v is string or v is number %}
+        {{ p }} {{ v }};
+{% else %}
+{% for t in v %}
+        {{ p }} {{ t }};
+{% endfor %}
 {% endif %}
 {% endfor %}
     }
