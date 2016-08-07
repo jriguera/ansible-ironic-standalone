@@ -111,11 +111,15 @@
           tftp: "{{ ironic_pxe_tftp_root }}"
 
     - role: nginx
+      nginx_lua: True
       nginx_server_list:
         - name: "{{ ansible_hostname }}"
           root: "{{ baremetal_server_http_root_path }}"
           client_body_temp_path: "{{ baremetal_server_http_root_path }}/tmp"
           access_log: "/var/log/nginx/{{ ansible_hostname }}-server_access.log"
+          lua_files: 
+            - "files/bosh_webdav_lua_registry/webdav-registry.lua"
+            - "files/bosh_webdav_lua_registry/JSON.lua"
           location_list:
             - name: "/"
               autoindex: "on"
@@ -143,6 +147,24 @@
               dav_access: "user:rw group:rw all:r"
               dav_methods: "PUT DELETE MKCOL COPY MOVE"
               default_type: "application/octet-stream"
+              satisfy: "any"
+              allow:
+                - "127.0.0.0/24"
+                - "{{ ansible_default_ipv4.address }}"
+              auth:
+                title: "Restricted Metadata"
+                users:
+                  jose: "{PLAIN}hola"
+            - name: "/registry/"
+              autoindex: "off"
+              default_type: "application/json"
+              client_max_body_size: "10M"
+              content_by_lua_file: "webdav-registry.lua"
+              auth:
+                title: "BOSH Registry Auth"
+                users:
+                  jose: "{PLAIN}hola"
+
 
     - role: webclient
       webclient_webdir_owner: "{{ nginx_user }}"
