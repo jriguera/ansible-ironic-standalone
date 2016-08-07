@@ -56,6 +56,9 @@ http {
     server_names_hash_max_size {{ nginx_server_names_hash_max_size }};
 {% endif %} 
 
+    # Time combined format
+    log_format timed_combined '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_time $upstream_response_time $pipe';
+
 {% if nginx_access_log is defined and nginx_access_log | trim != 'off' -%}
 {% if nginx_access_log_format is defined and not nginx_access_log_format is none %}
     log_format defined '{{ nginx_access_log_format }}';
@@ -66,7 +69,7 @@ http {
 {% else %}
     access_log off;
 {% endif %}
- 
+
 {% if nginx_gzip is defined and nginx_gzip %}
     # Gzip module options
     gzip on;
