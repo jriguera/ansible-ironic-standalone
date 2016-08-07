@@ -19,4 +19,5 @@ nginx_sites_dir: /etc/nginx/sites-enabled
 nginx_confd_dir: /etc/nginx/conf.d
 nginx_auth_dir: /etc/nginx/auth.d
 nginx_default_server_path: /etc/nginx/sites-enabled/default
+nginx_lib_dir: /var/lib/nginx
 
