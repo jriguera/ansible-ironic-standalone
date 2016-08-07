@@ -25,12 +25,17 @@
 
 # RedHat repository
 - block:
-  - name: RedHat - Add repository
-    yum: name="{{ nginx_os_repo_url }}" state=present
+   - name: RedHat - Add repository
+     yum: name="{{ nginx_os_repo_url }}" state=present
+     when: nginx_os_repo_url | match(".*\.rpm$")
 
-  - name: RedHat - Import repository key
-    rpm_key: key="{{ nginx_os_repo_key }}" state=present
-    when: nginx_os_repo_key is not none
+   - name: RedHat - Import repository key
+     rpm_key: key="{{ nginx_os_repo_key }}" state=present
+     when: nginx_os_repo_key is not none
+
+   - name: RedHat - Add repository url
+     yum_repository: name=nginx baseurl="{{ nginx_os_repo_url }}" description=Nginx
+     when: not nginx_os_repo_url | match(".*\.rpm$")
 
   when: >
       ansible_os_family == 'RedHat'
