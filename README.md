@@ -33,10 +33,9 @@ included with the role `webclient`.
 
 # Requirements
 
-Just Ansible 2.0. Due to some nasty bugs in ansible 2, it is recommended update
-to the latest version, specially for running on Ubuntu Xenial.
+Ansible 2.1. See `requirements.txt`.
 
-There is no backwards compatibility with previous ansible versions, but it is 
+There is no backwards compatibility with previous Ansible versions, but it is 
 safe run the roles against a previous installation deployed with  Ansible 1.9. 
 For the client playbooks `add-baremetal` and `del-baremetal` you also have to 
 install the Ironic client package on the server where they will run. No local 
@@ -84,22 +83,24 @@ when they run for first time, just uninstall the packages and delete the main
 configuration file to get a clean installation and try again.
 
 
-There are 4 main playbooks here:
+There are 5 main playbooks here:
 
- * `setup-ironic` to deploy a real server configuring all the software. 
+ * `setup-ironic.yml` to deploy a real server configuring all the software. 
  Probably you will have to adapt some parameters there like dnsmasq 
  interfaces (e.g. *eth1*, *em1* ...). The rest of the parameters 
  (IP's, DNS, ...) are defined in the Ansible inventory (see *hosts/allinone*)
  and/or in *group_vars* folder.
- * `add-baremetal` to manually define and deploy a server with Ironic. 
+ * `add-baremetal.yml` to manually define and deploy a server with Ironic. 
  When it runs, it will ask you for an id (name) which has to match to a file 
  with a server parameters definition (IPMI, networks, bonding ...) in *servers*
  folder (optionally you can also define a *.cloudconfig* configuration in the
  same way).
- * `del-baremetal` to delete a server defined in Ironic with the previous
+ * `del-baremetal.yml` to delete a server defined in Ironic with the previous
  playbook. When it runs, it will power off the server and remove it from Ironic.
  It does not trigger additional cleaning steps like wipe the disks.
  * `site.yml` and `add-vbox.yml` just for a demo with Vagrant, see below.
+ * `setup-ironic-boshregistry.yml` is the same as `setup-ironic` plus
+ a Lua implementation for BOSH Registry using Nginx or OpenResty (in Centos/RH).
 
 
 Notes:
@@ -154,6 +155,18 @@ Notes:
  * Because of the amount of packages and also because it downloads the official
  Coreos IPA image automatically (~250 MB) you will need a decent internet 
  connection and about 30 minutes to get everything deployed. Be patient.
+
+ * BOSH Registry support via Nginx Lua (`setup-ironic-boshregistry.yml` playbook). 
+ It offers a BOSH Registry API to store the BOSH Agent settings in the WebDAV 
+ *metadata* folder. More details in the section below and in 
+ https://github.com/jriguera/bosh-ironic-cpi-release, for more information about 
+ how to use BOSH, go to https://bosh.io . This implementation uses Nginx compiled 
+ with Lua so in case of Debian distributions, `nginx-extras` from the official 
+ repositories will be installed, for Centos/RedHat the `nginx` role will define 
+ the OpenResty (https://openresty.org/en/) repository and it will install it.
+ OpenResty is compatible with Nginx, but the location of the binaries and 
+ configuration files is different in Centos/RH. If you do not use BOSH you
+ do not need to run this playbook.
 
 
 ## Running on Vagrant
@@ -298,7 +311,50 @@ point to the proper server. In the same way, you can split the API vs Conductor
 services in different servers to create a cluster of Conductors.
 
 
-## RedHat Enterprise Linux
+
+## About BOSH
+
+BOSH is an open source tool for release engineering, deployment, lifecycle 
+management, and monitoring of distributed systems (taken from http://bosh.io/)
+BOSH makes possible managing software in a completely abstract way from
+the underlaying infrastructure. The same BOSH release is valid on OpenStack,
+VMware, AWS, CloudStack, ... which is pretty awesome. The idea is having
+a deterministic way to define and deploy distributed software in the new
+cloud infrastructures.
+
+The integration is done by implementing the BOSH Registry API in Lua with a
+WebDAV backend on the `/metadata/` location, where the ConfigDrive is saved.
+Registry provides the persistent configuration needed by the BOSH Agent      
+to setup/configure the server, in the same way that Cloud-Init does (it is a
+similar idea, but BOSH Agent is limited, while Cloud-Init is a flexible 
+general purpose tool). Also, the cloud config format for the BOSH Agent is not 
+compatible with Cloud-Init, it is really simple, the most important field is 
+the URL to the Registry. The registry is a JSON structure (`settings` file) 
+specifying the networking, the disks, the NATS queue ... for example, every 
+time BOSH creates a disk for a server it writes the configuration in the 
+Registry (for the server) and tells the agent (via NATS) to read it.
+
+A Cloud Provider Interface (CPI) is an API that BOSH uses to interact with
+the underlaying infrastructue to manage the resources. The CPI
+https://github.com/jriguera/bosh-ironic-cpi-release is a Python program
+which translates BOSH requests in Ironic requests and uses Nginx as
+WebDAV backend to store the Stemcells (QCOW2 Images with BOSH Agent
+installed). To run it:
+
+ 1. Adjust the Registry user and/or password defined in the playbook 
+ `setup-ironic-boshregistry.yml`. Instead of defining those settings in 
+ the playbook, you can also do it in `host_groups`. 
+
+ 2. Run `ansible-playbook -i hosts/allinone setup-ironic-boshregistry.yml`
+
+ 3. Define the CPI properties to point to the Ironic server.
+
+
+More information about the CPI in https://github.com/jriguera/bosh-ironic-cpi-release
+
+
+
+## About RedHat Enterprise Linux
 
 Due to the fact EPEL repositories are needed in the installation, on RedHat is 
 needed to enable the *optional* repository to use EPEL packages as they depend 
