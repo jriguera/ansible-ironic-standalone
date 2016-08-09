@@ -101,19 +101,49 @@
     - role: nginx
       nginx_lua: True
       nginx_server_list:
-        lua_files: 
-          - "files/bosh_webdav_lua_registry/webdav-registry.lua"
-          - "files/bosh_webdav_lua_registry/JSON.lua"
-        location_list:
-          - name: "/registry/"
-            autoindex: "off"
-            default_type: "application/json"
-            client_max_body_size: "10M"
-            content_by_lua_file: "webdav-registry.lua"
-            auth:
-              title: "BOSH Registry Auth"
-              users:
-                jose: "{PLAIN}hola"
+        - name: "{{ ansible_hostname }}"
+          lua_files:
+            - "files/bosh_webdav_lua_registry/webdav-registry.lua"
+            - "files/bosh_webdav_lua_registry/JSON.lua"
+          root: "{{ baremetal_server_http_root_path }}"
+          client_body_temp_path: "{{ baremetal_server_http_root_path }}/tmp"
+          access_log: "/var/log/nginx/{{ ansible_hostname }}-server_access.log"
+          location_list:
+            - name: "/"
+              autoindex: "on"
+            - name: "/images/"
+              autoindex: "on"   
+              client_body_buffer_size: "16k"
+              client_max_body_size: "50G"
+              create_full_put_path: "on"
+              dav_access: "user:rw group:rw all:r"
+              dav_methods: "PUT DELETE MKCOL COPY MOVE"
+              default_type: "application/octet-stream"
+            - name: "/metadata/"
+              autoindex: "on"
+              client_body_buffer_size: "16k"
+              client_max_body_size: "100M"
+              create_full_put_path: "on"
+              dav_access: "user:rw group:rw all:r"
+              dav_methods: "PUT DELETE MKCOL COPY MOVE"
+              default_type: "application/octet-stream"
+            - name: "/deploy/"
+              autoindex: "on"
+              client_body_buffer_size: "16k"
+              client_max_body_size: "100M"
+              create_full_put_path: "on"
+              dav_access: "user:rw group:rw all:r"
+              dav_methods: "PUT DELETE MKCOL COPY MOVE"
+              default_type: "application/octet-stream"
+            - name: "/registry/"
+              autoindex: "off"
+              default_type: "application/json"
+              client_max_body_size: "10M"
+              content_by_lua_file: "webdav-registry.lua"
+              auth:
+                title: "BOSH Registry Auth"
+                users:
+                  jose: "{PLAIN}hola"
 
     - role: webclient
     - role: monit
