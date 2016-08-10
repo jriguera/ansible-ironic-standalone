@@ -98,6 +98,8 @@
             - "{{ ironic_pxe_bootfile_name }}"
           tftp: "{{ ironic_pxe_tftp_root }}"
 
+    # Nginx with LUA support for BOSH registry (see /registry location)
+    # It will overwrite the variables defined in the group_vars.
     - role: nginx
       nginx_lua: True
       nginx_server_list:
@@ -143,7 +145,7 @@
               auth:
                 title: "BOSH Registry Auth"
                 users:
-                  jose: "{PLAIN}hola"
+                  bosh: "{PLAIN}hola"
 
     - role: webclient
     - role: monit
