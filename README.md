@@ -99,8 +99,9 @@ There are 5 main playbooks here:
  playbook. When it runs, it will power off the server and remove it from Ironic.
  It does not trigger additional cleaning steps like wipe the disks.
  * `site.yml` and `add-vbox.yml` just for a demo with Vagrant, see below.
- * `setup-ironic-boshregistry.yml` is the same as `setup-ironic` plus
- a Lua implementation for BOSH Registry using Nginx or OpenResty (in Centos/RH).
+ * `setup-ironic-boshregistry.yml` does the same as `setup-ironic` plus
+ deploys a Lua implementation for BOSH Registry API using Nginx or OpenResty 
+ (in Centos/RHEL).
 
 
 Notes:
@@ -156,18 +157,19 @@ Notes:
  Coreos IPA image automatically (~250 MB) you will need a decent internet 
  connection and about 30 minutes to get everything deployed. Be patient.
 
- * BOSH Registry support via Nginx Lua (`setup-ironic-boshregistry.yml` playbook). 
- It offers a BOSH Registry API to store the BOSH Agent settings in the WebDAV 
- *metadata* folder. More details in the section below and in 
- https://github.com/jriguera/bosh-ironic-cpi-release, for more information about 
- how to use BOSH, go to https://bosh.io . This implementation uses Nginx compiled 
- with Lua so in case of Debian distributions, `nginx-extras` from the official 
- repositories will be installed, for Centos/RedHat the `nginx` role will define 
- the OpenResty (https://openresty.org/en/) repository and it will install it.
- OpenResty is compatible with Nginx, but the location of the binaries and 
- configuration files is different in Centos/RH. If you do not use BOSH you
- do not need to run this playbook.
-
+ * [BOSH](https://bosh.io) Registry support via Nginx Lua (using `setup-ironic-boshregistry.yml` 
+ playbook and `files/bosh_webdav_lua_registry` Lua files). It offers a BOSH 
+ Registry API to store the BOSH Agent settings using the WebDAV *metadata* 
+ location. More details in the section below and in 
+ https://github.com/jriguera/bosh-ironic-cpi-release. This implementation 
+ relies on Nginx compiled with Lua, so in case of Debian distributions, 
+ `nginx-extras` from the official repositories will be installed, for 
+ Centos/RedHat the `nginx` role will define the [OpenResty](https://openresty.org/en/)
+ repository and it will install the package. OpenResty is compatible with Nginx, 
+ but the location of the binaries and configuration files is different in 
+ Centos/RH. If you do not use BOSH you do not need to run this playbook. 
+ Those packages will be installed only if the parameter `nginx_lua` is True 
+ (defined on the `nginx` role).
 
 ## Running on Vagrant
 
@@ -323,7 +325,7 @@ a deterministic way to define and deploy distributed software in the new
 cloud infrastructures.
 
 The integration is done by implementing the BOSH Registry API in Lua with a
-WebDAV backend on the `/metadata/` location, where the ConfigDrive is saved.
+WebDAV backend on the `/metadata` location, where the ConfigDrive is saved.
 Registry provides the persistent configuration needed by the BOSH Agent      
 to setup/configure the server, in the same way that Cloud-Init does (it is a
 similar idea, but BOSH Agent is limited, while Cloud-Init is a flexible 
@@ -342,16 +344,55 @@ WebDAV backend to store the Stemcells (QCOW2 Images with BOSH Agent
 installed). To run it:
 
  1. Adjust the Registry user and/or password defined in the playbook 
- `setup-ironic-boshregistry.yml`. Instead of defining those settings in 
- the playbook, you can also do it in `host_groups`. 
+ `setup-ironic-boshregistry.yml` acording to the BOSH Director set-up 
+ (instead of defining those settings in the playbook, you can also do 
+ it in `host_groups`, or even via the inventory). 
 
  2. Run `ansible-playbook -i hosts/allinone setup-ironic-boshregistry.yml`
 
- 3. Define the CPI properties to point to the Ironic server.
+The implementation is in `files/bosh_webdav_lua_registry/webdav-registry.lua`
+an it relies on Nginx with Lua support. For Debian/Ubuntu is already provided 
+via `nginx-extras` package from the official repositories. Centos/RHEL does 
+not provide Nignx with Lua support directly, so the Nginx role will define 
+[OpenResty](https://openresty.org) (an Nginx compilation with Lua support) 
+repositories and it will install it.
 
+Note: Be carefull defining Auth Basic for */metadata* endpoint. It is used
+by the Ironic IPA process while a server is being deployed to get the 
+Config-Drive configuration. If Auth Basic is defined, you have to make aware the
+IPA client of the authentication process. Also, in this situation you have
+to define the following *allow* rules to permit the `webdav-registry.lua` reach 
+the local metadata endpoint (because it does not support authentication):
+
+```
+            - name: "/metadata/"
+              autoindex: "on"
+              client_body_buffer_size: "16k" 
+              client_max_body_size: "100M"
+              create_full_put_path: "on"
+              dav_access: "user:rw group:rw all:r"
+              dav_methods: "PUT DELETE MKCOL COPY MOVE"
+              default_type: "application/octet-stream"
+              satisfy: "any"
+              allow:
+                - "127.0.0.0/24"
+                - "{{ ansible_default_ipv4.address }}"
+              auth:
+                title: "Restricted Metadata"
+                users:
+                  metadatauser: "{PLAIN}password"
+            - name: "/registry/"
+              autoindex: "off"
+              default_type: "application/json"
+              client_max_body_size: "10M"
+              content_by_lua_file: "webdav-registry.lua"
+              auth:
+                title: "BOSH Registry Auth"
+                users:
+                  registry: "{PLAIN}password"
+```
 
 More information about the CPI in https://github.com/jriguera/bosh-ironic-cpi-release
-
 
 
 ## About RedHat Enterprise Linux
