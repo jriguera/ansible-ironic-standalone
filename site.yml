@@ -131,7 +131,7 @@
               dav_access: "user:rw group:rw all:r"
               dav_methods: "PUT DELETE MKCOL COPY MOVE"
               default_type: "application/octet-stream"
-            - name: "/metadata/"
+            - name: "/deploy/"
               autoindex: "on"
               client_body_buffer_size: "16k" 
               client_max_body_size: "100M"
@@ -139,7 +139,7 @@
               dav_access: "user:rw group:rw all:r"
               dav_methods: "PUT DELETE MKCOL COPY MOVE"
               default_type: "application/octet-stream"
-            - name: "/deploy/"
+            - name: "/metadata/"
               autoindex: "on"
               client_body_buffer_size: "16k" 
               client_max_body_size: "100M"
@@ -154,7 +154,7 @@
               auth:
                 title: "Restricted Metadata"
                 users:
-                  jose: "{PLAIN}hola"
+                  metadata: "{PLAIN}hola"
             - name: "/registry/"
               autoindex: "off"
               default_type: "application/json"
@@ -163,7 +163,7 @@
               auth:
                 title: "BOSH Registry Auth"
                 users:
-                  jose: "{PLAIN}hola"
+                  boshagent: "{PLAIN}hola"
 
 
     - role: webclient
