@@ -9,13 +9,14 @@
     mode: 0775
     state: directory
 
+
 - block:
   - name: Downloading IPA Coreos ramdisk (~250 MB)
     get_url:
       checksum: "{{ ironic_pxe_ipa_img_checksum }}"
       url: "{{ ironic_pxe_ipa_img_url }}"
       dest: "{{ ironic_deploy_http_root }}/{{ ironic_pxe_ipa_img_name }}"
-    
+
   - name: Downloading IPA Coreos kernel (~25 MB)
     get_url:
       checksum: "{{ ironic_pxe_ipa_kernel_checksum }}"
@@ -33,4 +34,30 @@
       - "{{ ironic_deploy_http_root }}/{{ ironic_pxe_ipa_img_name }}"
 
   when: ironic_pxe_ipa_download
+
+
+- block:
+  - name: Tiny Core Ironic Python Agent ramdisk (~40 MB)
+    get_url:
+      checksum: "{{ ironic_pxe_tinyipa_img_checksum }}"
+      url: "{{ ironic_pxe_tinyipa_img_url }}"
+      dest: "{{ ironic_deploy_http_root }}/{{ ironic_pxe_tinyipa_img_name }}"
+
+  - name: Tiny Core Ironic Python Agent kernel (~4 MB)
+    get_url:
+      checksum: "{{ ironic_pxe_tinyipa_kernel_checksum }}"
+      url: "{{ ironic_pxe_tinyipa_kernel_url }}"
+      dest: "{{ ironic_deploy_http_root }}/{{ ironic_pxe_tinyipa_kernel_name }}"
+
+  - name: Change permissions
+    file:
+      path: "{{ item }}"
+      group: "{{ ironic_group }}"
+      mode: 0664
+      state: file
+    with_items:
+      - "{{ ironic_deploy_http_root }}/{{ ironic_pxe_tinyipa_kernel_name }}"
+      - "{{ ironic_deploy_http_root }}/{{ ironic_pxe_tinyipa_img_name }}"
+
+  when: ironic_pxe_tinyipa_download
 

@@ -203,6 +203,15 @@ ironic_pxe_ipa_kernel_url: "http://tarballs.openstack.org/ironic-python-agent/co
 ironic_pxe_ipa_kernel_checksum: "sha1:7c1f31fba3747197fc8356f03aa4ad7372ba643e"
 ironic_pxe_ipa_kernel_name: "coreos_production_pxe.vmlinuz"
 
+# Tiny Core Ironic Python Agent
+ironic_pxe_tinyipa_download: True
+ironic_pxe_tinyipa_img_url: "https://tarballs.openstack.org/ironic-python-agent/tinyipa/files/tinyipa-stable-{{ ironic_release }}.gz"
+ironic_pxe_tinyipa_img_checksum: "sha1:76359be3a943694097797e9a945b18723955b7c6"
+ironic_pxe_tinyipa_img_name: "tinyipa-master.gz"
+ironic_pxe_tinyipa_kernel_url: "https://tarballs.openstack.org/ironic-python-agent/tinyipa/files/tinyipa-stable-{{ ironic_release }}.vmlinuz"
+ironic_pxe_tinyipa_kernel_checksum: "sha1:1a936929b57a8d3f1ccc378d241103c5f1b93097"
+ironic_pxe_tinyipa_kernel_name: "tinyipa-master.vmlinuz"
+
 # Enabling iPXE
 ironic_ipxe: False
 # If defined, it will copy the file
