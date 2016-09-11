@@ -238,7 +238,7 @@ referenced locally).
 Also remember that the client needs these environment variables to get it
 working:
 ```
-export OS_AUTH_TOKEN=" "
+export OS_AUTH_TOKEN="fake"
 export IRONIC_URL=http://localhost:6385/
 ```
 They are automatically defined by in the vagrant provisioning (but not on the
@@ -437,7 +437,7 @@ Here you can see the typical workflow with the client playbooks. The playbooks
 do not need environment variables, but the Ironic client does:
 
 ```
-export OS_AUTH_TOKEN=" "
+export OS_AUTH_TOKEN="fake"
 export IRONIC_URL=http://<server>:6385/
 ```
 
