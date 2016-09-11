@@ -42,7 +42,7 @@ baremetal_server_inspector_default_pxe=True
 
 
 # Client variables (for the add-* and del-* playbooks)
-baremetal_ironic_token=" "
+baremetal_ironic_token="fake"
 baremetal_configdrive=True
 # Define a ssh key for default cloud user
 baremetal_ssh_key="ssh-rsa AAAAU+v.... FLV admin@automation"

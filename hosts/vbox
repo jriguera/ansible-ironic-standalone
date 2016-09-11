@@ -21,7 +21,7 @@ baremetal_server_images_path=/var/lib/ironic/http/images
 baremetal_server_images_deploy_path=/var/lib/ironic/http/deploy
 baremetal_server_configdrive_path="/var/lib/ironic/http/metadata"
 # Client variables
-baremetal_ironic_token=" "
+baremetal_ironic_token="fake"
 baremetal_domain=vbox.local
 baremetal_nameservers=[ "8.8.8.8" ]
 baremetal_ssh_key="ssh-rsa AAAAB3NzaC1yc2EAAAADAQAB...tion"
