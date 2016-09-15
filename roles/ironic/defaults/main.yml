@@ -206,7 +206,7 @@ ironic_pxe_ipa_kernel_name: "coreos_production_pxe.vmlinuz"
 # Tiny Core Ironic Python Agent
 ironic_pxe_tinyipa_download: True
 ironic_pxe_tinyipa_img_url: "https://tarballs.openstack.org/ironic-python-agent/tinyipa/files/tinyipa-stable-{{ ironic_release }}.gz"
-ironic_pxe_tinyipa_img_checksum: "sha1:76359be3a943694097797e9a945b18723955b7c6"
+ironic_pxe_tinyipa_img_checksum: "sha1:c71dfa31c970a7b3d81e4153c668b2451f058aac"
 ironic_pxe_tinyipa_img_name: "tinyipa-master.gz"
 ironic_pxe_tinyipa_kernel_url: "https://tarballs.openstack.org/ironic-python-agent/tinyipa/files/tinyipa-stable-{{ ironic_release }}.vmlinuz"
 ironic_pxe_tinyipa_kernel_checksum: "sha1:1a936929b57a8d3f1ccc378d241103c5f1b93097"
