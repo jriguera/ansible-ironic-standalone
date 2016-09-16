@@ -72,6 +72,10 @@
 
     - name: Delete config-drive from the repository
       file:
-        path: "{{ baremetal_server_metadata_path }}/{{ _baremetal_new[0] | trim }}"
+        path: "{{ baremetal_server_metadata_path }}/{{ item }}"
         state: absent
+      with_items:
+        - "{{ _baremetal_new[0] | trim }}"
+        - "{{ _baremetal_new[0] | trim }}.gz"
+
 
