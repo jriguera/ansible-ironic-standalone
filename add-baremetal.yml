@@ -5,7 +5,7 @@
 # http://docs.ansible.com/ansible/os_ironic_module.html
 
 - name: Define and deploy physical servers using Ironic
-  hosts: ironic
+  hosts: allinone
   become: True
   gather_facts: True
   vars_files:
@@ -48,6 +48,7 @@
     - name: Check if servername configdrive exists
       local_action: stat path="servers/{{ id }}.cloudconfig"
       register: _configdrive_config_user_data_path
+      become: False
       when: >
         baremetal_configdrive and
         (configdrive_config_user_data_path is not defined or not _configdrive_config_user_data_path.stat.exists)

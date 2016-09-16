@@ -41,7 +41,7 @@ baremetal_ssh_key="ssh-rsa AAAAU+v.... FLV admin@automation"
 
 
 [client]
-localhost ansible_connection=local
+localhost ansible_connection=local ansible_become=false
 
 
 [allinone]

@@ -5,7 +5,7 @@
 # http://docs.ansible.com/ansible/os_ironic_module.html
 
 - name: Poweroff and delete servers using Ironic
-  hosts: ironic
+  hosts: allinone
   become: True
   gather_facts: True
   vars_files:
