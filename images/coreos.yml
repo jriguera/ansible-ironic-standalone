@@ -6,9 +6,9 @@ baremetal_driver: "agent_ipmitool"
 baremetal_deploy_kernel: "file://{{ baremetal_server_images_deploy_path }}/coreos_production_pxe.vmlinuz"
 baremetal_deploy_ramdisk: "file://{{ baremetal_server_images_deploy_path }}/coreos_production_pxe_image-oem.cpio.gz"
 
-# Depends on the image
-baremetal_image_type: "Debian"
-baremetal_image: "http://{{ baremetal_server_repository_url }}/images/coreos_production_openstack_image.qcow2"
+# In this case baremetal_image_type is not needed because it is using cloud-config
+baremetal_image_type: ""
+baremetal_image: "{{ baremetal_server_repository_url }}/images/coreos_production_openstack_1122.2.0.qcow2"
 baremetal_image_checksum:
 baremetal_image_kernel:
 baremetal_image_ramdisk:
