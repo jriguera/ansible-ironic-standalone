@@ -1,6 +1,7 @@
 ---
 configdrive_content_tmproot_dir: "_"
 configdrive_voume_name: "config-2"
+configdrive_os_network_path:
 
 configdrive_required_packages:
   genisoimage:

@@ -10,6 +10,9 @@
 - name: Include OS specific variables
   include_vars: "{{ configdrive_os_family }}.yml"
   tags: ["distribution"]
+  when: >
+    configdrive_os_family is defined
+    and configdrive_os_family|trim != ""
 
 - name: Setup configdrive instance folder
   set_fact: configdrive_instance_dir="{{ configdrive_uuid }}"
