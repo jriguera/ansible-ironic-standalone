@@ -19,7 +19,7 @@ baremetal_server_inspector_database_pass=mysql
 # Change the IPs!
 baremetal_server_ironic_api="http://{{ ansible_default_ipv4.address }}:6385/"
 baremetal_server_inspector_api="http://{{ ansible_default_ipv4.address }}:5050/v1/"
-baremetal_server_repository_url="http://{{ ansible_default_ipv4.address }}/"
+baremetal_server_repository_url="http://{{ ansible_default_ipv4.address }}"
 # Leasing time can be only one hour because the static ips
 # can be defined with configdrive. This is only for the time
 # when the server is being deployed
