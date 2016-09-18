@@ -3,8 +3,12 @@
 baremetal_driver: "agent_ipmitool"
 
 # Folder relative to the servers
+#baremetal_deploy_kernel: "file://{{ baremetal_server_images_deploy_path }}/coreos_production_pxe-master.vmlinuz"
+#baremetal_deploy_ramdisk: "file://{{ baremetal_server_images_deploy_path }}/coreos_production_pxe_image-oem-master.cpio.gz"
 baremetal_deploy_kernel: "file://{{ baremetal_server_images_deploy_path }}/coreos_production_pxe.vmlinuz"
 baremetal_deploy_ramdisk: "file://{{ baremetal_server_images_deploy_path }}/coreos_production_pxe_image-oem.cpio.gz"
+#baremetal_deploy_kernel: "file://{{ baremetal_server_images_deploy_path }}/tinyipa-master.vmlinuz"
+#baremetal_deploy_ramdisk: "file://{{ baremetal_server_images_deploy_path }}/tinyipa-master.gz"
 
 # In this case baremetal_image_type is not needed because it is using cloud-config
 baremetal_image_type: ""
