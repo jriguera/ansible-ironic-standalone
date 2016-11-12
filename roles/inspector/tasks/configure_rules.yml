@@ -1,9 +1,8 @@
 ---
-# Load from files
-- include_vars: defaults/discovery_rules_deploy.yml
-- include_vars: defaults/discovery_rules_ipmi.yml
-- include_vars: defaults/discovery_rules.yml
-
+# defaults/discovery_rules_deploy.yml
+# defaults/discovery_rules_ipmi.yml
+# defaults/discovery_rules.yml
+# Now all variables of those files are also defined in defaults/main.yml to make it compatible with all ansible versions
 
 - name: Wait 15 seconds until Ironic-Inspector is ready
   command: sleep 10
