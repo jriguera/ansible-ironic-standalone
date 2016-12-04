@@ -6,6 +6,5 @@
     group: "{{ webclient_webdir_group }}"
     owner: "{{ webclient_webdir_owner }}"
     mode: 0664
-  when: >
-    webclient_config_list is defined
-    and webclient_config_list is not none
+  when: webclient_config_list is defined and webclient_config_list
+
