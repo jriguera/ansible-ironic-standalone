@@ -11,7 +11,7 @@ ironic_inspector_debug: False
 ironic_inspector_trace: False
 
 # Main settings
-ironic_inspector_api_url: "http://127.0.0.1:5050/v1/"
+ironic_inspector_api_url: "http://{{ ansible_default_ipv4.address }}:5050/v1/"
 ironic_inspector_listen_address: "0.0.0.0"
 ironic_inspector_listen_port: 5050
 ironic_inspector_timeout: 3600
@@ -23,6 +23,10 @@ ironic_inspector_introspection_delay: 5
 ironic_inspector_log: "/var/log/ironic-inspector/inspector.log"
 ironic_inspector_publish_errors: True
 ironic_inspector_fatal_deprecations: False
+ironic_inspector_watch_log_file: False
+
+# Capabilities
+ironic_inspector_capabilities_boot_mode: True
 
 # Define these vars for mysql connection:
 #ironic_inspector_database_mysql_host: "localhost"
@@ -37,23 +41,35 @@ ironic_inspector_database_pool_size: 10
 ironic_inspector_database_use_db_reconnect: True
 
 # How to contact Ironic API to define the server
-ironic_inspector_ironic_api_url: "http://127.0.0.1:6385/"
+ironic_inspector_ironic_api_url: "http://{{ ansible_default_ipv4.address }}:6385/"
 ironic_inspector_ironic_os_service_type: "baremetal"
 ironic_inspector_ironic_os_endpoint_type: "internalURL"
+#ironic_inspector_ironic_domain_name:
+#ironic_inspector_ironic_project_name:
+#ironic_inspector_ironic_username:
+#ironic_inspector_ironic_password:
 
 # Manage the rules defined in the discovery_rules*.yml files
 ironic_inspector_discovery_manage_rules: True
+
 # IPA ramdisk and kernel definition for inspection
 ironic_inspector_ipa_download: True
 ironic_inspector_ipa_deploy_path: "/var/lib/ironic/images"
-ironic_inspector_ipa_ramdisk_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem-stable-{{ ironic_inspector_release }}.cpio.gz"
-ironic_inspector_ipa_ramdisk_checksum: "sha1:435f974d6cd21101a140151af1a9fc239835f901"
-ironic_inspector_ipa_ramdisk: "coreos_production_pxe_image-oem.cpio.gz"
-ironic_inspector_ipa_kernel_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe-stable-{{ ironic_inspector_release }}.vmlinuz"
-ironic_inspector_ipa_kernel_checksum: "sha1:7c1f31fba3747197fc8356f03aa4ad7372ba643e"
-ironic_inspector_ipa_kernel: "coreos_production_pxe.vmlinuz"
 ironic_inspector_ipa_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
 ironic_inspector_ipa_tftproot: "/var/lib/ironic/tftpboot"
+# IPA (Coreos or tinyIPA)
+#ironic_inspector_ipa_ramdisk_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem-stable-{{ ironic_inspector_release }}.cpio.gz"
+#ironic_inspector_ipa_ramdisk_checksum: "sha1:c998ed71ddb4f535b6dde2dd1c77099ec0f9c425"
+#ironic_inspector_ipa_ramdisk: "coreos_production_pxe_image-oem.cpio.gz"
+#ironic_inspector_ipa_kernel_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe-stable-{{ ironic_inspector_release }}.vmlinuz"
+#ironic_inspector_ipa_kernel_checksum: "sha1:934b1fd795557fd7b8b684507cfef008eeb664d9"
+#ironic_inspector_ipa_kernel: "coreos_production_pxe.vmlinuz"
+ironic_inspector_ipa_ramdisk_url: "https://tarballs.openstack.org/ironic-python-agent/tinyipa/files/tinyipa-stable-{{ ironic_release }}.gz"
+ironic_inspector_ipa_ramdisk_checksum: "sha1:4b87ca3b4353a99f84f449890c68a5b0122eeacb"
+ironic_inspector_ipa_ramdisk: "tinyipa-master.gz"
+ironic_inspector_ipa_kernel_url: "https://tarballs.openstack.org/ironic-python-agent/tinyipa/files/tinyipa-stable-{{ ironic_release }}.vmlinuz"
+ironic_inspector_ipa_kernel_checksum: "sha1:1a936929b57a8d3f1ccc378d241103c5f1b93097"
+ironic_inspector_ipa_kernel: "tinyipa-master.vmlinuz"
 
 # If enabled it will create the pxelinux.cfg folder with a  default entry
 # to automatically offer PXE boot to all servers when they boot. If they are not
@@ -86,13 +102,15 @@ ironic_inspector_processing_add_ports: "all"
 ironic_inspector_processing_keep_ports: "all"
 ironic_inspector_processing_overwrite_existing: True
 ironic_inspector_processing_enable_setting_ipmi_credentials: False
-ironic_inspector_processing_default_processing_hooks: ["ramdisk_error", "root_disk_selection", "scheduler", "validate_interfaces"]
+ironic_inspector_processing_default_processing_hooks: ["ramdisk_error", "root_disk_selection", "scheduler", "validate_interfaces", "capabilities", "pci_devices"]
+#ironic_inspector_processing_processing_hooks:
 ironic_inspector_processing_node_not_found_hook: "enroll"
 ironic_inspector_processing_ramdisk_logs_dir: "/var/log/ironic-inspector"
 ironic_inspector_processing_always_store_ramdisk_logs: False
 ironic_inspector_processing_store_data_location: "inspection"
 ironic_inspector_processing_disk_partitioning_spacing: True
 ironic_inspector_processing_log_bmc_address: True
+ironic_inspector_processing_power_off: True
 
 # Define auth_uri to use keystone authentication, otherwise
 # noauth will be assumed
@@ -100,10 +118,6 @@ ironic_inspector_keystone_authtoken_auth_uri:
 ironic_inspector_keystone_authtoken_region_name: "RegionOne"
 ironic_inspector_keystone_authtoken_auth_version: 2
 ironic_inspector_keystone_authtoken_delay_auth_decision: False
-ironic_inspector_keystone_authtoken_identity_uri:
-ironic_inspector_keystone_authtoken_service_user: "admin"
-ironic_inspector_keystone_authtoken_service_password: "admin"
-ironic_inspector_keystone_authtoken_service_tenant_name: "admin"
 
 # Manage FW on the PXE host, disabled
 ironic_inspector_firewall_manage: False
@@ -111,17 +125,15 @@ ironic_inspector_firewall_interface: "{{ ansible_default_ipv4.interface }}"
 ironic_inspector_firewall_update_period: 15
 ironic_inspector_firewall_chain: "ironic-inspector"
 
-# If swift_os_auth_url is not none, it will be used for storing introspection data. 
+# If swift_auth_url is not none, it will be used for storing introspection data. 
 # otherwise introspection data will not be stored.
-ironic_inspector_swift_os_auth_url:
-ironic_inspector_swift_os_auth_version: 2
+#ironic_inspector_swift_auth_url:
+#ironic_inspector_swift_domain_name:
+#ironic_inspector_swift_project_name:
+#ironic_inspector_swift_username:
+#ironic_inspector_swift_password:
 ironic_inspector_swift_delete_after: 600
 ironic_inspector_swift_container: "ironic-inspector"
-ironic_inspector_swift_username: "admin"
-ironic_inspector_swift_password:
-ironic_inspector_swift_tenant_name: "admin"
-ironic_inspector_swift_os_service_type: "object-store"
-ironic_inspector_swift_os_endpoint_type: "internalURL"
 
 # CORS: http://docs.openstack.org/developer/oslo.middleware/cors.html
 #ironic_inspector_cors_allowed_origin: "*"
@@ -136,114 +148,15 @@ ironic_inspector_swift_os_endpoint_type: "internalURL"
 #     allowed_origin: "http://localhost:8080"
 #     allow_credentials: True
 
-
-
 # Rules to apply when a new node is discovered
 # http://docs.openstack.org/developer/ironic-inspector/http-api.html
 # https://github.com/openstack/ironic-inspector/blob/master/doc/source/usage.rst
-
-# NOTE: If you change a rule but not its name, it wont be applied
-# because the Ansible task only checks if it exists by name, not by
-# the content. You can delete all the rules before running ansible with
-# curl -X DELETE http://localhost:5050/v1/rules
-# or fill the UUID of the rules in the variable defined at the bottom
-# of the file discovery_rules.yml. (the intention behind that file is
-# define your custom rules)
-# You can check the rules defined with curl -X GET http://localhost:5050/v1/rules
-
 # Default rules to apply when a new node is defined (enroll)
-ironic_inspector_discovery_enroll_deploy:
-  - description: "Set initial driver_info if not defined on node"
-    conditions:
-      - op: "is-empty"
-        field: "node://driver_info"
-    actions:
-      - action: "set-attribute"
-        path: "driver_info/deploy_kernel"
-        value: "{{ ironic_inspector_discovery_enroll_deploy_kernel }}"
-      - action: "set-attribute"
-        path: "driver_info/deploy_ramdisk"
-        value: "{{ ironic_inspector_discovery_enroll_deploy_ramdisk }}"
-  - description: "Set driver_info.deploy_ramdisk if empty"
-    conditions:
-      - op: "is-empty"
-        field: "node://driver_info.deploy_ramdisk"
-    actions:
-      - action: "set-attribute"
-        path: "driver_info/deploy_ramdisk"
-        value: "{{ ironic_inspector_discovery_enroll_deploy_ramdisk }}"
-  - description: "Set driver_info.deploy_kernel if empty"
-    conditions:
-      - op: "is-empty"
-        field: "node://driver_info.deploy_kernel"
-    actions:
-      - action: "set-attribute"
-        path: "driver_info/deploy_kernel"
-        value: "{{ ironic_inspector_discovery_enroll_deploy_kernel }}"
-
-
-
-# Rules to apply when a new node is discovered
-# http://docs.openstack.org/developer/ironic-inspector/http-api.html
-# https://github.com/openstack/ironic-inspector/blob/master/doc/source/usage.rst
-
-# NOTE: If you change a rule but not its name, it wont be applied
-# because the Ansible task only checks if it exists by name, not by
-# the content. You can delete all the rules before running ansible with
-# curl -X DELETE http://localhost:5050/v1/rules
-# or fill the UUID of the rules in the variable defined at the bottom
-# of the file discovery_rules.yml. (the intention behind that file is
-# define your custom rules)
-# You can check the rules defined with curl -X GET http://localhost:5050/v1/rules
-
+ironic_inspector_discovery_enroll_deploy: []
 # Define the IPMI seetings for the new nodes
-ironic_inspector_discovery_enroll_ipmi:
-  - description: "Set IPMI driver_info if no credentials"
-    conditions:
-      - op: "is-empty"
-        field: "node://driver_info.ipmi_username"
-    actions:
-      - action: "set-attribute"
-        path: "driver_info/ipmi_username"
-        value: "{{ ironic_inspector_discovery_enroll_ipmi_username }}"
-      - action: "set-attribute"
-        path: "driver_info/ipmi_password"
-        value: "{{ ironic_inspector_discovery_enroll_ipmi_password }}"
-
-
-
-# Rules to apply when a new node is discovered
-# http://docs.openstack.org/developer/ironic-inspector/http-api.html
-# https://github.com/openstack/ironic-inspector/blob/master/doc/source/usage.rst
-
-# NOTE: If you change a rule but not its name, it wont be applied
-# because the Ansible task only checks if it exists by name, not by
-# the content. You can delete all the rules before running ansible with
-# curl -X DELETE http://localhost:5050/v1/rules
-# or fill the UUID of the rules in the variable defined at the bottom of this
-# file. The intention behind this file is define your custom rules
-# You can check the rules defined with curl -X GET http://localhost:5050/v1/rules
-
-# This rules will be applied even if not automatic enrollment (default PXE boot)
-# is enabled. The rest of discovery_rules will be applied only when
-# ironic_inspector_discovery_enroll is True
-
+ironic_inspector_discovery_enroll_ipmi: []
 # Define your additional discovery rules
-ironic_inspector_discovery_enroll_rules:
-  - description: "Add extra discovery hardware information to extra field"
-    conditions: []
-    actions:
-      - action: "set-attribute"
-        path: "extra/disks"
-        value: "{data[inventory][disks]}"
-      - action: "set-attribute"
-        path: "extra/cpu"
-        value: "{data[inventory][cpu]}"
-      - action: "set-attribute"
-        path: "extra/system_vendor"
-        value: "{data[inventory][system_vendor]}"
+ironic_inspector_discovery_enroll_rules: []
+# Define rules to be deleted (by uuid or by description)
+ironic_inspector_discovery_enroll_rules_delete: []
 
-
-# Define rules to be deleted (by uuid)
-ironic_inspector_discovery_enroll_rules_delete:
-#  - uuid: "9ed96141-dc44-4c0c-ad77-ff2c4e7cb521"
