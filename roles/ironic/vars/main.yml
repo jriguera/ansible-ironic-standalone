@@ -1,13 +1,9 @@
 ---
 # Install from upstream repos or directly from operating system packages
 # (True for Xenial, False otherwise)
-ironic_os_packages: "{{
-    True if
-            (ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '16')
-            or (ansible_distribution == 'Debian' and ansible_distribution_major_version == '8')
-    else False
-}}"
-ironic_release: "mitaka"
+ironic_os_packages: True
+
+ironic_release: "newton"
 ironic_os_repo_url:
 ironic_os_repo_key:
 ironic_packages_install_recommends: True
@@ -33,11 +29,35 @@ ironic_config_file: /etc/ironic/ironic.conf
 ironic_config_dir: /etc/ironic/
 ironic_var_dir: /var/lib/ironic/
 
+ironic_pxe_ipa_img_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem-stable-{{ ironic_release }}.cpio.gz"
+ironic_pxe_ipa_img_checksum: "sha1:c998ed71ddb4f535b6dde2dd1c77099ec0f9c425"
+ironic_pxe_ipa_img_name: "coreos_production_pxe_image-oem.cpio.gz"
+ironic_pxe_ipa_kernel_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe-stable-{{ ironic_release }}.vmlinuz"
+ironic_pxe_ipa_kernel_checksum: "sha1:934b1fd795557fd7b8b684507cfef008eeb664d9"
+ironic_pxe_ipa_kernel_name: "coreos_production_pxe.vmlinuz"
+
+ironic_pxe_tinyipa_img_url: "https://tarballs.openstack.org/ironic-python-agent/tinyipa/files/tinyipa-stable-{{ ironic_release }}.gz"
+ironic_pxe_tinyipa_img_checksum: "sha1:4b87ca3b4353a99f84f449890c68a5b0122eeacb"
+ironic_pxe_tinyipa_img_name: "tinyipa-master.gz"
+ironic_pxe_tinyipa_kernel_url: "https://tarballs.openstack.org/ironic-python-agent/tinyipa/files/tinyipa-stable-{{ ironic_release }}.vmlinuz"
+ironic_pxe_tinyipa_kernel_checksum: "sha1:1a936929b57a8d3f1ccc378d241103c5f1b93097"
+ironic_pxe_tinyipa_kernel_name: "tinyipa-master.vmlinuz"
+
 ironic_syslinux_basedir: /var/lib/ironic/pxeutils
+
 ironic_pxe_syslinux_version: "6.03"
 ironic_pxe_syslinux_tarball_checksum: "sha1:d215372c664109258dbc18b64e699afe1a4aaedd"
 ironic_pxe_syslinux_tarball_url: "https://www.kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.gz"
-ironic_pxe_elilo_version: "3.16"
+
 ironic_pxe_elilo_tarball_url: "http://heanet.dl.sourceforge.net/project/elilo/elilo/elilo-3.16/elilo-3.16-all.tar.gz"
 ironic_pxe_elilo_tarball_checksum: "sha1:bd0bd4f1b3dc2d23a304f957ffbf907ae104f323"
+ironic_pxe_shim_tarball_url: "http://archive.ubuntu.com/ubuntu/pool/main/s/shim-signed/shim-signed_1.12.tar.xz"
+ironic_pxe_shim_tarball_checksum: "sha1:efe6213e393e9b715a92290b2b08cc1ad4221bf1"
+ironic_pxe_grub2_url: "http://archive.ubuntu.com/ubuntu/dists/xenial/main/uefi/grub2-amd64/current/grubnetx64.efi.signed"
+ironic_pxe_grub2_checksum: "sha1:f7dfa0cf34e98477aa9278ba82efa26dc8d2d2f3"
+
+#ironic_pxe_ipxe_checksum:
+ironic_pxe_ipxe_url: "http://boot.ipxe.org/undionly.kpxe"
+#ironic_pxe_ipxe_uefi_checksum:
+ironic_pxe_ipxe_uefi_url: "http://boot.ipxe.org/ipxe.efi"
 

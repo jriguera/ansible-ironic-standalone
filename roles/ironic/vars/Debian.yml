@@ -1,4 +1,6 @@
 ---
+ironic_os_packages: False
+
 ironic_os_repo_url: "deb http://ubuntu-cloud.archive.canonical.com/ubuntu {{ ansible_distribution_release }}-updates/{{ ironic_release }} main"
 ironic_os_repo_key: "ubuntu-cloud-keyring"
 
