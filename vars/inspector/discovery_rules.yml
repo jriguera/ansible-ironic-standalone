@@ -1,0 +1,37 @@
+---
+# Rules to apply when a new node is discovered
+# http://docs.openstack.org/developer/ironic-inspector/http-api.html
+# https://github.com/openstack/ironic-inspector/blob/master/doc/source/usage.rst
+
+# NOTE: If you change a rule but not its name, it wont be applied
+# because the Ansible task only checks if it exists by name, not by
+# the content. You can delete all the rules before running ansible with
+# curl -X DELETE http://localhost:5050/v1/rules
+# or fill the UUID of the rules in the variable defined at the bottom of this
+# file. The intention behind this file is define your custom rules
+# You can check the rules defined with curl -X GET http://localhost:5050/v1/rules
+
+# This rules will be applied even if not automatic enrollment (default PXE boot)
+# is enabled. The rest of discovery_rules will be applied only when
+# ironic_inspector_discovery_enroll is True
+
+# Define your additional discovery rules
+ironic_inspector_discovery_enroll_rules:
+
+  - description: "Add extra discovery hardware information to extra field"
+    conditions: []
+    actions:
+      - action: "set-attribute"
+        path: "/extra/disks"
+        value: "{data[inventory][disks]}"
+      - action: "set-attribute"
+        path: "/extra/cpu"
+        value: "{data[inventory][cpu]}"
+      - action: "set-attribute"
+        path: "/extra/system_vendor"
+        value: "{data[inventory][system_vendor]}"
+
+# Define rules to be deleted (by uuid or by description)
+#ironic_inspector_discovery_enroll_rules_delete:
+#  - description: "Set IPMI address if empty"
+#  - uuid: "9ed96141-dc44-4c0c-ad77-ff2c4e7cb521"
