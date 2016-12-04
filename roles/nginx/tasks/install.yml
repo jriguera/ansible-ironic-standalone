@@ -2,44 +2,49 @@
 # Debian repository
 - block:
   - name: Debian - Import repository key
-    apt_key: url="{{ nginx_os_repo_key }}" state=present
-    when: >
-      not nginx_os_repo_key is none and
-      nginx_os_repo_key | search("http://.*")
+    apt_key:
+      url: "{{ nginx_os_repo_key }}"
+      state: present
+    when: nginx_os_repo_key and nginx_os_repo_key | search("http://.*")
     ignore_errors: yes
 
   - name: Debian - Add repository package
-    apt: name="{{ nginx_os_repo_key }}" state=latest
-    when: >
-      not nginx_os_repo_key is none and
-      not nginx_os_repo_key | search("http://.*")
+    apt:
+      name: "{{ nginx_os_repo_key }}"
+      state: latest
+    when: nginx_os_repo_key and not nginx_os_repo_key | search("http://.*")
 
   - name: Debian - Add repository url
-    apt_repository: repo="{{ nginx_os_repo_url }}" state=present
+    apt_repository:
+      repo: "{{ nginx_os_repo_url }}"
+      state: present
 
-  when: >
-    ansible_os_family == 'Debian' 
-    and not nginx_os_packages
+  when: ansible_os_family == 'Debian' and not nginx_os_packages
   tags: ["debian", "repository"]
 
 
 # RedHat repository
 - block:
-   - name: RedHat - Add repository
-     yum: name="{{ nginx_os_repo_url }}" state=present
+   - name: RedHat - Add repository url
+     yum:
+       name: "{{ nginx_os_repo_url }}"
+       state: present
      when: nginx_os_repo_url | match(".*\.rpm$")
 
    - name: RedHat - Import repository key
-     rpm_key: key="{{ nginx_os_repo_key }}" state=present
+     rpm_key:
+       key: "{{ nginx_os_repo_key }}"
+       state: present
      when: nginx_os_repo_key is not none
 
    - name: RedHat - Add repository url
-     yum_repository: name=nginx baseurl="{{ nginx_os_repo_url }}" description=Nginx
+     yum_repository:
+       name: nginx
+       baseurl: "{{ nginx_os_repo_url }}"
+       description: Nginx
      when: not nginx_os_repo_url | match(".*\.rpm$")
 
-  when: >
-      ansible_os_family == 'RedHat'
-      and not nginx_os_packages
+  when: ansible_os_family == 'RedHat' and not nginx_os_packages
   tags: ["redhat", "repository"]
 
 
@@ -66,31 +71,14 @@
   tags: ["debian", "packages"]
 
 - name: Check if packages were installed
-  set_fact: _nginx_reinstalled="{{ __nginx_installed_rh.changed or __nginx_installed_debian.changed }}"
+  set_fact:
+    _nginx_reinstalled: "{{ __nginx_installed_rh.changed or __nginx_installed_debian.changed }}"
 
 - name: Ensure nginx is stopped after initial install
-  service: name={{ nginx_daemon }} state=stopped enabled=no
+  service:
+    name: "{{ nginx_daemon }}"
+    state: stopped
+    enabled: no
   ignore_errors: yes
   when: _nginx_reinstalled
-
-- name: Get init system
-  command: cat /proc/1/comm
-  register: __nginx_init_system
-  changed_when: False
-
-- name: Set init system
-  set_fact: nginx_init_system="{{ __nginx_init_system.stdout }}"
-
-- block:
-  - name: Create custom systemd folder configuration
-    file:
-      path: "/etc/systemd/system/{{ nginx_daemon }}.service.d"
-      state: directory
-      mode: 0755
-
-  - name: Delete upstart configuration
-    file: path="/etc/init/{{ nginx_daemon }}.conf" state=absent
-
-  when: nginx_init_system == 'systemd'
-  tags: ["systemd", "init"]
 

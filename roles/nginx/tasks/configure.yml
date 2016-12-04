@@ -22,10 +22,8 @@
     group: "{{ nginx_group }}"
     mode: 0755
     state: directory
-  when: >
-    nginx_proxy_cache_path is defined and
-    not nginx_proxy_cache_path is none
-  
+  when: nginx_proxy_cache_path is defined and nginx_proxy_cache_path
+
 - name: Create proxy temp path
   file:
     path: "{{ nginx_proxy_temp_path | first }}"
@@ -33,9 +31,7 @@
     group: "{{ nginx_group }}"
     mode: 0755
     state: directory
-  when: >
-    nginx_proxy_temp_path is defined and
-    not nginx_proxy_temp_path is none
+  when: nginx_proxy_temp_path is defined and nginx_proxy_temp_path
 
 - name: Create global nginx configuration
   template:
@@ -49,49 +45,46 @@
   register: __nginx_updated_global
 
 # Lua
-- name: Copy init by lua file
+- name: Copy global init_by_lua file
   copy:
     src: "{{ nginx_lua_init_by_file }}"
     dest: "{{ nginx_lua_dir }}/{{ nginx_lua_init_by_file | basename }}"
     owner: "{{ nginx_user }}"
     group: "{{ nginx_group }}"
     mode: 0644
-  when: >
-    nginx_lua and
-    nginx_lua_init_by_file is defined and
-    not nginx_lua_init_by_file is none
+  when: nginx_lua and nginx_lua_init_by_file is defined and nginx_lua_init_by_file
 
 
 # SSL
 - block:
-  - name: Copy ssl certificate
+  - name: Copy SSL certificate
     copy:
       src: "{{ nginx_ssl_certificate }}"
       dest: "{{ nginx_ssl_dir }}/{{ nginx_ssl_certificate | basename }}"
       owner: "{{ nginx_user }}"
       group: "{{ nginx_group }}"
       mode: 0640
-    when: >
-      nginx_ssl_certificate is defined and
-      not nginx_ssl_certificate is none
+    when: nginx_ssl_certificate is defined and nginx_ssl_certificate
 
-  - name: Copy ssl certificate key
+  - name: Copy SSL certificate key
     copy:
       src: "{{ nginx_ssl_certificate_key }}"
       dest: "{{ nginx_ssl_dir }}/{{ nginx_ssl_certificate_key | basename }}"
       owner: "{{ nginx_user }}"
       group: "{{ nginx_group }}"
       mode: 0640
-    when: >
-      nginx_ssl_certificate_key is defined and
-      not nginx_ssl_certificate_key is none
-  
+    when: nginx_ssl_certificate_key is defined and nginx_ssl_certificate_key
+
   tags: ["ssl"]
 
 
-- name: Checking if configuration was updated
-  set_fact: _nginx_updated="{{ __nginx_updated_global.changed }}"
+- name: Check if configuration was updated
+  set_fact:
+    _nginx_updated: "{{ __nginx_updated_global.changed }}"
 
-- name: Ensure nginx is started and enabled on boot
-  service: name="{{ nginx_daemon }}" state=started enabled="{{ nginx_enabled_on_startup | ternary('yes', 'no') }}"
+- name: Ensure nginx is started or stopped as required
+  service:
+    name: "{{ nginx_daemon }}"
+    state: "{{ nginx_enabled | ternary('started', 'stopped') }}"
+    enabled: "{{ nginx_enabled_on_startup | ternary('yes', 'no') }}"
 

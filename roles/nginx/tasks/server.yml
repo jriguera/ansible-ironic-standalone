@@ -1,24 +1,30 @@
 ---
 - name: Delete default vhost
-  file: path="{{ nginx_default_server_path }}" state=absent
+  file:
+    path: "{{ nginx_default_server_path }}"
+    state: absent
   when: >
-    nginx_remove_default_server and
-    nginx_default_server_path is defined and
-    not nginx_default_server_path is none
+    nginx_remove_default_server
+    and nginx_default_server_path is defined
+    and nginx_default_server_path
   notify: reload nginx
   tags: ["delete"]
 
 
 # Delete vhosts
 - block:
-  - name: Delete vhost servers
-    file: path="{{ nginx_sites_dir }}/{{ item.name }}.conf" state=absent
+  - name: Delete vhost definition file
+    file:
+      path: "{{ nginx_sites_dir }}/{{ item.name }}.conf"
+      state: absent
     with_items: "{{ nginx_server_list }}"
     when: item.delete is defined and item.delete
     notify: reload nginx
 
-  - name: Delete vhost authentication file if exists
-    file: path="{{ nginx_auth_dir }}/{{ item.name }}.conf" state=absent
+  - name: Delete vhost authentication file
+    file:
+      path: "{{ nginx_auth_dir }}/{{ item.name }}.conf"
+      state: absent
     with_items: "{{ nginx_server_list }}"
     when: item.delete is defined and item.delete
 
@@ -27,17 +33,17 @@
     file:
       path: "{{ nginx_lua_dir }}/{{ item.1 | basename }}"
       state: absent
-    when: >
-      nginx_lua and
-      (item.0.delete is defined and item.0.delete)
+    when: nginx_lua and (item.0.delete is defined and item.0.delete)
     with_subelements:
       - "{{ nginx_server_list }}"
       - lua_files
       - flags:
         skip_missing: True
 
-  - name: Delete vhost location authentication file if exists
-    file: path="{{ nginx_auth_dir }}/{{ item.0.name }}_{{ item.1.name | hash('md5') }}.conf" state=absent
+  - name: Delete vhost location authentication file
+    file:
+      path: "{{ nginx_auth_dir }}/{{ item.0.name }}_{{ item.1.name | hash('md5') }}.conf"
+      state: absent
     with_subelements:
       - "{{ nginx_server_list }}"
       - location_list
@@ -45,9 +51,7 @@
         skip_missing: True
     when: item.0.delete is defined and item.0.delete
 
-  when: >
-    nginx_server_list is defined and
-    not nginx_server_list is none
+  when: nginx_server_list is defined and nginx_server_list
   no_log: True
   tags: ["delete"]
 
@@ -126,7 +130,7 @@
         skip_missing: True
     notify: reload nginx
 
-  - name: Add vhost servers
+  - name: Add vhost servers configuration
     template:
       src: server.conf.j2
       dest: "{{ nginx_sites_dir }}/{{ item.name }}.conf"
@@ -137,9 +141,7 @@
     with_items: "{{ nginx_server_list }}"
     notify: reload nginx
 
-  when: >
-    nginx_server_list is defined and
-    not nginx_server_list is none
+  when: nginx_server_list is defined and nginx_server_list
   no_log: True
   tags: ["create"]
 
