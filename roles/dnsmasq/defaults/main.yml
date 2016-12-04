@@ -1,4 +1,5 @@
 ---
+dnsmasq_enabled: True
 dnsmasq_enabled_on_startup: True
 # Manage resolvconf
 dnsmasq_resolvconf: False
@@ -191,5 +192,4 @@ dnsmasq_conf_tftp_max: 50
 
 # Stop the TFTP server from negotiating the "blocksize" option with a client
 dnsmasq_conf_tftp_no_blocksize: False
-
 

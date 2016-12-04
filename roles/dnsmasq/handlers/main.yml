@@ -1,13 +1,19 @@
 ---
 - name: restart dnsmasq
-  service: name="{{ dnsmasq_daemon }}" state=restarted
-  
+  service:
+    name: "{{ dnsmasq_daemon }}"
+    state: restarted
+
 - name: reload dnsmasq
   shell: "kill -s HUP $(pgrep -u {{ dnsmasq_user }} {{ dnsmasq_daemon }})"
-  
+
 - name: start dnsmasq
-  service: name="{{ dnsmasq_daemon }}" state=started
+  service:
+    name: "{{ dnsmasq_daemon }}"
+    state: started
 
 - name: stop dnsmasq
-  service: name="{{ dnsmasq_daemon }}" state=stopped
+  service:
+    name: "{{ dnsmasq_daemon }}"
+    state: stopped
 

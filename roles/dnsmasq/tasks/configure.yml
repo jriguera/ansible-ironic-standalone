@@ -1,5 +1,5 @@
 ---
-- name: Create the config folder
+- name: Create config folder
   file:
     path: "{{ dnsmasq_config_dir }}"
     owner: "{{ dnsmasq_user }}"
@@ -7,7 +7,7 @@
     mode: 0755
     state: directory
 
-- name: Create the var folder
+- name: Create var folder
   file:
     path: "{{ dnsmasq_var_dir }}"
     owner: "{{ dnsmasq_user }}"
@@ -15,7 +15,7 @@
     mode: 0755
     state: directory
 
-- name: Create Dnsmasq log folder
+- name: Create logs folder
   file:
     path: "{{ dnsmasq_conf_log | dirname }}"
     owner: "{{ dnsmasq_user }}"
@@ -23,14 +23,14 @@
     state: directory
     mode: 0755
   when: >
-    dnsmasq_conf_log is defined and
-    dnsmasq_conf_log is not none and
-    dnsmasq_conf_log != '-' and
-    dnsmasq_conf_log | dirname != '/var/log'
+    dnsmasq_conf_log is defined
+    and dnsmasq_conf_log
+    and dnsmasq_conf_log != '-'
+    and dnsmasq_conf_log | dirname != '/var/log'
 
 
 - block:
-  - name: Create DHCP dnsmasq configuration
+  - name: Create DHCP configuration file
     template:
       src: dnsmasq.d/dhcp.conf.j2
       dest: "{{ dnsmasq_config_dir }}/dhcp.conf"
@@ -40,7 +40,7 @@
     notify: reload dnsmasq
     register: __dnsmasq_updated_dhcp
 
-  - name: Create TFTP dnsmasq configuration
+  - name: Create TFTP configuration file
     template:
       src: dnsmasq.d/tftp.conf.j2
       dest: "{{ dnsmasq_config_dir }}/tftp.conf"
@@ -51,12 +51,10 @@
     register: __dnsmasq_updated_tftp
     when: dnsmasq_tftp
 
-  when: >
-    dnsmasq_conf_dhcp is defined
-    and dnsmasq_dhcp
+  when: dnsmasq_conf_dhcp is defined and dnsmasq_dhcp
 
 
-- name: Create global dnsmasq configuration
+- name: Create global configuration file
   template:
     src: dnsmasq.conf.j2
     dest: "{{ dnsmasq_config_file }}"
@@ -67,51 +65,48 @@
   notify: reload dnsmasq
   register: __dnsmasq_updated_global
 
-- name: Create the dhcp hosts folder
-  file:
-    path: "{{ dnsmasq_config_dhcphosts | dirname }}"
-    owner: "{{ dnsmasq_user }}"
-    group: "{{ dnsmasq_group }}"
-    mode: 0755
-    state: directory
-  when: >
-    dnsmasq_conf_dhcp_hosts is defined
-    and dnsmasq_conf_dhcp_hosts is not none
 
-- name: Create dhcp hosts file from configuration
-  template:
-    src: leases.j2
-    dest: "{{ dnsmasq_config_dhcphosts }}"
-    owner: "{{ dnsmasq_user }}"
-    group: "{{ dnsmasq_group }}"
-    mode: 0644
-  when: >
-    dnsmasq_conf_dhcp_hosts is defined
-    and dnsmasq_conf_dhcp_hosts is iterable
-  notify: reload dnsmasq
+- block:
+  - name: Create DHCP static hosts folder
+    file:
+      path: "{{ dnsmasq_config_dhcphosts | dirname }}"
+      owner: "{{ dnsmasq_user }}"
+      group: "{{ dnsmasq_group }}"
+      mode: 0755
+      state: directory
+    when: dnsmasq_conf_dhcp_hosts
 
-- name: Copy dhcp hosts file if defined
-  copy:
-    src: "{{ dnsmasq_conf_dhcp_hosts }}"
-    dest: "{{ dnsmasq_config_dhcphosts | dirname }}/{{ dnsmasq_conf_dhcp_hosts | basename }}"
-    owner: "{{ dnsmasq_user }}"
-    group: "{{ dnsmasq_group }}"
-    mode: 0644
-  when: >
-    dnsmasq_conf_dhcp_hosts is defined and
-    dnsmasq_conf_dhcp_hosts is not iterable
-  notify: reload dnsmasq
+  - name: Create DHCP static host file from configuration
+    template:
+      src: leases.j2
+      dest: "{{ dnsmasq_config_dhcphosts }}"
+      owner: "{{ dnsmasq_user }}"
+      group: "{{ dnsmasq_group }}"
+      mode: 0644
+    when: dnsmasq_conf_dhcp_hosts is iterable
+    notify: reload dnsmasq
 
-- name: Copy dhcp script file
+  - name: Copy DHCP static hosts file
+    copy:
+      src: "{{ dnsmasq_conf_dhcp_hosts }}"
+      dest: "{{ dnsmasq_config_dhcphosts | dirname }}/{{ dnsmasq_conf_dhcp_hosts | basename }}"
+      owner: "{{ dnsmasq_user }}"
+      group: "{{ dnsmasq_group }}"
+      mode: 0644
+    when: dnsmasq_conf_dhcp_hosts is not iterable
+    notify: reload dnsmasq
+
+  when: dnsmasq_conf_dhcp_hosts is defined
+
+
+- name: Copy DHCP script file
   copy:
     src: "{{ dnsmasq_conf_dhcp_script }}"
     dest: "{{ dnsmasq_config_dhcpscript }}"
     owner: root
     group: root
     mode: 0775
-  when: >
-    dnsmasq_conf_dhcp_script is defined and
-    not nsmasq_conf_dhcp_script is none
+  when: dnsmasq_conf_dhcp_script is defined and nsmasq_conf_dhcp_script
 
 - name: Create additional hosts file
   template:
@@ -124,11 +119,12 @@
   notify: reload dnsmasq
 
 - name: Check if configuration was updated
-  set_fact: dnsmasq_updated="{{ __dnsmasq_updated_global.changed or __dnsmasq_updated_dhcp.changed or __dnsmasq_updated_tftp.changed }}"
+  set_fact:
+    dnsmasq_updated: "{{ __dnsmasq_updated_global.changed or __dnsmasq_updated_dhcp.changed or __dnsmasq_updated_tftp.changed }}"
 
-- name: Ensure dnsmasq is started and enabled on boot
+- name: Ensure Dnsmasq is started or stopped as required
   service:
     name: "{{ dnsmasq_daemon }}"
-    state: started
+    state: "{{ dnsmasq_enabled | ternary('started', 'stopped') }}"
     enabled: "{{ dnsmasq_enabled_on_startup | ternary('yes', 'no') }}"
 
