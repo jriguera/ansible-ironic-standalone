@@ -52,12 +52,13 @@
     - role: ironic
       ironic_debug: true
       ironic_my_ip: "{{ ansible_default_ipv4.address }}"
+      # ironic_api_public_endpoint: "http://{{ ansible_default_ipv4.address }}"
       ironic_conductor_api_url: "http://10.0.0.10:6385/"
       ironic_pxe_tftp_server: "10.0.0.10"
-      ironic_oslo_messaging_rabbit_host: "localhost"
-      ironic_oslo_messaging_rabbit_userid: "{{ baremetal_server_msg_user }}"
-      ironic_oslo_messaging_rabbit_password: "{{ baremetal_server_msg_pass }}"
-      ironic_oslo_messaging_rabbit_virtual_host: "{{ baremetal_server_msg_vhost }}"
+      ironic_messaging_host: "localhost"
+      ironic_messaging_userid: "{{ baremetal_server_msg_user }}"
+      ironic_messaging_password: "{{ baremetal_server_msg_pass }}"
+      ironic_messaging_virtual_host: "{{ baremetal_server_msg_vhost }}"
       ironic_database_mysql_host: "localhost"
       ironic_database_mysql_userid: "{{ baremetal_server_database_user }}"
       ironic_database_mysql_password: "{{ baremetal_server_database_pass }}"
@@ -98,8 +99,7 @@
     - role: dnsmasq
       dnsmasq_conf_domain: "{{ baremetal_server_dhcp_domain }}"
       dnsmasq_conf_dhcp:
-        # enp0s8 for Centos 7, eth1 for Ubuntu
-        - device: "eth1"
+        - device: "enp0s8"
           range: "{{ baremetal_server_dhcp_params }}"
           ignore_names: True
           generate_names: True
@@ -121,6 +121,12 @@
             - "files/bosh_webdav_lua_registry/webdav-registry.lua"
             - "files/bosh_webdav_lua_registry/JSON.lua"
           location_list:
+            - name: "/v1/"
+              proxy_set_header:
+                - "X-Real-IP $remote_addr"
+                - "X-Forwarded-For $proxy_add_x_forwarded_for"
+                - "Host $http_host"
+              proxy_pass: "http://10.0.0.10:6385"
             - name: "/"
               autoindex: "on"
             - name: "/images/"
@@ -164,7 +170,6 @@
                 title: "BOSH Registry Auth"
                 users:
                   boshagent: "{PLAIN}hola"
-
 
     - role: webclient
       webclient_webdir_owner: "{{ nginx_user }}"
