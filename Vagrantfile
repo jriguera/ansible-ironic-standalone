@@ -40,9 +40,7 @@ Vagrant.configure(2) do |config|
   config.vm.define "ironic" do |master|
     # Every Vagrant development environment requires a box. You can search for
     # boxes at https://atlas.hashicorp.com/search.
-    master.vm.box = "ubuntu/trusty64"
-    # For Xenial/Centos, change the vm network settings below!
-    #master.vm.box = "ubuntu/xenial64"
+    master.vm.box = "bento/ubuntu-16.04"
     # On Centos the interfaces are not eth0 ... change the playbooks!
     #master.vm.box = "bento/centos-7.2"
 
@@ -67,7 +65,6 @@ Vagrant.configure(2) do |config|
     # With Xenial the previous setting does not work, so, when vagrant up fails ... comment it out
     # and try this is the workaround:
     #master.vm.network "private_network", ip: "10.0.0.10", virtualbox__intnet: "intnet", auto_config: false
-    #master.vm.provision 'shell', inline: "echo '127.0.0.1 ubuntu-xenial' >> /etc/hosts; ifconfig enp0s8 10.0.0.10"
 
     # Create a public network, which generally matched to bridged network.
     # Bridged networks make the machine appear as another physical device on
@@ -78,7 +75,7 @@ Vagrant.configure(2) do |config|
     # the path on the host to the actual folder. The second argument is
     # the path on the guest to mount the folder. And the optional third
     # argument is a set of non-required options.
-    master.vm.synced_folder ".", "/vagrant", type: "rsync", rsync__exclude: ".vagrant/"
+    #master.vm.synced_folder ".", "/vagrant", type: "rsync", rsync__exclude: ".vagrant/"
 
     # Provider-specific configuration so you can fine-tune various
     # backing providers for Vagrant. These expose provider-specific options.
@@ -113,16 +110,16 @@ Vagrant.configure(2) do |config|
 
     master.vm.provision "ansible" do |ansible|
         ansible.playbook = "site.yml"
-        #ansible.verbose = "vvv"
+        #ansible.verbose = "vvvv"
         #ansible.raw_arguments = "--list-task"
     end
 
     # Enable provisioning with a shell script. Additional provisioners such as
     # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
     # documentation for more information about their specific syntax and use.
-    master.vm.provision "shell" do |s|
-        s.inline = $script
-    end
+#    master.vm.provision "shell" do |s|
+#        s.inline = $script
+#    end
   end
 
   config.vm.define "baremetal" do |slave|
