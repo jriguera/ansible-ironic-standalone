@@ -1,12 +1,19 @@
 ---
 - block:
   - name: Remove guest user (hostname)
-    rabbitmq_user: user=guest vhost=/ node="rabbit@{{ ansible_hostname }}" state=absent
+    rabbitmq_user:
+      user: 'guest'
+      vhost: '/'
+      node: "rabbit@{{ ansible_hostname }}"
+      state: absent
     register: __rabbitmq_rm_guest_hostname
     ignore_errors: true
 
   - name: Remove guest user (default)
-    rabbitmq_user: user=guest vhost=/ state=absent
+    rabbitmq_user:
+      user: 'guest'
+      vhost: '/'
+      state: absent
     when: __rabbitmq_rm_guest_hostname|failed
 
   when: rabbitmq_secure
@@ -38,7 +45,7 @@
     with_items: "{{ rabbitmq_users_definition_list }}"
     no_log: True
     tags: ["users"]
-  
+
   when: rabbitmq_users_definition_list is defined
   tags: ["manage"]
 
