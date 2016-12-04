@@ -1,13 +1,8 @@
 ---
 # Install from upstream repos or directly from operating system packages
-# (True for Xenial, False otherwise)
-ironic_inspector_os_packages: "{{
-    True if
-            (ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '16')
-            or (ansible_distribution == 'Debian' and ansible_distribution_major_version == '8')
-    else False
-}}"
-ironic_inspector_release: "mitaka"
+ironic_inspector_os_packages: True
+
+ironic_inspector_release: "newton"
 ironic_inspector_os_repo_url:
 ironic_inspector_os_repo_key:
 ironic_inspector_packages_install_recommends: True

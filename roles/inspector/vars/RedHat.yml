@@ -1,4 +1,6 @@
 ---
+ironic_os_packages: False
+
 ironic_inspector_os_repo_url: "http://rdo.fedorapeople.org/openstack-{{ ironic_inspector_release }}/rdo-release-{{ ironic_inspector_release }}.rpm"
 ironic_inspector_os_repo_key:
 
