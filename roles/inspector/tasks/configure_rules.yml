@@ -1,10 +1,11 @@
 ---
-# defaults/discovery_rules_deploy.yml
-# defaults/discovery_rules_ipmi.yml
-# defaults/discovery_rules.yml
-# Now all variables of those files are also defined in defaults/main.yml to make it compatible with all ansible versions
+- name: Load discovery rules from vars files
+  include_vars:
+    dir: 'vars/inspector'
+  ignore_errors: yes
 
-- name: Wait 15 seconds until Ironic-Inspector is ready
+
+- name: Wait until Ironic-Inspector is ready
   command: sleep 10
   when: _ironic_inspector_updated
 
@@ -13,15 +14,15 @@
     url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules"
     headers:
       X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
-    # HEADER_X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
     method: GET
     body_format: json
     return_content: yes
   register: __inspector_discovery_current_rules
 
-- name: Save the list of current rules
-  set_fact: _ironic_inspector_discovery_rules="{{ __inspector_discovery_current_rules.json.rules | map(attribute='description') | list }}"
-  when: __inspector_discovery_current_rules|success
+- name: Define list of current rules
+  set_fact:
+    _ironic_inspector_discovery_rules: "{{ __inspector_discovery_current_rules.json.rules | map(attribute='description') | list }}"
+  when: __inspector_discovery_current_rules | success
 
 
 # Enable only in case of automatic enroll is available
@@ -31,13 +32,13 @@
       url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules"
       headers:
         X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
-      # HEADER_X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
       body: "{{ item | to_json }}"
       method: POST
+      status_code: 201
       body_format: json
     when: >
       ironic_inspector_discovery_enroll_deploy is defined
-      and ironic_inspector_discovery_enroll_deploy is not none
+      and ironic_inspector_discovery_enroll_deploy
       and item.description not in _ironic_inspector_discovery_rules
     with_items: "{{ ironic_inspector_discovery_enroll_deploy }}"
     no_log: True
@@ -47,13 +48,13 @@
       url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules"
       headers:
         X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
-      # HEADER_X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
       body: "{{ item | to_json }}"
       method: POST
+      status_code: 201
       body_format: json
     when: >
       ironic_inspector_discovery_enroll_ipmi is defined
-      and ironic_inspector_discovery_enroll_ipmi is not none
+      and ironic_inspector_discovery_enroll_ipmi
       and item.description not in _ironic_inspector_discovery_rules
     with_items: "{{ ironic_inspector_discovery_enroll_ipmi }}"
     no_log: True
@@ -67,13 +68,13 @@
     url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules"
     headers:
       X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
-    # HEADER_X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
     body: "{{ item | to_json }}"
     method: POST
+    status_code: 201
     body_format: json
   when: >
     ironic_inspector_discovery_enroll_rules is defined
-    and ironic_inspector_discovery_enroll_rules is not none
+    and ironic_inspector_discovery_enroll_rules
     and item.description not in _ironic_inspector_discovery_rules
   with_items: "{{ ironic_inspector_discovery_enroll_rules }}"
   no_log: True
@@ -86,7 +87,6 @@
       url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules"
       headers:
         X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
-      # HEADER_X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
       method: GET
       body_format: json
       return_content: yes
@@ -97,33 +97,32 @@
       url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules/{{ item }}"
       headers:
         X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
-      # HEADER_X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
       method: DELETE
+      status_code: 204
     when: item in (__inspector_discovery_current_rules.json.rules | map(attribute='uuid') | list)
     with_items: "{{ ironic_inspector_discovery_enroll_rules_delete | selectattr('uuid', 'defined') | map(attribute='uuid') | list }}"
 
-# - name: Delete discovery rules by description
-#   uri: 
-#     url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules/{{ __inspector_discovery_current_rules.json.rules | selectattr('description', 'equalto', item) | map(attribute='uuid') | list | first }}"
-#     headers:
-#       X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
-#     # HEADER_X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
-#     method: DELETE
-#   when: item in (__inspector_discovery_current_rules.json.rules | map(attribute='description') | list)
-#   with_items: "{{ ironic_inspector_discovery_enroll_rules_delete | selectattr('description', 'defined') | map(attribute='description') | list }}"
+  - name: Delete discovery rules by description
+    uri: 
+      url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules/{{ __inspector_discovery_current_rules.json.rules | selectattr('description', 'equalto', item) | map(attribute='uuid') | list | first }}"
+      headers:
+        X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
+      method: DELETE
+      status_code: 204
+    when: item in (__inspector_discovery_current_rules.json.rules | map(attribute='description') | list)
+    with_items: "{{ ironic_inspector_discovery_enroll_rules_delete | selectattr('description', 'defined') | map(attribute='description') | list }}"
 
   when: >
     ironic_inspector_discovery_enroll_rules_delete is defined
-    and ironic_inspector_discovery_enroll_rules_delete is not none
+    and ironic_inspector_discovery_enroll_rules_delete
 
 
 # Just list the rules
-- name: Get final list of current defined rules
+- name: Get list of current rules
   uri:
     url: "{{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/rules"
     headers:
       X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
-    # HEADER_X-Auth-Token: "{{ ironic_inspector_discovery_enroll_token }}"
     method: GET
     body_format: json
     return_content: yes
