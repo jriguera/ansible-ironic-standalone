@@ -1,0 +1,34 @@
+---
+# Get elilo for UEFI
+
+- name: Downloading elilo tarball
+  get_url:
+    checksum: "{{ ironic_pxe_elilo_tarball_checksum }}"
+    url: "{{ ironic_pxe_elilo_tarball_url }}"
+    dest: "{{ ironic_syslinux_basedir }}/{{ ironic_pxe_elilo_tarball_url | basename }}"
+  register: __ironic_pxe_elilo_tarball
+
+- name: Create elilo tarball folder
+  file:
+    path: "{{ ironic_syslinux_basedir }}/{{ ironic_pxe_elilo_tarball_url | basename | splitext | first }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    mode: 0775
+    state: directory
+  when: __ironic_pxe_elilo_tarball | changed
+
+- name: Unarchive elilo tarball
+  unarchive:
+    src: "{{ ironic_syslinux_basedir }}/{{ ironic_pxe_elilo_tarball_url | basename }}"
+    dest: "{{ ironic_syslinux_basedir }}/{{ ironic_pxe_elilo_tarball_url | basename | splitext | first }}"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    copy: no
+  when: __ironic_pxe_elilo_tarball | changed
+
+- name: Copy elilo binaries to PXE folder
+  shell: cp -v elilo-*.*-x86_64.efi  "{{ ironic_pxe_tftp_root }}/{{ ironic_pxe_uefi_pxe_bootfile_name }}" && chgrp "{{ ironic_group }}" "{{ ironic_pxe_tftp_root }}/{{ ironic_pxe_uefi_pxe_bootfile_name }}"
+  args:
+    chdir: "{{ ironic_syslinux_basedir }}/{{ ironic_pxe_elilo_tarball_url | basename | splitext | first }}"
+  when: __ironic_pxe_elilo_tarball | changed
+

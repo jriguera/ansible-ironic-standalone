@@ -1,0 +1,17 @@
+---
+# iPXE
+
+- name: Downloading iPXE loader
+  get_url:
+    checksum: "{{ ironic_pxe_ipxe_checksum | default(omit) }}"
+    url: "{{ ironic_pxe_ipxe_url }}"
+    dest: "{{ ironic_pxe_tftp_root }}/{{ ironic_pxe_bootfile_name }}"
+    group: "{{ ironic_group }}"
+
+- name: Downloading UEFI iPXE loader
+  get_url:
+    checksum: "{{ ironic_pxe_ipxe_uefi_checksum | default(omit) }}"
+    url: "{{ ironic_pxe_ipxe_uefi_url }}"
+    dest: "{{ ironic_pxe_tftp_root }}/{{ ironic_pxe_uefi_pxe_bootfile_name }}"
+    group: "{{ ironic_group }}"
+

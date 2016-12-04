@@ -1,0 +1,32 @@
+---
+# Get grub2 for UEFI
+
+- name: Downloading UEFI shim tarball
+  get_url:
+    checksum: "{{ ironic_pxe_shim_tarball_checksum }}"
+    url: "{{ ironic_pxe_shim_tarball_url }}"
+    dest: "{{ ironic_syslinux_basedir }}/{{ ironic_pxe_shim_tarball_url | basename }}"
+  register: __ironic_pxe_shim_tarball
+
+- name: Unarchive shim tarball
+  unarchive:
+    src: "{{ ironic_syslinux_basedir }}/{{ ironic_pxe_shim_tarball_url | basename }}"
+    dest: "{{ ironic_syslinux_basedir }}/"
+    owner: "{{ ironic_user }}"
+    group: "{{ ironic_group }}"
+    copy: no
+  when: __ironic_pxe_shim_tarball | changed
+
+- name: Copy shim binaries to PXE folder
+  shell: cp -v shim*/shim.efi* "{{ ironic_pxe_tftp_root }}/bootx64.efi" && chgrp "{{ ironic_group }}" "{{ ironic_pxe_tftp_root }}/bootx64.efi"
+  args:
+    chdir: "{{ ironic_syslinux_basedir }}"
+  when: __ironic_pxe_shim_tarball | changed
+
+- name: Downloading UEFI grub2 loader
+  get_url:
+    checksum: "{{ ironic_pxe_grub2_checksum }}"
+    url: "{{ ironic_pxe_grub2_url }}"
+    dest: "{{ ironic_pxe_tftp_root }}/{{ ironic_pxe_uefi_pxe_bootfile_name }}"
+    group: "{{ ironic_group }}"
+
