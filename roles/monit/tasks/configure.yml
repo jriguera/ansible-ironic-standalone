@@ -14,7 +14,7 @@
 
 
 - block:
-  - name: Copy ssl certificate
+  - name: Copy SSL certificate
     copy:
       src: "{{ monit_https_cert }}"
       dest: "{{ monit_config_dir }}/{{ monit_https_cert | basename }}"
@@ -22,7 +22,7 @@
       group: "{{ monit_group }}"
       mode: 0640
 
-  - name: Copy ssl client certificate
+  - name: Copy SSL client certificate
     copy:
       src: "{{ monit_https_client }}"
       dest: "{{ monit_config_dir }}/{{ monit_https_client | basename }}"
@@ -30,28 +30,27 @@
       group: "{{ monit_group }}"
       mode: 0640
 
-  when: >
-    monit_https_client is defined and
-    not monit_https_client is none
+  when: monit_https_client is defined and monit_https_client
   tags: ["ssl"]
 
 
-- name: Delete unmanaged configuration
-  file:
-    path: "{{ item }}"
-    state: absent
-  with_items:
-    - "{{ monit_config_dir | dirname }}/monitrc.d"
+- block:
+  - name: Delete unmanaged configuration
+    file:
+      path: "{{ item }}"
+      state: absent
+    with_items:
+      - "{{ monit_config_dir | dirname }}/monitrc.d"
+
+  - name: Debian - Define motd info
+    template:
+      src: motd.j2
+      dest: "/etc/update-motd.d/95-monit"
+      mode: 0755
+    when: monit_update_motd
+
   when: ansible_os_family == 'Debian'
 
-- name: Debian - Define motd info
-  template:
-    src: motd.j2
-    dest: "/etc/update-motd.d/95-monit"
-    mode: 0755
-  when: >
-    monit_update_motd and
-    ansible_os_family == 'Debian'
 
 - name: RedHat - Define motd info
   lineinfile:
@@ -60,9 +59,7 @@
     regexp: "System managed with Monit"
     line: "* System managed with Monit!"
     insertafter: EOF
-  when: >
-    monit_update_motd and
-    ansible_os_family == 'RedHat'
+  when: monit_update_motd and ansible_os_family == 'RedHat'
 
 - name: Create global monit configuration
   template:
@@ -75,10 +72,12 @@
   register: __monit_updated
 
 - name: Check if configuration was updated
-  set_fact: _monit_updated="{{ __monit_updated.changed }}"
+  set_fact:
+    _monit_updated: "{{ __monit_updated.changed }}"
 
-- name: Ensure monit is started and enabled on boot
+- name: Ensure Monit is started or stopped as required
   service:
     name: "{{ monit_daemon }}"
-    state: started
+    state: "{{ monit_enabled | ternary('started', 'stopped') }}"
     enabled: "{{ monit_enabled_on_startup | ternary('yes', 'no') }}"
+

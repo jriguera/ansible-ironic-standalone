@@ -12,7 +12,9 @@
 
 - block:
   - name: Delete monitors
-    file: path="{{ monit_config_dir }}/{{ item.name }}" state=absent
+    file:
+      path: "{{ monit_config_dir }}/{{ item.name }}"
+      state: absent
     with_items: "{{ monit_monitoring_list }}"
     when: item.delete is defined and item.delete
     notify: reload monit

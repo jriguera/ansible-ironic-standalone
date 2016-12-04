@@ -1,6 +1,7 @@
 ---
 monit_os_repo_url:
 monit_os_repo_key:
+
 monit_packages_install_recommends: True
 # Upgrade the database if older than these seconds
 # Time is only valid in Debian, set to 0/False to disable

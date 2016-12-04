@@ -2,50 +2,54 @@
 # Debian repository
 - block:
   - name: Debian - Import repository key
-    apt_key: url="{{ monit_os_repo_key }}" state=present
-    when: >
-      not monit_os_repo_key is none and
-      monit_os_repo_key | search("http://.*")
+    apt_key:
+      url: "{{ monit_os_repo_key }}"
+      state: present
+    when: monit_os_repo_key and monit_os_repo_key | search("http://.*")
     ignore_errors: yes
 
   - name: Debian - Add repository package
-    apt: name="{{ monit_os_repo_key }}" state=latest
-    when: >
-      not monit_os_repo_key is none and
-      not monit_os_repo_key | search("http://.*")
+    apt:
+      name: "{{ monit_os_repo_key }}"
+      state: latest
+    when: monit_os_repo_key and not monit_os_repo_key | search("http://.*")
 
   - name: Debian - Add repository url
-    apt_repository: repo="{{ monit_os_repo_url }}" state=present
+    apt_repository:
+      repo: "{{ monit_os_repo_url }}"
+      state: present
 
-  when: >
-    ansible_os_family == 'Debian'
-    and not monit_os_packages
+  when: ansible_os_family == 'Debian' and not monit_os_packages
   tags: ["debian", "repository"]
 
 
 # RedHat repository
 - block:
-  - name: RedHat - Add repository
-    yum: name="{{ monit_os_repo_url }}" state=present
+  - name: RedHat - Add repository url
+    yum:
+      name: "{{ monit_os_repo_url }}"
+      state: present
 
   - name: RedHat - Import repository key
-    rpm_key: key="{{ monit_os_repo_key }}" state=present
-    when: monit_os_repo_key is not none
+    rpm_key:
+      key: "{{ monit_os_repo_key }}"
+      state: present
+    when: monit_os_repo_key
 
-  when: >
-      ansible_os_family == 'RedHat'
-      and not monit_os_packages
+  when: ansible_os_family == 'RedHat' and not monit_os_packages
   tags: ["redhat", "repository"]
 
 
 - name: Check if configuration exists
-  stat: path="{{ monit_config_file }}"
+  stat:
+    path: "{{ monit_config_file }}"
   register: __monit_conf
 
-- name: Setup configuration fact
-  set_fact: _monit_previous="{{ __monit_conf.stat.exists }}"
+- name: Set configuration fact
+  set_fact:
+    _monit_previous: "{{ __monit_conf.stat.exists }}"
 
-- name: RedHat - Install the required packages
+- name: RedHat - Install required packages
   yum:
     name: "{{ item.key if ('version' not in item.value) else ('%s-%s' % (item.key, item.value['version'])) }}"
     state: "{{ item.value.state | default('present') }}"
@@ -55,7 +59,7 @@
   register: __monit_installed_rh
   tags: ["redhat", "packages"]
 
-- name: Debian - Install the required packages
+- name: Debian - Install required packages
   apt: 
     name: "{{ item.key if ('version' not in item.value) else ('%s=%s' % (item.key, item.value['version'])) }}"
     state: "{{ item.value.state | default('present') }}"
@@ -68,31 +72,14 @@
   tags: ["debian", "packages"]
 
 - name: Check if packages were installed
-  set_fact: _monit_reinstalled="{{ __monit_installed_rh.changed or __monit_installed_debian.changed }}"
+  set_fact:
+    _monit_reinstalled: "{{ __monit_installed_rh.changed or __monit_installed_debian.changed }}"
 
 - name: Ensure monit is stopped after initial install
-  service: name="{{ monit_daemon }}" state=stopped enabled=no
+  service:
+    name: "{{ monit_daemon }}"
+    state: stopped
+    enabled: no
   ignore_errors: yes
   when: _monit_reinstalled
-
-- name: Get init system
-  command: cat /proc/1/comm
-  register: __monit_init_system
-  changed_when: False
-
-- name: Set init system
-  set_fact: monit_init_system="{{ __monit_init_system.stdout }}"
-
-- block:
-  - name: Create custom systemd folder configuration
-    file:
-      path: "/etc/systemd/system/{{ monit_daemon }}.service.d"
-      state: directory
-      mode: 0755
-
-  - name: Delete upstart configuration
-    file: path="/etc/init/{{ monit_daemon }}.conf" state=absent
-
-  when: monit_init_system == 'systemd'
-  tags: ["systemd", "init"]
 
