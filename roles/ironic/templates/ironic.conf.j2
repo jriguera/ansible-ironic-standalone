@@ -2,8 +2,6 @@
 # /etc/ironic/ironic.conf
 
 [DEFAULT]
-### Options defined in oslo.messaging
-
 # Heartbeat frequency. (integer value)
 #matchmaker_heartbeat_freq=300
 
@@ -13,40 +11,25 @@
 # Size of executor thread pool. (integer value)
 executor_thread_pool_size={{ ironic_executor_thread_pool_size | default('64') }}
 
+# Some periodic tasks can be run in a separate process. Should
+# we run them here? (boolean value)
+run_external_periodic_tasks={{ ironic_run_external_periodic_tasks | default(True) | ternary('true','false') }}
+
 # Seconds to wait for a response from a call. (integer value)
 #rpc_response_timeout=60
 
-# The default number of seconds that poll should wait. 
-# Poll raises timeout exception when timeout expired
-rpc_poll_timeout=1
+# The pool size limit for connections expiration policy
+# (integer value)
+#conn_pool_min_size = 2
 
-# Use PUB/SUB pattern for fanout methods. PUB/SUB always uses
-# proxy. (boolean value)
-#use_pub_sub = true
+# The time-to-live in sec of idle connections in the pool
+# (integer value)
+#conn_pool_ttl = 1200
 
-{% if ironic_notification_driver is defined and ironic_notification_driver -%}
-# The Drivers(s) to handle sending notifications. Possible
-# values are messaging, messagingv2, routing,log, test, noop
-# (multi valued)
-{% for driver in ironic_notification_driver -%}
-notification_driver={{ driver }}
-{% endfor %}
-
-# AMQP topic used for OpenStack notifications. (list value)
-# Deprecated group/name - [rpc_notifier2]/topics
-notification_topics={{ ironic_notification_topics | default('notifications') }}
-{% endif %}
-
-{% if ironic_transport_url is defined and not ironic_transport_url is none -%}
 # A URL representing the messaging driver to use and its full
 # configuration. If not set, we fall back to the rpc_backend
 # option and driver specific configuration. (string value)
 transport_url={{ ironic_transport_url }}
-{% else %}
-# The messaging driver to use, defaults to rabbit. Other
-# drivers include qpid and zmq. (string value)
-rpc_backend={{ ironic_rpc_backend | default('rabbit') }}
-{% endif %}
 
 {% if ironic_control_exchange is defined and not ironic_control_exchange is none -%}
 # The default exchange under which topics are scoped. May be
@@ -55,16 +38,12 @@ rpc_backend={{ ironic_rpc_backend | default('rabbit') }}
 control_exchange={{ ironic_control_exchange }}
 {% endif %}
 
-### Options defined in ironic.netconf
-
 {% if ironic_my_ip is defined and ironic_my_ip | ipaddr -%}
 # IP address of this host. If unset, will determine the IP
 # programmatically. If unable to do so, will use "127.0.0.1".
 # (string value)
 my_ip={{ ironic_my_ip }}
 {% endif %}
-
-### Options defined in ironic.api.app
 
 # Authentication strategy used by ironic-api: one of
 # "keystone" or "noauth". "noauth" should not be used in a
@@ -81,9 +60,6 @@ auth_strategy={{ ironic_auth_strategy | default('noauth') }}
 # in a production environment. (boolean value)
 debug_tracebacks_in_api={{ ironic_debug | ternary('true','false') }}
 
-
-### Options defined in ironic.common.driver_factory
-
 # Specify the list of drivers to load during service
 # initialization. Missing drivers, or drivers which fail to
 # initialize, will prevent the conductor service from
@@ -98,8 +74,26 @@ enabled_drivers={{ ironic_enabled_drivers | join(',') }}
 enabled_drivers=pxe_ipmitool
 {% endif %}
 
+# Specify the list of network interfaces to load during
+# service initialization. Missing network interfaces, or
+# network interfaces which fail to initialize, will prevent
+# the conductor service from starting. The option default is a
+# recommended set of production-oriented network interfaces. A
+# complete list of network interfaces present on your system
+# may be found by enumerating the
+# "ironic.hardware.interfaces.network" entrypoint. This value
+# must be the same on all ironic-conductor and ironic-api
+# services, because it is used by ironic-api service to
+# validate a new or updated node's network_interface value.
+# (list value)
+#enabled_network_interfaces = flat,noop
 
-### Options defined in ironic.common.hash_ring
+# Default network interface to be used for nodes that do not
+# have network_interface field set. A complete list of network
+# interfaces present on your system may be found by
+# enumerating the "ironic.hardware.interfaces.network"
+# entrypoint. (string value)
+#default_network_interface = <None>
 
 # Exponent to determine number of hash partitions to use when
 # distributing load across conductors. Larger values will
@@ -125,9 +119,6 @@ enabled_drivers=pxe_ipmitool
 # Interval (in seconds) between hash ring resets. (integer value)
 #hash_ring_reset_interval = 180
 
-
-## Options defined in ironic.common.images
-
 # If True, convert backing images to "raw" disk image format. (boolean value)
 force_raw_images={{ ironic_force_raw_images | default(True) | ternary('true','false') }}
 
@@ -137,16 +128,22 @@ isolinux_bin={{ ironic_isolinux_bin | default('/usr/lib/syslinux/isolinux.bin') 
 {% if ironic_isolinux_config_template is defined and not ironic_isolinux_config_template is none -%}
 # Template file for isolinux configuration file. (string value)
 # $pybasedir/common/isolinux_config.template
+{% if '$pybasedir' in ironic_isolinux_config_template -%}
+isolinux_config_template={{ ironic_isolinux_config_template }}
+{% else %}
 isolinux_config_template={{ ironic_state_path }}/{{ ironic_isolinux_config_template | basename }}
+{% endif %}
 {% endif %}
 
 {% if ironic_grub_config_template is defined and not ironic_grub_config_template is none -%}
 # Template file for grub configuration file. (string value)
 # $pybasedir/common/grub_conf.template
+{% if '$pybasedir' in ironic_grub_config_template -%}
+grub_config_template={{ ironic_grub_config_template }}
+{% else %}
 grub_config_template={{ ironic_state_path }}/{{ ironic_grub_config_template | basename }}
 {% endif %}
-
-### Options defined in ironic.common.paths
+{% endif %}
 
 # Directory where the ironic python module is installed.
 # (string value)
@@ -158,16 +155,21 @@ bindir={{ ironic_bindir | default('/usr/bin') }}
 # Top-level directory for maintaining ironic's state. (string value)
 state_path={{ ironic_state_path | default('/var/lib/ironic') }}
 
-### Options defined in ironic.common.service
-
 # Name of this node.  This can be an opaque identifier.  It is
 # not necessarily a hostname, FQDN, or IP address. However,
 # the node name must be valid within an AMQP key, and if using
 # ZeroMQ, a valid hostname, FQDN, or IP address. (string value)
-host={{ ironic_host | default('ironic') }}
+{% if ironic_host is defined and ironic_host -%}
+host={{ ironic_host }}
+{% elif ironic_my_ip is defined and ironic_my_ip | ipaddr -%}
+host={{ ironic_my_ip }}
+{% else %}
+host=ironic
+{% endif %}
 
-
-### Options defined in ironic.common.utils
+# Specify a timeout after which a gracefully shutdown server
+# will exit. Zero value means endless wait. (integer value)
+graceful_shutdown_timeout={{ ironic_graceful_shutdown_timeout | default('60') }}
 
 # Path to the rootwrap configuration file to use for running
 # commands as root. (string value)
@@ -176,14 +178,8 @@ rootwrap_config=/etc/ironic/rootwrap.conf
 # Explicitly specify the temporary working directory. (string value)
 tempdir={{ ironic_tempdir | default('/tmp') }}
 
-
-### Options defined in ironic.drivers.modules.image_cache
-
 # Run image downloads and raw format conversions in parallel. (boolean value)
 parallel_image_downloads={{ ironic_parallel_image_downloads | ternary('true','false') }}
-
-
-### Options defined in ironic.openstack.common.eventlet_backdoor
 
 # Enable eventlet backdoor.  Acceptable values are 0, <port>,
 # and <start>:<end>, where 0 results in listening on a random
@@ -195,12 +191,20 @@ parallel_image_downloads={{ ironic_parallel_image_downloads | ternary('true','fa
 # service's log file. (string value)
 #backdoor_port=<None>
 
-
-### Options defined in ironic.openstack.common.log
+# Enable eventlet backdoor, using the provided path as a unix
+# socket that can receive connections. This option is mutually
+# exclusive with 'backdoor_port' in that only one should be
+# provided. If both are provided then the existence of this
+# option overrides the usage of that option. (string value)
+#backdoor_socket = <None>
 
 # Print debugging output (set logging level to DEBUG instead
 # of default WARNING level). (boolean value)
 debug={{ ironic_debug | default(False) | ternary('true','false') }}
+
+# Enables or disables logging values of all registered options
+# when starting a service (at DEBUG level). (boolean value)
+log_options=true
 
 # The name of a logging configuration file. This file is
 # appended to any existing logging configuration files. For
@@ -267,7 +271,7 @@ logging_debug_format_suffix=%(funcName)s %(pathname)s:%(lineno)d
 logging_exception_prefix=%(asctime)s.%(msecs)03d %(process)d ERROR %(name)s %(instance)s
 
 # List of logger=LEVEL pairs. (list value)
-#default_log_levels=amqp=WARN,amqplib=WARN,boto=WARN,qpid=WARN,sqlalchemy=WARN,suds=INFO,oslo.messaging=INFO,iso8601=WARN,requests.packages.urllib3.connectionpool=WARN,urllib3.connectionpool=WARN,websocket=WARN,keystonemiddleware=WARN,routes.middleware=WARN,stevedore=WARN
+#default_log_levels=amqp=WARN,amqplib=WARN,boto=WARN,qpid=WARN,sqlalchemy=WARN,suds=INFO,oslo.messaging=INFO,iso8601=WARN,requests.packages.urllib3.connectionpool=WARN,urllib3.connectionpool=WARN,websocket=WARN,requests.packages.urllib3.util.retry=WARN,urllib3.util.retry=WARN,keystonemiddleware=WARN,routes.middleware=WARN,stevedore=WARN,taskflow=WARN,keystoneauth=WARN,oslo.cache=INFO,dogpile.core.dogpile=INFO
 
 # Enables or disables publication of error events. (boolean value)
 publish_errors={{ ironic_publish_errors | ternary('true','false') }}
@@ -284,17 +288,8 @@ fatal_deprecations={{ ironic_fatal_deprecations | ternary('true','false') }}
 #instance_uuid_format="[instance: %(uuid)s] "
 
 
-### Options defined in ironic.openstack.common.periodic_task
-
-# Some periodic tasks can be run in a separate process. Should
-# we run them here? (boolean value)
-run_external_periodic_tasks={{ ironic_run_external_periodic_tasks | default(True) | ternary('true','false') }}
-
-
 
 [ssl]
-### Options defined in oslo.service.sslutils
-
 # CA certificate file to use to verify connecting clients. (string value)
 #ca_file = <None>
 
@@ -315,9 +310,23 @@ run_external_periodic_tasks={{ ironic_run_external_periodic_tasks | default(True
 
 
 
-[api]
-### Options defined in ironic.api
+[matchmaker_redis]
+# Redis replica set name. (string value)
+#sentinel_group_name = oslo-messaging-zeromq
 
+# Time in ms to wait between connection attempts. (integer value)
+#wait_timeout = 2000
+
+# Time in ms to wait before the transaction is killed.
+# (integer value)
+#check_timeout = 20000
+
+# Timeout in ms on blocking socket operations (integer value)
+#socket_timeout = 10000
+
+
+
+[api]
 # The IP address on which ironic-api listens. (string value)
 host_ip={{ ironic_api_host_ip | default('0.0.0.0') }}
 
@@ -339,11 +348,136 @@ port={{ ironic_api_port | default('6385') }}
 public_endpoint={{ ironic_api_public_endpoint }}
 {% endif %}
 
+# Number of workers for OpenStack Ironic API service. The
+# default is equal to the number of CPUs available if that can
+# be determined, else a default worker count of 1 is returned.
+#api_workers = <None>
+
+# Enable the integrated stand-alone API to service requests
+# via HTTPS instead of HTTP. If there is a front-end service
+# performing HTTPS offloading from the service, this option
+# should be False; note, you will want to change public API
+# endpoint to represent SSL termination URL with
+# 'public_endpoint' option. (boolean value)
+#enable_ssl_api = false
+
+# Whether to restrict the lookup API to only nodes in certain
+# states. (boolean value)
+restrict_lookup=true
+
+# Maximum interval (in seconds) for agent heartbeats.
+#ramdisk_heartbeat_timeout = 300
+
+
+
+[audit]
+# Enable auditing of API requests (for ironic-api service).
+enabled={{ ironic_audit_enabled | default(False) | ternary('true','false') }}
+
+# Path to audit map file for ironic-api service. Used only
+# when API audit is enabled. (string value)
+#audit_map_file = /etc/ironic/ironic_api_audit_map.conf
+
+# Comma separated list of Ironic REST API HTTP methods to be
+# ignored during audit. For example: auditing will not be done
+# on any GET or POST requests if this is set to "GET,POST". It
+# is used only when API audit is enabled. (string value)
+{% if ironic_audit_ignore_req_list is defined -%}
+ignore_req_list={{ ironic_audit_ignore_req_list | join(',') }}
+{% endif %}
+
+
+
+[metrics]
+# Backend for the agent ramdisk to use for metrics. Default
+# possible backends are "noop" and "statsd". (string value)
+{% if ironic_metrics_statsd_host is defined and not ironic_metrics_statsd_host is none and ironic_metrics_agent -%}
+agent_backend=statsd
+{% else %}
+agent_backend=noop
+{% endif %}
+
+# Prepend the hostname to all metric names sent by the agent
+# ramdisk. The format of metric names is
+# [global_prefix.][uuid.][host_name.]prefix.metric_name.
+agent_prepend_host={{ ironic_metrics_prepend_host | default(False) | ternary('true','false') }}
+
+# Prepend the node's Ironic uuid to all metric names sent by
+# the agent ramdisk. The format of metric names is
+# [global_prefix.][uuid.][host_name.]prefix.metric_name.
+agent_prepend_uuid=false
+
+# Split the prepended host value by "." and reverse it for
+# metrics sent by the agent ramdisk (to better match the
+# reverse hierarchical form of domain names). (boolean value)
+agent_prepend_host_reverse=true
+
+# Prefix all metric names sent by the agent ramdisk with this
+# value. The format of metric names is
+# [global_prefix.][uuid.][host_name.]prefix.metric_name.
+{% if ironic_metrics_global_prefix_agent is defined and not ironic_metrics_global_prefix_agent is none -%}
+agent_global_prefix={{ ironic_metrics_global_prefix_agent }}
+{% endif %}
+
+# Backend to use for the metrics system. (string value)
+# Allowed values: noop, statsd
+{% if ironic_metrics_statsd_host is defined and not ironic_metrics_statsd_host is none -%}
+backend=statsd
+{% else %}
+backend=noop
+{% endif %}
+
+# Prepend the hostname to all metric names. The format of
+# metric names is
+# [global_prefix.][host_name.]prefix.metric_name.
+prepend_host={{ ironic_metrics_prepend_host | default(False) | ternary('true','false') }}
+
+# Split the prepended host value by "." and reverse it (to
+# better match the reverse hierarchical form of domain names).
+prepend_host_reverse=true
+
+# Prefix all metric names with this value. By default, there
+# is no global prefix. The format of metric names is
+# [global_prefix.][host_name.]prefix.metric_name. (stringvalue)
+{% if ironic_metrics_global_prefix is defined and not ironic_metrics_global_prefix is none -%}
+global_prefix={{ ironic_metrics_global_prefix }}
+{% endif %}
+
+
+
+[metrics_statsd]
+# Host for the agent ramdisk to use with the statsd backend.
+# This must be accessible from networks the agent is booted
+{% if ironic_metrics_statsd_host is defined and not ironic_metrics_statsd_host is none and ironic_metrics_agent -%}
+agent_statsd_host={{ ironic_metrics_statsd_host }}
+
+# Port for the agent ramdisk to use with the statsd backend.
+agent_statsd_port={{ ironic_metrics_statsd_port | default('8125') }}
+{% endif %}
+
+{% if ironic_metrics_statsd_host is defined and ironic_metrics_statsd_host is not none -%}
+# Host for use with the statsd backend. (string value)
+statsd_host={{ ironic_metrics_statsd_host }}
+
+# Port to use with the statsd backend. (port value)
+statsd_port={{ ironic_metrics_statsd_port | default('8125') }}
+{% endif %}
+
+
+
+[ironic_lib]
+# Command that is prefixed to commands that are run as root.
+# If not specified, no commands are run as root. (string value)
+#root_helper = sudo ironic-rootwrap /etc/ironic/rootwrap.conf
+
+# Used if there is a formatting error when generating an
+# exception message (a programming error). If True, raise an
+# exception; if False, use the unformatted message. (boolean value)
+fatal_exception_format_errors={{ ironic_fatal_exception_format_errors | default(False) | ternary('true','false') }}
+
 
 
 [cors]
-# Options defined in oslo.middleware.cors
-
 # Indicate whether this resource may be shared with the domain
 # received in the requests "origin" header. (string value)
 #allowed_origin=
@@ -414,8 +548,6 @@ allow_headers={{ values["allow_headers"] | join(',') }}
 
 
 [conductor]
-### Options defined in ironic.conductor.manager
-
 {% if ironic_conductor_api_url is defined and not ironic_conductor_api_url is none -%}
 # URL of Ironic API service. If not set ironic can get the
 # current value from the keystone service catalog. (string value)
@@ -530,7 +662,8 @@ automated_clean={{ ironic_conductor_automated_clean | default(True) | ternary('t
 
 
 [database]
-### Options defined in oslo.db
+# MySQL engine to use. (string value)
+#mysql_engine = InnoDB
 
 # The back end to use for the database. (string value)
 # Deprecated group/name - [DEFAULT]/db_backend
@@ -541,24 +674,24 @@ backend=sqlalchemy
 # Deprecated group/name - [DEFAULT]/sql_connection
 # Deprecated group/name - [DATABASE]/sql_connection
 # Deprecated group/name - [sql]/connection
-{% if ironic_database_connection is defined and ironic_database_connection | match("mysql://.*") -%}
+{% if ironic_database_connection is defined and ironic_database_connection | match("mysql.*") -%}
 connection="{{ ironic_database_connection }}"
+
+{% if ironic_database_slave_connection is defined and ironic_database_slave_connection | match("mysql.*") -%}
+# The SQLAlchemy connection string to use to connect to the
+# slave database. (string value)
+slave_connection="{{ ironic_database_slave_connection }}"
+{% endif %}
+
 {% else %}
 {% if not ironic_database_connection is defined -%}
 {% set ironic_database_connection="sqlite:///var/lib/ironic/ironic.db" %}
 {% endif %}
 connection="{{ ironic_database_connection }}"
 
-# The file name to use with SQLite. (string value)
-sqlite_db={{ ironic_database_connection | basename }}
-
 # If True, SQLite uses synchronous mode. (boolean value)
 sqlite_synchronous=true
 {% endif %}
-
-# The SQLAlchemy connection string to use to connect to the
-# slave database. (string value)
-#slave_connection=<None>
 
 # Timeout before idle SQL connections are reaped. (integer
 # value)
@@ -584,7 +717,7 @@ max_pool_size={{ ironic_database_pool_size | default('10') }}
 # (integer value)
 # Deprecated group/name - [DEFAULT]/sql_max_retries
 # Deprecated group/name - [DATABASE]/sql_max_retries
-#max_retries=10
+max_retries={{ ironic_database_max_retries | default('10') }}
 
 # Interval between retries of opening a SQL connection.
 # (integer value)
@@ -597,7 +730,6 @@ max_pool_size={{ ironic_database_pool_size | default('10') }}
 # Deprecated group/name - [DEFAULT]/sql_max_overflow
 # Deprecated group/name - [DATABASE]/sqlalchemy_max_overflow
 #max_overflow=<None>
-
 
 {% if ironic_debug and ironic_trace -%}
 # Verbosity of SQL debugging information: 0=None, 100=Everything. (integer value)
@@ -653,20 +785,17 @@ use_db_reconnect={{ ironic_database_use_db_reconnect | ternary('true','false') }
 
 
 
-{% if ironic_auth_strategy == 'keystone' -%}
 [keystone]
-### Options defined in ironic.common.keystone
-
-{% if ironic_keystone_region_name  is defined -%}
+{% if ironic_auth_strategy == 'keystone' and ironic_keystone_region_name is defined -%}
 # The region used for getting endpoints of OpenStackservices.
 # (string value)
 region_name={{ ironic_keystone_region_name }}
 {% endif %}
 
 
-[keystone_authtoken]
-### Options defined in keystonemiddleware.auth_token
 
+[keystone_authtoken]
+{% if ironic_auth_strategy == 'keystone' -%}
 {% if ironic_keystone_authtoken_auth_uri is defined -%}
 # Complete public Identity API endpoint. (string value)
 auth_uri={{ ironic_keystone_authtoken_auth_uri }}
@@ -675,6 +804,7 @@ auth_uri={{ ironic_keystone_authtoken_auth_uri }}
 {% if ironic_keystone_authtoken_auth_version is defined -%}
 # API version of the admin Identity API endpoint. (string value)
 auth_version={{ ironic_keystone_authtoken_auth_version }}
+{% endif %}
 {% endif %}
 
 # Do not handle authorization requests within the middleware,
@@ -692,21 +822,6 @@ auth_version={{ ironic_keystone_authtoken_auth_version }}
 
 # Env key for the swift cache. (string value)
 #cache=<None>
-
-# Required if identity server requires client certificate
-# (string value)
-#certfile=<None>
-
-# Required if identity server requires client certificate
-# (string value)
-#keyfile=<None>
-
-# A PEM encoded Certificate Authority to use when verifying
-# HTTPs connections. Defaults to system CAs. (string value)
-#cafile=<None>
-
-# Verify HTTPS connections. (boolean value)
-#insecure=false
 
 # Directory used to cache files related to PKI tokens. (string value)
 #signing_dir=<None>
@@ -771,7 +886,7 @@ auth_version={{ ironic_keystone_authtoken_auth_version }}
 # header. If False, middleware will not ask for service
 # catalog on token validation and will not set the X-Service-
 # Catalog header. (boolean value)
-#include_service_catalog=true
+include_service_catalog=true
 
 # Used to control the use and type of token binding. Can be
 # set to: "disabled" to not check token binding. "permissive"
@@ -800,59 +915,29 @@ auth_version={{ ironic_keystone_authtoken_auth_version }}
 # (list value)
 #hash_algorithms=md5
 
-{% if ironic_keystone_authtoken_identity_uri is defined and not ironic_keystone_authtoken_identity_uri is none -%}
-# Complete admin Identity API endpoint. This should specify
-# the unversioned root endpoint e.g. https://localhost:35357/
+
+
+[oslo_policy]
+{% if ironic_oslo_policy_file is defined and not ironic_oslo_policy_file is none -%}
+# The JSON file that defines policies. (string value)
+policy_file={{ ironic_oslo_policy_file | basename }}
+
+# Default rule. Enforced when a requested rule is not found.
 # (string value)
-identity_uri={{ ironic_keystone_authtoken_identity_uri }}
-{% endif %}
+policy_default_rule=default
 
-{% if ironic_keystone_authtoken_service_user is defined and not ironic_keystone_authtoken_service_user is none -%}
-# Service username. (string value)
-admin_user={{ ironic_keystone_authtoken_service_user }}
-{% endif %}
-
-{% if ironic_keystone_authtoken_service_password is defined and not ironic_keystone_authtoken_service_password is none -%}
-# Service user password. (string value)
-admin_password={{ ironic_keystone_authtoken_service_password }}
-{% endif %}
-
-# Service tenant name. (string value)
-admin_tenant_name={{ ironic_keystone_authtoken_service_tenant_name | default('admin') }}
-{% endif %}
-
-
-
-{% if ironic_neutron_url is defined and not ironic_neutron_url is none -%}
-[neutron]
-### Options defined in ironic.dhcp.neutron
-
-# URL for connecting to neutron. (string value)
-url={{ ironic_neutron_url }}
-
-# Timeout value for connecting to neutron in seconds. (integer value)
-#url_timeout=30
-
-# Client retries in the case of a failed request. (integer value)
-#retries=3
-
-# Default authentication strategy to use when connecting to
-# neutron. Can be either "keystone" or "noauth". Running
-# neutron in noauth mode (related to but not affected by this
-# setting) is insecure and should only be used for testing.
-# (string value)
-auth_strategy={{ ironic_neutron_auth_strategy | default(ironic_auth_strategy) }}
-
-# UUID of the network to create Neutron ports on when booting
-# to a ramdisk for cleaning/zapping using Neutron DHCP (string value)
-cleaning_network_uuid={{ ironic_neutron_cleaning_network_uuid | default('') }}
+# Directories where policy configuration files are stored.
+# They can be relative to any directory in the search path
+# defined by the config_dir option, or absolute paths. The
+# file defined by policy_file must exist for these directories
+# to be searched.  Missing or empty directories are ignored.
+# (multi valued)
+policy_dirs={{ ironic_oslo_policy_file | dirname }}
 {% endif %}
 
 
 
 [oslo_concurrency]
-### Options defined in oslo.concurrency
-
 {% if ironic_oslo_concurrency_lock_path is defined and not ironic_oslo_concurrency_lock_path is none -%}
 # Enables or disables inter-process locks. (boolean value)
 disable_process_locking=false
@@ -870,8 +955,6 @@ disable_process_locking=true
 
 
 [oslo_messaging_amqp]
-### Options defined in oslo.messaging
-
 # address prefix used when sending to a specific server
 # (string value)
 #server_request_prefix=exclusive
@@ -912,10 +995,28 @@ trace={{ ironic_trace | ternary('true','false') }}
 
 
 
-{% if ironic_rpc_backend == 'rabbit' -%}
-[oslo_messaging_rabbit]
-### Options defined in oslo.messaging
+[oslo_messaging_notifications]
+# A URL representing the messaging driver to use for
+# notifications. If not set, we fall back to the same
+# configuration used for RPC. (string value)
+# Deprecated group/name - [DEFAULT]/notification_transport_url
+#transport_url = <None>
 
+{% if ironic_oslo_messaging_notification_driver is defined and ironic_oslo_messaging_notification_driver -%}
+# The Drivers(s) to handle sending notifications. Possible
+# values are messaging, messagingv2, routing,log, test, noop
+# (multi valued)
+{% for driver in ironic_oslo_messaging_notification_driver -%}
+notification_driver={{ driver }}
+{% endfor %}
+
+# AMQP topic used for OpenStack notifications. (list value)
+notification_topics={{ ironic_oslo_messaging_notification_topics | default('notifications') }}
+{% endif %}
+
+
+
+[oslo_messaging_rabbit]
 # Size of RPC connection pool. (integer value)
 rpc_conn_pool_size={{ ironic_oslo_messaging_rabbit_rpc_conn_pool_size | default('30') }}
 
@@ -968,29 +1069,11 @@ amqp_auto_delete={{ ironic_oslo_messaging_rabbit_amqp_auto_delete | default(Fals
 # Allowed values: round-robin, shuffle
 kombu_failover_strategy = round-robin
 
-# The RabbitMQ broker address where a single node is used. (string value)
-rabbit_host={{ ironic_oslo_messaging_rabbit_host | default('localhost') }}
-
-# The RabbitMQ broker port where a single node is used. (integer value)
-rabbit_port={{ ironic_oslo_messaging_rabbit_port | default('5672') }}
-
-# RabbitMQ HA cluster host:port pairs. (list value)
-rabbit_hosts=$rabbit_host:$rabbit_port
-
 # Connect over SSL for RabbitMQ. (boolean value)
 rabbit_use_ssl=false
 
-# The RabbitMQ userid. (string value)
-rabbit_userid={{ ironic_oslo_messaging_rabbit_userid | default('guest') }}
-
-# The RabbitMQ password. (string value)
-rabbit_password={{ ironic_oslo_messaging_rabbit_password | default('guest') }}
-
 # The RabbitMQ login method. (string value)
 rabbit_login_method={{ ironic_oslo_messaging_rabbit_login_method | default('AMQPLAIN') }}
-
-# The RabbitMQ virtual host. (string value)
-rabbit_virtual_host={{ ironic_oslo_messaging_rabbit_virtual_host | default('/') }}
 
 # How frequently to retry connecting with RabbitMQ. (integer value)
 #rabbit_retry_interval=1
@@ -999,12 +1082,14 @@ rabbit_virtual_host={{ ironic_oslo_messaging_rabbit_virtual_host | default('/') 
 # RabbitMQ. (integer value)
 #rabbit_retry_backoff=2
 
-# Maximum number of RabbitMQ connection retries. Default is 0
-# (infinite retry count). (integer value)
-rabbit_max_retries={{ ironic_oslo_messaging_rabbit_max_retries | default('0') }}
-
-# Use HA queues in RabbitMQ (x-ha-policy: all). If you change
-# this option, you must wipe the RabbitMQ database. (boolean value)
+# Try to use HA queues in RabbitMQ (x-ha-policy: all). If you
+# change this option, you must wipe the RabbitMQ database. In
+# RabbitMQ 3.0, queue mirroring is no longer controlled by the
+# x-ha-policy argument when declaring a queue. If you just
+# want to make sure that all queues (except  those with auto-
+# generated names) are mirrored across all nodes, run:
+# "rabbitmqctl set_policy HA '^(?!amq\.).*' '{"ha-mode":
+# "all"}' " (boolean value)
 rabbit_ha_queues={{ ironic_oslo_messaging_rabbit_ha_queues | default(False) | ternary('true','false') }}
 
 # Positive integer representing duration in seconds for queue
@@ -1022,7 +1107,6 @@ heartbeat_timeout_threshold={{ ironic_oslo_messaging_heartbeat_timeout_threshold
 # How often times during the heartbeat_timeout_threshold we
 # check the heartbeat. (integer value)
 #heartbeat_rate=2
-{% endif %}
 
 # Maximum number of channels to allow (integer value)
 #channel_max = <None>
@@ -1032,7 +1116,7 @@ heartbeat_timeout_threshold={{ ironic_oslo_messaging_heartbeat_timeout_threshold
 
 # How often to send heartbeats for consumer's connections
 # (integer value)
-#heartbeat_interval = 1
+#heartbeat_interval=3
 
 # Enable SSL (boolean value)
 #ssl = <None>
@@ -1052,30 +1136,29 @@ heartbeat_timeout_threshold={{ ironic_oslo_messaging_heartbeat_timeout_threshold
 # error (floating point value)
 #host_connection_reconnect_delay = 0.25
 
-# Maximum number of connections to keep queued. (integer
-# value)
-#pool_max_size = 10
+# Maximum number of connections to keep queued. (integer value)
+pool_max_size={{ ironic_oslo_messaging_pool_max_size | default('10') }}
 
 # Maximum number of connections to create above
 # `pool_max_size`. (integer value)
-#pool_max_overflow = 0
+pool_max_overflow=10
 
 # Default number of seconds to wait for a connections to
 # available (integer value)
-#pool_timeout = 30
+pool_timeout={{ ironic_oslo_messaging_pool_timeout | default('30') }}
 
 # Lifetime of a connection (since creation) in seconds or None
 # for no recycling. Expired connections are closed on acquire.
 # (integer value)
-#pool_recycle = 600
+pool_recycle={{ ironic_oslo_messaging_pool_recycle | default('600') }}
 
 # Threshold at which inactive (since release) connections are
 # considered stale in seconds or None for no staleness. Stale
 # connections are closed on acquire. (integer value)
-#pool_stale = 60
+pool_stale={{ ironic_oslo_messaging_pool_stale | default('60') }}
 
 # Persist notification messages. (boolean value)
-#notification_persistence = false
+notification_persistence={{ ironic_oslo_messaging_notification_persistence | default(False) | ternary('true','false') }}
 
 # Exchange name for for sending notifications (string value)
 #default_notification_exchange = ${control_exchange}_notification
@@ -1132,48 +1215,110 @@ heartbeat_timeout_threshold={{ ironic_oslo_messaging_heartbeat_timeout_threshold
 
 
 
-[oslo_policy]
-### Options defined in oslo.policy
+[oslo_messaging_zmq]
+# ZeroMQ bind address. Should be a wildcard (*), an ethernet
+# interface, or IP. The "host" option should point or resolve
+# to this address. (string value)
+# Deprecated group/name - [DEFAULT]/rpc_zmq_bind_address
+#rpc_zmq_bind_address = *
 
-{% if ironic_oslo_policy_file is defined and not ironic_oslo_policy_file is none -%}
-# The JSON file that defines policies. (string value)
-policy_file={{ ironic_oslo_policy_file | basename }}
+# MatchMaker driver. (string value)
+# Allowed values: redis, dummy
+# Deprecated group/name - [DEFAULT]/rpc_zmq_matchmaker
+#rpc_zmq_matchmaker = redis
 
-# Default rule. Enforced when a requested rule is not found.
-# (string value)
-policy_default_rule=default
+# Number of ZeroMQ contexts, defaults to 1. (integer value)
+# Deprecated group/name - [DEFAULT]/rpc_zmq_contexts
+#rpc_zmq_contexts = 1
 
-# Directories where policy configuration files are stored.
-# They can be relative to any directory in the search path
-# defined by the config_dir option, or absolute paths. The
-# file defined by policy_file must exist for these directories
-# to be searched.  Missing or empty directories are ignored.
-# (multi valued)
-policy_dirs={{ ironic_oslo_policy_file | dirname }}
-{% endif %}
+# Maximum number of ingress messages to locally buffer per
+# topic. Default is unlimited. (integer value)
+# Deprecated group/name - [DEFAULT]/rpc_zmq_topic_backlog
+#rpc_zmq_topic_backlog = <None>
 
+# Directory for holding IPC sockets. (string value)
+# Deprecated group/name - [DEFAULT]/rpc_zmq_ipc_dir
+#rpc_zmq_ipc_dir = /var/run/openstack
 
+# Name of this node. Must be a valid hostname, FQDN, or IP
+# address. Must match "host" option, if running Nova. (string
+# value)
+# Deprecated group/name - [DEFAULT]/rpc_zmq_host
+#rpc_zmq_host = localhost
 
-[ironic_lib]
-### Options defined in ironic_lib.utils
+# Seconds to wait before a cast expires (TTL). The default
+# value of -1 specifies an infinite linger period. The value
+# of 0 specifies no linger period. Pending messages shall be
+# discarded immediately when the socket is closed. Only
+# supported by impl_zmq. (integer value)
+# Deprecated group/name - [DEFAULT]/rpc_cast_timeout
+#rpc_cast_timeout = -1
 
-# Command that is prefixed to commands that are run as root.
-# If not specified, no commands are run as root. (string value)
-#root_helper = sudo ironic-rootwrap /etc/ironic/rootwrap.conf
+# The default number of seconds that poll should wait. Poll
+# raises timeout exception when timeout expired. (integer
+# value)
+# Deprecated group/name - [DEFAULT]/rpc_poll_timeout
+#rpc_poll_timeout = 1
 
-# Used if there is a formatting error when generating an
-# exception message (a programming error). If True, raise an
-# exception; if False, use the unformatted message. (boolean value)
-fatal_exception_format_errors={{ ironic_lib_fatal_exception_format_errors | default(False) | ternary('true','false') }}
+# Expiration timeout in seconds of a name service record about
+# existing target ( < 0 means no timeout). (integer value)
+# Deprecated group/name - [DEFAULT]/zmq_target_expire
+#zmq_target_expire = 300
+
+# Update period in seconds of a name service record about
+# existing target. (integer value)
+# Deprecated group/name - [DEFAULT]/zmq_target_update
+#zmq_target_update = 180
+
+# Use PUB/SUB pattern for fanout methods. PUB/SUB always uses
+# proxy. (boolean value)
+# Deprecated group/name - [DEFAULT]/use_pub_sub
+#use_pub_sub = true
+
+# Use ROUTER remote proxy. (boolean value)
+# Deprecated group/name - [DEFAULT]/use_router_proxy
+#use_router_proxy = true
+
+# Minimal port number for random ports range. (port value)
+# Minimum value: 0
+# Maximum value: 65535
+# Deprecated group/name - [DEFAULT]/rpc_zmq_min_port
+#rpc_zmq_min_port = 49153
+
+# Maximal port number for random ports range. (integer value)
+# Minimum value: 1
+# Maximum value: 65536
+# Deprecated group/name - [DEFAULT]/rpc_zmq_max_port
+#rpc_zmq_max_port = 65536
+
+# Number of retries to find free port number before fail with
+# ZMQBindError. (integer value)
+# Deprecated group/name - [DEFAULT]/rpc_zmq_bind_port_retries
+#rpc_zmq_bind_port_retries = 100
+
+# Default serialization mechanism for
+# serializing/deserializing outgoing/incoming messages (string value)
+# Allowed values: json, msgpack
+# Deprecated group/name - [DEFAULT]/rpc_zmq_serialization
+#rpc_zmq_serialization = json
+
+# This option configures round-robin mode in zmq socket. True
+# means not keeping a queue when server side disconnects.
+# False means to keep queue and messages even if server is
+# disconnected, when the server appears we send all
+# accumulated messages to it. (boolean value)
+#zmq_immediate = false
 
 
 
 [disk_utils]
-### Options defined in ironic_lib.disk_utils
-
 # Size of EFI system partition in MiB when configuring UEFI
 # systems for local boot. (integer value)
 efi_system_partition_size={{ ironic_disk_utils_efi_system_partition_size | default('200') }}
+
+# Size of BIOS Boot partition in MiB when configuring GPT
+# partitioned systems for local boot in BIOS. (integer value)
+#bios_boot_partition_size = 1
 
 # Block size to use when writing to the nodes disk. (string value)
 dd_block_size={{ ironic_disk_utils_dd_block_size | default('1M') }}
@@ -1185,8 +1330,6 @@ dd_block_size={{ ironic_disk_utils_dd_block_size | default('1M') }}
 
 
 [disk_partitioner]
-### Options defined in ironic_lib.disk_partitioner
-
 # After Ironic has completed creating the partition table, it
 # continues to check for activity on the attached iSCSI device
 # status at this interval prior to copying the image to the
@@ -1202,8 +1345,6 @@ dd_block_size={{ ironic_disk_utils_dd_block_size | default('1M') }}
 
 
 [deploy]
-### Options defined in ironic.drivers.modules.deploy_utils
-
 {% if ironic_deploy_http_url is defined and not ironic_deploy_http_url is none -%}
 # ironic-conductor node's HTTP server URL. Example:
 # http://192.1.2.3:8080 (string value)
@@ -1213,25 +1354,58 @@ http_url={{ ironic_deploy_http_url }}
 http_root={{ ironic_deploy_http_root | default('/httpboot') }}
 {% endif %}
 
-{% if ironic_deploy_erase_devices_priority is defined and not ironic_deploy_erase_devices_priority is none -%}
+{% if not ironic_deploy_erase_devices_priority is none -%}
 # Priority to run in-band erase devices via the Ironic Python
 # Agent ramdisk. If unset, will use the priority set in the
 # ramdisk (defaults to 10 for the GenericHardwareManager). If
 # set to 0, will not run during cleaning. (integer value)
-# Deprecated group/name - [agent]/agent_erase_devices_priority
 erase_devices_priority={{ ironic_deploy_erase_devices_priority }}
 {% endif %}
 
-# Number of iterations to be run for erasing devices. (integer
-# value)
-# Deprecated group/name - [agent]/agent_erase_devices_iterations
-#erase_devices_iterations=1
+{% if not ironic_deploy_erase_devices_metadata_priority is none -%}
+# Priority to run in-band clean step that erases metadata from
+# devices, via the Ironic Python Agent ramdisk. If unset, will
+# use the priority set in the ramdisk (defaults to 99 for the
+# GenericHardwareManager). If set to 0, will not run during
+# cleaning. (integer value)
+erase_devices_metadata_priority={{ ironic_deploy_erase_devices_metadata_priority }}
+{% endif %}
+
+# During shred, overwrite all block devices N times with
+# random data. This is only used if a device could not be ATA
+# Secure Erased. Defaults to 1. (integer value)
+# Minimum value: 0
+shred_random_overwrite_iterations={{ ironic_deploy_shred_random_overwrite_iterations | default(1) }}
+
+# Whether to write zeros to a node's block devices after
+# writing random data. This will write zeros to the device
+# even when deploy.shred_random_overwrite_iterations is 0.
+# This option is only used if a device could not be ATA Secure
+# Erased. Defaults to True. (boolean value)
+shred_final_overwrite_with_zeros={{ ironic_deploy_shred_final_overwrite_with_zeros | default(True) | ternary('true','false') }}
+
+# Defines what to do if an ATA secure erase operation fails
+# during cleaning in the Ironic Python Agent. If False, the
+# cleaning operation will fail and the node will be put in
+# ``clean failed`` state. If True, shred will be invoked and
+# cleaning will continue. (boolean value)
+continue_if_disk_secure_erase_fails={{ ironic_deploy_continue_if_disk_secure_erase_fails | default(False) | ternary('true','false') }}
+
+# Whether to power off a node after deploy failure. Defaults
+# to True. (boolean value)
+power_off_after_deploy_failure={{ ironic_deploy_power_off_after_deploy_failure | default(True) | ternary('true','false') }}
+
+# Default boot option to use when no boot option is requested
+# in node's driver_info. Currently the default is "netboot",
+# but it will be changed to "local" in the future. It is
+# recommended to set an explicit value for this option.
+# (string value)
+# Allowed values: netboot, local
+default_boot_option={{ ironic_deploy_default_boot_option | default('netboot') }}
 
 
 
 [dhcp]
-### Options defined in ironic.common.dhcp_factory
-
 # DHCP provider to use. "neutron" uses Neutron, and "none"
 # uses a no-op provider. (string value)
 {% if ironic_neutron_url is defined and not ironic_neutron_url is none -%}
@@ -1242,9 +1416,300 @@ dhcp_provider=none
 
 
 
-[inspector]
-### Options defined in ironic.drivers.modules.inspector
+[service_catalog]
+# Complete public Identity API endpoint. (string value)
+{% if ironic_service_catalog_auth_url is defined and ironic_service_catalog_auth_url -%}
+auth_url={{ ironic_service_catalog_auth_url }}
+{% elif ironic_auth_url is defined and ironic_auth_url %}
+auth_url={{ ironic_auth_url }}
+{% endif %}
 
+# Authentication type to load (string value)
+#auth_type = <None>
+
+# PEM encoded Certificate Authority to use when verifying
+# HTTPs connections. (string value)
+#cafile = <None>
+
+# PEM encoded client certificate cert file (string value)
+#certfile = <None>
+
+# Optional domain ID to use with v3 and v2 parameters. It will
+# be used for both the user and project domain in v3 and
+# ignored in v2 authentication. (string value)
+#default_domain_id = <None>
+
+# Optional domain name to use with v3 API and v2 parameters.
+# It will be used for both the user and project domain in v3
+# and ignored in v2 authentication. (string value)
+{% if ironic_service_catalog_domain_name is defined and ironic_service_catalog_domain_name -%}
+default_domain_name={{ ironic_service_catalog_domain_name }}
+{% elif ironic_domain_name is defined and ironic_domain_name %}
+default_domain_name={{ ironic_domain_name }}
+{% endif %}
+
+# Domain ID to scope to (string value)
+#domain_id = <None>
+
+# Domain name to scope to (string value)
+#domain_name = <None>
+
+# Verify HTTPS connections. (boolean value)
+#insecure = false
+
+# PEM encoded client certificate key file (string value)
+#keyfile = <None>
+
+# Domain ID containing project (string value)
+#project_domain_id = <None>
+
+# Domain name containing project (string value)
+#project_domain_name = <None>
+
+# Project ID to scope to (string value)
+# Deprecated group/name - [glance]/tenant-id
+#project_id = <None>
+
+# Project name to scope to (string value)
+{% if ironic_service_catalog_project_name is defined and ironic_service_catalog_project_name -%}
+project_name={{ ironic_service_catalog_project_name }}
+{% elif ironic_project_name is defined and ironic_project_name %}
+project_name={{ ironic_project_name }}
+{% endif %}
+
+# Timeout value for http requests (integer value)
+#timeout = <None>
+
+# Trust ID (string value)
+#trust_id = <None>
+
+# User's domain id (string value)
+#user_domain_id = <None>
+
+# User's domain name (string value)
+#user_domain_name = <None>
+
+# User id (string value)
+#user_id = <None>
+
+# Username (string value)
+{% if ironic_service_catalog_username is defined and ironic_service_catalog_username -%}
+username={{ ironic_service_catalog_username }}
+password={{ ironic_service_catalog_password | default('') }}
+{% elif ironic_username is defined and ironic_username -%}
+username={{ ironic_username }}
+password={{ ironic_password }}
+{% endif %}
+
+
+
+[neutron]
+{% if ironic_neutron_url is defined and not ironic_neutron_url is none -%}
+# URL for connecting to neutron. (string value)
+url={{ ironic_neutron_url }}
+{% endif %}
+
+# Timeout value for connecting to neutron in seconds. (integer value)
+#url_timeout=30
+
+# Client retries in the case of a failed request. (integer value)
+#retries=3
+
+# Delay value to wait for Neutron agents to setup sufficient
+# DHCP configuration for port. (integer value)
+# Minimum value: 0
+#port_setup_delay = 0
+
+# Neutron network UUID for the ramdisk to be booted into for
+# provisioning nodes. Required for "neutron" network
+# interface. (string value)
+provisioning_network_uuid={{ ironic_neutron_provisioning_network_uuid | default('') }}
+
+# UUID of the network to create Neutron ports on when booting
+# to a ramdisk for cleaning/zapping using Neutron DHCP (string value)
+cleaning_network_uuid={{ ironic_neutron_cleaning_network_uuid | default('') }}
+
+# Default authentication strategy to use when connecting to
+# neutron. Can be either "keystone" or "noauth". Running
+# neutron in noauth mode (related to but not affected by this
+# setting) is insecure and should only be used for testing.
+# (string value)
+auth_strategy={{ ironic_neutron_auth_strategy | default(ironic_auth_strategy) }}
+
+# Complete public Identity API endpoint. (string value)
+{% if ironic_neutron_auth_url is defined and ironic_neutron_auth_url -%}
+auth_url={{ ironic_neutron_auth_url }}
+{% elif ironic_auth_url is defined and ironic_auth_url %}
+auth_url={{ ironic_auth_url }}
+{% endif %}
+
+# Authentication type to load (string value)
+#auth_type = <None>
+
+# PEM encoded Certificate Authority to use when verifying
+# HTTPs connections. (string value)
+#cafile = <None>
+
+# PEM encoded client certificate cert file (string value)
+#certfile = <None>
+
+# Optional domain ID to use with v3 and v2 parameters. It will
+# be used for both the user and project domain in v3 and
+# ignored in v2 authentication. (string value)
+#default_domain_id = <None>
+
+# Optional domain name to use with v3 API and v2 parameters.
+# It will be used for both the user and project domain in v3
+# and ignored in v2 authentication. (string value)
+{% if ironic_neutron_domain_name is defined and ironic_neutron_domain_name -%}
+default_domain_name={{ ironic_neutron_domain_name }}
+{% elif ironic_domain_name is defined and ironic_domain_name %}
+default_domain_name={{ ironic_domain_name }}
+{% endif %}
+
+# Domain ID to scope to (string value)
+#domain_id = <None>
+
+# Domain name to scope to (string value)
+#domain_name = <None>
+
+# Verify HTTPS connections. (boolean value)
+#insecure = false
+
+# PEM encoded client certificate key file (string value)
+#keyfile = <None>
+
+# Domain ID containing project (string value)
+#project_domain_id = <None>
+
+# Domain name containing project (string value)
+#project_domain_name = <None>
+
+# Project ID to scope to (string value)
+# Deprecated group/name - [glance]/tenant-id
+#project_id = <None>
+
+# Project name to scope to (string value)
+{% if ironic_neutron_project_name is defined and ironic_neutron_project_name -%}
+project_name={{ ironic_neutron_project_name }}
+{% elif ironic_project_name is defined and ironic_project_name %}
+project_name={{ ironic_project_name }}
+{% endif %}
+
+# Timeout value for http requests (integer value)
+#timeout = <None>
+
+# Trust ID (string value)
+#trust_id = <None>
+
+# User's domain id (string value)
+#user_domain_id = <None>
+
+# User's domain name (string value)
+#user_domain_name = <None>
+
+# User id (string value)
+#user_id = <None>
+
+# Username (string value)
+{% if ironic_neutron_username is defined and ironic_neutron_username -%}
+username={{ ironic_neutron_username }}
+password={{ ironic_neutron_password | default('') }}
+{% elif ironic_username is defined and ironic_username %}
+username={{ ironic_username }}
+password={{ ironic_password | default('') }}
+{% endif %}
+
+
+
+[swift]
+# Complete public Identity API endpoint. (string value)
+{% if ironic_swift_auth_url is defined and ironic_swift_auth_url -%}
+auth_url={{ ironic_swift_auth_url }}
+{% elif ironic_auth_url is defined and ironic_auth_url %}
+auth_url={{ ironic_auth_url }}
+{% endif %}
+
+# Authentication type to load (string value)
+#auth_type = <None>
+
+# PEM encoded Certificate Authority to use when verifying
+# HTTPs connections. (string value)
+#cafile = <None>
+
+# PEM encoded client certificate cert file (string value)
+#certfile = <None>
+
+# Optional domain ID to use with v3 and v2 parameters. It will
+# be used for both the user and project domain in v3 and
+# ignored in v2 authentication. (string value)
+#default_domain_id = <None>
+
+# Optional domain name to use with v3 API and v2 parameters.
+# It will be used for both the user and project domain in v3
+# and ignored in v2 authentication. (string value)
+{% if ironic_swift_domain_name is defined and ironic_swift_domain_name -%}
+default_domain_name={{ ironic_swift_domain_name }}
+{% elif ironic_domain_name is defined and ironic_domain_name %}
+default_domain_name={{ ironic_domain_name }}
+{% endif %}
+
+# Domain ID to scope to (string value)
+#domain_id = <None>
+
+# Domain name to scope to (string value)
+#domain_name = <None>
+
+# Verify HTTPS connections. (boolean value)
+#insecure = false
+
+# PEM encoded client certificate key file (string value)
+#keyfile = <None>
+
+# Domain ID containing project (string value)
+#project_domain_id = <None>
+
+# Domain name containing project (string value)
+#project_domain_name = <None>
+
+# Project ID to scope to (string value)
+# Deprecated group/name - [glance]/tenant-id
+#project_id = <None>
+
+# Project name to scope to (string value)
+{% if ironic_swift_project_name is defined and ironic_swift_project_name -%}
+project_name={{ ironic_swift_project_name }}
+{% elif ironic_project_name is defined and ironic_project_name %}
+project_name={{ ironic_project_name }}
+{% endif %}
+
+# Timeout value for http requests (integer value)
+#timeout = <None>
+
+# Trust ID (string value)
+#trust_id = <None>
+
+# User's domain id (string value)
+#user_domain_id = <None>
+
+# User's domain name (string value)
+#user_domain_name = <None>
+
+# User id (string value)
+#user_id = <None>
+
+# Username (string value)
+{% if ironic_swift_username is defined and ironic_swift_username -%}
+username={{ ironic_swift_username }}
+password={{ ironic_swift_password | default('') }}
+{% elif ironic_username is defined and ironic_username -%}
+username={{ ironic_username }}
+password={{ ironic_password }}
+{% endif %}
+
+
+
+[inspector]
 # whether to enable inspection using ironic-inspector (boolean value)
 {% if ironic_inspector_enabled -%}
 enabled=true
@@ -1261,11 +1726,93 @@ status_check_period={{ ironic_inspector_status_check_period | default('60') }}
 enabled=false
 {% endif %}
 
+# Complete public Identity API endpoint. (string value)
+{% if ironic_inspector_auth_url is defined and ironic_inspector_auth_url -%}
+auth_url={{ ironic_inspector_auth_url }}
+{% elif ironic_auth_url is defined and ironic_auth_url %}
+auth_url={{ ironic_auth_url }}
+{% endif %}
+
+# Authentication type to load (string value)
+#auth_type = <None>
+
+# PEM encoded Certificate Authority to use when verifying
+# HTTPs connections. (string value)
+#cafile = <None>
+
+# PEM encoded client certificate cert file (string value)
+#certfile = <None>
+
+# Optional domain ID to use with v3 and v2 parameters. It will
+# be used for both the user and project domain in v3 and
+# ignored in v2 authentication. (string value)
+#default_domain_id = <None>
+
+# Optional domain name to use with v3 API and v2 parameters.
+# It will be used for both the user and project domain in v3
+# and ignored in v2 authentication. (string value)
+{% if ironic_inspector_domain_name is defined and ironic_inspector_domain_name -%}
+default_domain_name={{ ironic_inspector_domain_name }}
+{% elif ironic_domain_name is defined and ironic_domain_name %}
+default_domain_name={{ ironic_domain_name }}
+{% endif %}
+
+# Domain ID to scope to (string value)
+#domain_id = <None>
+
+# Domain name to scope to (string value)
+#domain_name = <None>
+
+# Verify HTTPS connections. (boolean value)
+#insecure = false
+
+# PEM encoded client certificate key file (string value)
+#keyfile = <None>
+
+# Domain ID containing project (string value)
+#project_domain_id = <None>
+
+# Domain name containing project (string value)
+#project_domain_name = <None>
+
+# Project ID to scope to (string value)
+# Deprecated group/name - [glance]/tenant-id
+#project_id = <None>
+
+# Project name to scope to (string value)
+{% if ironic_inspector_project_name is defined and ironic_inspector_project_name -%}
+project_name={{ ironic_inspector_project_name }}
+{% elif ironic_project_name is defined and ironic_project_name %}
+project_name={{ ironic_project_name }}
+{% endif %}
+
+# Timeout value for http requests (integer value)
+#timeout = <None>
+
+# Trust ID (string value)
+#trust_id = <None>
+
+# User's domain id (string value)
+#user_domain_id = <None>
+
+# User's domain name (string value)
+#user_domain_name = <None>
+
+# User id (string value)
+#user_id = <None>
+
+# Username (string value)
+{% if ironic_inspector_username is defined and ironic_inspector_username -%}
+username={{ ironic_inspector_username }}
+password={{ ironic_inspector_password | default('') }}
+{% elif ironic_username is defined and ironic_username %}
+username={{ ironic_username }}
+password={{ ironic_password }}
+{% endif %}
+
 
 
 [glance]
-### Options defined in ironic.common.glance_service.v2.image_service
-
 # A list of URL schemes that can be downloaded directly via
 # the direct_url.  Currently supported schemes: [file]. (list value)
 #allowed_direct_url_schemes=
@@ -1343,9 +1890,6 @@ swift_temp_url_cache_enabled={{ ironic_glance_swift_temp_url_cache_enabled | def
 # Allowed values: swift, radosgw
 temp_url_endpoint_type={{ ironic_glance_temp_url_endpoint_type | default('swift') }}
 
-
-### Options defined in ironic.common.image_service
-
 # Default glance hostname or IP address. (string value)
 #glance_host=$my_ip
 
@@ -1375,13 +1919,95 @@ glance_api_servers={{ ironic_glance_api_servers | join(',') }}
 
 # Authentication strategy to use when connecting to glance.
 # Only "keystone" and "noauth" are currently supported by ironic. (string value)
-auth_strategy={{ ironic_glace_auth_strategy | default(ironic_auth_strategy) }}
+auth_strategy={{ ironic_glance_auth_strategy | default(ironic_auth_strategy) }}
+
+# Complete public Identity API endpoint. (string value)
+{% if ironic_glance_auth_url is defined and ironic_glance_auth_url -%}
+auth_url={{ ironic_glance_auth_url }}
+{% elif ironic_auth_url is defined and ironic_auth_url %}
+auth_url={{ ironic_auth_url }}
+{% endif %}
+
+# Authentication type to load (string value)
+#auth_type = <None>
+
+# PEM encoded Certificate Authority to use when verifying
+# HTTPs connections. (string value)
+#cafile = <None>
+
+# PEM encoded client certificate cert file (string value)
+#certfile = <None>
+
+# Optional domain ID to use with v3 and v2 parameters. It will
+# be used for both the user and project domain in v3 and
+# ignored in v2 authentication. (string value)
+#default_domain_id = <None>
+
+# Optional domain name to use with v3 API and v2 parameters.
+# It will be used for both the user and project domain in v3
+# and ignored in v2 authentication. (string value)
+{% if ironic_glance_domain_name is defined and ironic_glance_domain_name -%}
+default_domain_name={{ ironic_glance_domain_name }}
+{% elif ironic_domain_name is defined and ironic_domain_name %}
+default_domain_name={{ ironic_domain_name }}
+{% endif %}
+
+# Domain ID to scope to (string value)
+#domain_id = <None>
+
+# Domain name to scope to (string value)
+#domain_name = <None>
+
+# Verify HTTPS connections. (boolean value)
+#insecure = false
+
+# PEM encoded client certificate key file (string value)
+#keyfile = <None>
+
+# Domain ID containing project (string value)
+#project_domain_id = <None>
+
+# Domain name containing project (string value)
+#project_domain_name = <None>
+
+# Project ID to scope to (string value)
+# Deprecated group/name - [glance]/tenant-id
+#project_id = <None>
+
+# Project name to scope to (string value)
+{% if ironic_glance_project_name is defined and ironic_glance_project_name -%}
+project_name={{ ironic_glance_project_name }}
+{% elif ironic_project_name is defined and ironic_project_name %}
+project_name={{ ironic_project_name }}
+{% endif %}
+
+# Timeout value for http requests (integer value)
+#timeout = <None>
+
+# Trust ID (string value)
+#trust_id = <None>
+
+# User's domain id (string value)
+#user_domain_id = <None>
+
+# User's domain name (string value)
+#user_domain_name = <None>
+
+# User id (string value)
+#user_id = <None>
+
+# Username (string value)
+{% if ironic_glance_username is defined and ironic_glance_username -%}
+username={{ ironic_glance_username }}
+password={{ ironic_glance_password | default('') }}
+{% elif ironic_username is defined and ironic_username %}
+username={{ ironic_username }}
+password={{ ironic_password }}
+{% endif %}
 
 
 
 [console]
-### Options defined in ironic.drivers.modules.console_utils
-
 # Path to serial console terminal program (string value)
 terminal={{ ironic_console_terminal | default('shellinaboxd') }}
 
@@ -1404,8 +2030,6 @@ terminal_pid_dir={{ ironic_console_terminal_pid_dir | default(ironic_tempdir) }}
 
 
 [agent]
-### Options defined in ironic.drivers.modules.agent
-
 # Number of times to retry getting power state to check if
 # bare metal node has been powered off after a soft power off.
 # (integer value)
@@ -1428,9 +2052,6 @@ memory_consumed_by_agent={{ ironic_agent_memory_consumed | default('0') }}
 # (boolean value)
 manage_agent_boot={{ ironic_agent_manage_boot | ternary('true','false') }}
 
-# Maximum interval (in seconds) for agent heartbeats. (integer value)
-#heartbeat_timeout=300
-
 # API version to use for communicating with the ramdisk agent.
 # (string value)
 agent_api_version={{ ironic_agent_api_version | default('v1') }}
@@ -1444,30 +2065,40 @@ agent_api_version={{ ironic_agent_api_version | default('v1') }}
 # be set to True. Defaults to True. (boolean value)
 stream_raw_images={{ ironic_agent_stream_raw_images | ternary('true','false') }}
 
+# Whether Ironic should collect the deployment logs on deployment failure 
+# (on_failure), always or never. (string value)
+# Allowed values: always, on_failure, never
+deploy_logs_collect={{ ironic_agent_deploy_logs_collect | default('on_failure') }}
 
+{% if ironic_agent_deploy_logs_local_path is defined and ironic_agent_deploy_logs_local_path -%}
+# The name of the storage backend where the logs will be stored. (string value)
+# Allowed values: local, swift
+deploy_logs_storage_backend=local
 
-[ipmi]
-### Options defined in ironic.drivers.modules.ipminative
+# The path to the directory where the logs should be stored,
+# used when the deploy_logs_storage_backend is configured to
+# "local". (string value)
+deploy_logs_local_path={{ ironic_agent_deploy_logs_local_path }}
+{% elif ironic_agent_deploy_logs_swift_container is defined and ironic_agent_deploy_logs_swift_container -%}
+# The name of the storage backend where the logs will be stored. (string value)
+# Allowed values: local, swift
+deploy_logs_storage_backend=swift
 
-# Maximum time in seconds to retry IPMI operations. There is a
-# tradeoff when setting this value. Setting this too low may
-# cause older BMCs to crash and require a hard reset. However,
-# setting too high can cause the sync power state periodic
-# task to hang when there are slow or unresponsive BMCs.
-# (integer value)
-retry_timeout={{ ironic_ipmi_retry_timeout | default('60') }}
+# The name of the Swift container to store the logs, used when
+# the deploy_logs_storage_backend is configured to "swift".
+# (string value)
+deploy_logs_swift_container={{ ironic_agent_deploy_logs_swift_container }}
 
-# Minimum time, in seconds, between IPMI operations sent to a
-# server. There is a risk with some hardware that setting this
-# too low may cause the BMC to crash. Recommended setting is 5
-# seconds. (integer value)
-min_command_interval={{ ironic_ipmi_min_command_interval | default('5') }}
+# Number of days before a log object is marked as expired in
+# Swift. If None, the logs will be kept forever or until
+# manually deleted. Used when the deploy_logs_storage_backend
+# is configured to "swift". (integer value)
+deploy_logs_swift_days_to_expire=30
+{% endif %}
 
 
 
 [pxe]
-### Options defined in ironic.drivers.modules.iscsi_deploy
-
 # Additional append parameters for baremetal PXE boot. (string value)
 pxe_append_params={{ ironic_pxe_append_params | join(' ') }}
 
@@ -1493,20 +2124,26 @@ image_cache_ttl={{ ironic_pxe_image_cache_ttl | default('10080') }}
 # The disk devices to scan while doing the deploy. (string value)
 disk_devices={{ ironic_pxe_disk_devices | join(',') }}
 
-### Options defined in ironic.drivers.modules.pxe
-
 {% if ironic_pxe_config_template is defined and not ironic_pxe_config_template is none -%}
 # On ironic-conductor node, template file for PXE
 # configuration. (string value)
 # $pybasedir/drivers/modules/pxe_config.template
+{% if '$pybasedir' in ironic_pxe_config_template -%}
+pxe_config_template={{ ironic_pxe_config_template }}
+{% else %}
 pxe_config_template={{ ironic_state_path }}/{{ ironic_pxe_config_template | basename }}
+{% endif %}
 {% endif %}
 
 {% if ironic_pxe_uefi_pxe_config_template is defined and not ironic_pxe_uefi_pxe_config_template is none -%}
 # On ironic-conductor node, template file for PXE
 # configuration for UEFI boot loader. (string value)
 # $pybasedir/drivers/modules/elilo_efi_pxe_config.template
+{% if '$pybasedir' in ironic_pxe_uefi_pxe_config_template -%}
+uefi_pxe_config_template={{ ironic_pxe_uefi_pxe_config_template }}
+{% else %}
 uefi_pxe_config_template={{ ironic_state_path }}/{{ ironic_pxe_uefi_pxe_config_template | basename }}
+{% endif %}
 {% endif %}
 
 # IP address of ironic-conductor node's TFTP server. (string value)
@@ -1523,17 +2160,28 @@ tftp_master_path={{ ironic_pxe_tftp_master_path | default('/tftpboot/master_imag
 pxe_bootfile_name={{ ironic_pxe_bootfile_name | default('pxelinux.0') }}
 
 # Bootfile DHCP parameter for UEFI boot mode. (string value)
-uefi_pxe_bootfile_name={{ ironic_pxe_uefi_pxe_bootfile_name | default('elilo.efi') }}
+uefi_pxe_bootfile_name={{ ironic_pxe_uefi_pxe_bootfile_name | default('bootx64.efi') }}
 
 # Enable iPXE boot. (boolean value)
-{% if ironic_ipxe is defined and ironic_ipxe -%}
+{% if ironic_pxe_uefi_pxe_bootfile_name is defined and ironic_pxe_uefi_pxe_bootfile_name == 'ipxe.efi' -%}
 ipxe_enabled=true
 
 {% if ironic_pxe_ipxe_boot_script is defined and not ironic_pxe_ipxe_boot_script is none -%}
 # On ironic-conductor node, the path to the main iPXE script file. (string value)
 # $pybasedir/drivers/modules/boot.ipxe
+{% if '$pybasedir' in ironic_pxe_ipxe_boot_script -%}
+ipxe_boot_script={{ ironic_pxe_ipxe_boot_script }}
+{% else %}
 ipxe_boot_script={{ ironic_state_path }}/{{ ironic_pxe_ipxe_boot_script | basename }}
 {% endif %}
+{% endif %}
+
+# Download deploy images directly from swift using temporary
+# URLs. If set to false (default), images are downloaded to
+# the ironic-conductor node and served over its local HTTP
+# server. Applicable only when 'ipxe_enabled' option is set to
+# true. (boolean value)
+ipxe_use_swift=false
 {% else %}
 ipxe_enabled=false
 {% endif %}
@@ -1544,9 +2192,33 @@ ipxe_enabled=false
 
 
 
-[iboot]
-### Options defined in ironic.drivers.modules.iboot
+[ipmi]
+# Maximum time in seconds to retry IPMI operations. There is a
+# tradeoff when setting this value. Setting this too low may
+# cause older BMCs to crash and require a hard reset. However,
+# setting too high can cause the sync power state periodic
+# task to hang when there are slow or unresponsive BMCs.
+# (integer value)
+retry_timeout={{ ironic_ipmi_retry_timeout | default('60') }}
 
+# Minimum time, in seconds, between IPMI operations sent to a
+# server. There is a risk with some hardware that setting this
+# too low may cause the BMC to crash. Recommended setting is 5
+# seconds. (integer value)
+min_command_interval={{ ironic_ipmi_min_command_interval | default('5') }}
+
+
+
+[iscsi]
+# The port number on which the iSCSI portal listens for
+# incoming connections. (port value)
+# Minimum value: 0
+# Maximum value: 65535
+#portal_port = 3260
+
+
+
+[iboot]
 # Maximum retries for iBoot operations (integer value)
 #max_retry = 3
 
@@ -1562,23 +2234,15 @@ ipxe_enabled=false
 
 
 [drac]
-# Options defined in ironic.drivers.modules.drac.client
-
-# In case there is a communication failure, the DRAC client
-# resends the request as many times as defined in this
-# setting. (integer value)
-#client_retry_count=5
-
-# In case there is a communication failure, the DRAC client
-# waits for as many seconds as defined in this setting before
-# resending the request. (integer value)
-#client_retry_delay=5
+# Interval (in seconds) between periodic RAID job status
+# checks to determine whether the asynchronous RAID
+# configuration was successfully finished or not. (integer
+# value)
+#query_raid_config_job_status_interval = 120
 
 
 
 [ilo]
-### Options defined in ironic.drivers.modules.ilo.common
-
 # Timeout (in seconds) for iLO operations (integer value)
 #client_timeout=60
 
@@ -1607,29 +2271,14 @@ use_web_server_for_images=true
 use_web_server_for_images=false
 {% endif %}
 
-### Options defined in ironic.drivers.modules.ilo.deploy
-
-{% if ironic_deploy_erase_devices_priority is defined and not ironic_deploy_erase_devices_priority is none -%}
-# Priority for erase devices clean step. If unset, it defaults
-# to 10. If set to 0, the step will be disabled and will not 
-# run during cleaning. (integer value)
-clean_priority_erase_devices={{ ironic_deploy_erase_devices_priority }}
-{% else %}
-clean_priority_erase_devices={{ ironic_ilo_clean_priority_erase_devices | default('10') }}
-{% endif %}
-
-### Options defined in ironic.drivers.modules.ilo.management
-
 # Priority for reset_ilo clean step. (integer value)
 clean_priority_reset_ilo={{ ironic_ilo_clean_priority_reset_ilo | default('1') }}
 
-# Priority for reset_bios_to_default clean step. (integer
-# value)
+# Priority for reset_bios_to_default clean step. (integer value)
 #clean_priority_reset_bios_to_default=10
 
 # Priority for reset_secure_boot_keys clean step. This step
-# will reset the secure boot keys to manufacturing  defaults.
-# (integer value)
+# will reset the secure boot keys to manufacturing  defaults. (integer value)
 #clean_priority_reset_secure_boot_keys_to_default=20
 
 # Priority for clear_secure_boot_keys clean step. This step is
@@ -1642,21 +2291,28 @@ clean_priority_reset_ilo={{ ironic_ilo_clean_priority_reset_ilo | default('1') }
 # nodes's driver_info with the new password. (integer value)
 #clean_priority_reset_ilo_credential=30
 
-## Options defined in ironic.drivers.modules.ilo.power
-
 # Number of times a power operation needs to be retried
-# (integer value)
 #power_retry=6
 
 # Amount of time in seconds to wait in between power
 # operations (integer value)
 #power_wait=2
 
+# CA certificate file to validate iLO. (string value)
+#ca_file = <None>
+
+# Default boot mode to be used in provisioning when
+# "boot_mode" capability is not provided in the
+# "properties/capabilities" of the node. The default is "auto"
+# for backward compatibility. When "auto" is specified,
+# default boot mode will be selected based on boot mode
+# settings on the system. (string value)
+# Allowed values: auto, bios, uefi
+default_boot_mode = auto
+
 
 
 [irmc]
-### Options defined in ironic.drivers.modules.irmc.boot
-
 # Ironic conductor node's "NFS" or "CIFS" root path (string value)
 #remote_image_share_root = /remote_image_share_root
 
@@ -1714,8 +2370,6 @@ clean_priority_reset_ilo={{ ironic_ilo_clean_priority_reset_ilo | default('1') }
 
 
 [amt]
-### Options defined in ironic.drivers.modules.amt.common
-
 # Protocol used for AMT endpoint, support http/https (string
 # value)
 #protocol=http
@@ -1740,20 +2394,18 @@ clean_priority_reset_ilo={{ ironic_ilo_clean_priority_reset_ilo | default('1') }
 
 
 [oneview]
-### Options defined in ironic.drivers.modules.oneview.common
-
+{% if ironic_oneview_manager_url is defined and not ironic_oneview_manager_url is none -%}
 # URL where OneView is available (string value)
-#manager_url = <None>
+manager_url={{ ironic_oneview_manager_url }}
 
 # OneView username to be used (string value)
-#username = <None>
+username={{ ironic_oneview_username }}
 
 # OneView password to be used (string value)
-#password = <None>
+password={{ ironic_oneview_password }}
 
-# Option to allow insecure connection with OneView (boolean
-# value)
-#allow_insecure_connections = false
+# Option to allow insecure connection with OneView
+allow_insecure_connections=True
 
 # Path to CA certificate (string value)
 #tls_cacert_file = <None>
@@ -1761,11 +2413,43 @@ clean_priority_reset_ilo={{ ironic_ilo_clean_priority_reset_ilo | default('1') }
 # Max connection retries to check changes on OneView (integer value)
 #max_polling_attempts = 12
 
+# Whether to enable the periodic tasks for OneView driver be
+# aware when OneView hardware resources are taken and released
+# by Ironic or OneView users and proactively manage nodes in
+# clean fail state according to Dynamic Allocation model of
+# hardware resources allocation in OneView. (boolean value)
+enable_periodic_tasks=true
+
+# Period (in seconds) for periodic tasks to be executed when
+# enable_periodic_tasks=True. (integer value)
+periodic_check_interval=300
+{% endif %}
+
+
+
+[cimc]
+# Number of times a power operation needs to be retried
+# (integer value)
+#max_retry = 6
+
+# Amount of time in seconds to wait in between power
+# operations (integer value)
+#action_interval = 10
+
+
+
+[cisco_ucs]
+# Number of times a power operation needs to be retried
+# (integer value)
+#max_retry = 6
+
+# Amount of time in seconds to wait in between power
+# operations (integer value)
+#action_interval = 5
+
 
 
 [seamicro]
-### Options defined in ironic.drivers.modules.seamicro
-
 # Maximum retries for SeaMicro operations (integer value)
 #max_retry=3
 
@@ -1776,8 +2460,6 @@ clean_priority_reset_ilo={{ ironic_ilo_clean_priority_reset_ilo | default('1') }
 
 
 [snmp]
-### Options defined in ironic.drivers.modules.snmp
-
 # Seconds to wait for power action to be completed (integer
 # value)
 #power_timeout=10
@@ -1790,8 +2472,6 @@ clean_priority_reset_ilo={{ ironic_ilo_clean_priority_reset_ilo | default('1') }
 
 
 [ssh]
-### Options defined in ironic.drivers.modules.ssh
-
 # libvirt URI (string value)
 #libvirt_uri=qemu:///system
 
@@ -1807,8 +2487,6 @@ clean_priority_reset_ilo={{ ironic_ilo_clean_priority_reset_ilo | default('1') }
 
 
 [virtualbox]
-### Options defined in ironic.drivers.modules.virtualbox
-
 # Port on which VirtualBox web service is listening. (integer
 # value)
 #port=18083

@@ -10,23 +10,16 @@ ironic_enabled_on_startup: True
 ironic_debug: False
 ironic_trace: False
 
-# Ironic_lib
-ironic_lib_fatal_exception_format_errors: False
-
-# Default options:
-#ironic_my_ip:
+### Default options
+ironic_my_ip: "{{ ansible_default_ipv4.address }}"
+#ironic_host: "{{ inventory_hostname }}"
 ironic_log: "/var/log/ironic/ironic.log"
 ironic_watch_log_file: True
 ironic_state_path: "{{ ironic_var_dir }}"
-ironic_host: "{{ inventory_hostname }}"
 ironic_publish_errors: True
 ironic_fatal_deprecations: False
 ironic_executor_thread_pool_size: 64
-#ironic_notification_driver: [ "messaging" ]
-#ironic_notification_topics: "notifications"
-#ironic_control_exchange: "openstack"
-#ironic_transport_url:
-ironic_rpc_backend: "rabbit"
+ironic_graceful_shutdown_timeout: 60
 ironic_auth_strategy: "noauth"
 ironic_enabled_drivers: [ "pxe_ipmitool" ]
 ironic_fatal_exception_format_errors: False
@@ -36,37 +29,28 @@ ironic_force_raw_images: True
 ironic_tempdir: "/tmp"
 ironic_parallel_image_downloads: False
 ironic_run_external_periodic_tasks: True
-# If defined, it will copy next two templates
-ironic_isolinux_config_template:
-ironic_grub_config_template:
-# Isolinux is taken from the syslinux tarball is
-# not defined here, otherwise this is the default value
+#ironic_control_exchange: "openstack"
+# Isolinux is taken from the syslinux tarball if it not defined here, 
 #ironic_isolinux_bin: /usr/lib/syslinux/isolinux.bin
+# otherwise this is the default value. If defined, it will copy next templates
+# if they do not contain '$pybasedir'
+#ironic_isolinux_config_template:
+#ironic_grub_config_template:
 
 
-# Ironic-api options:
+### Auditing
+#ironic_audit_enabled: False
+#ironic_audit_ignore_req_list: ['GET', 'POST']
+
+
+### Ironic-Api
 ironic_api_host_ip: "0.0.0.0"
 ironic_api_port: 6385
-# If you are behing a proxy, you can define here the proxy URL
+# Proxy URL to get to ironic
 #ironic_api_public_endpoint:
 
 
-# CORS: http://docs.openstack.org/developer/oslo.middleware/cors.html
-#ironic_cors_allowed_origin: "*"
-#ironic_cors_allow_credentials: True
-#ironic_cors_expose_headers: ["Content-Type", "Cache-Control", "Content-Language", "Expires", "Last-Modified", "Pragma"]
-#ironic_cors_max_age: 3600
-#ironic_cors_allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-#ironic_cors_allow_headers: ["Content-Type", "Cache-Control", "Content-Language", "Expires", "Last-Modified", "Pragma"]
-
-# CORS subdomains
-#ironic_cors_domains:
-#  localhost_webclient:
-#     allowed_origin: "http://localhost:8080"
-#     allow_credentials: True
-
-
-# Ironic-conductor options:
+### Ironic-Conductor
 ironic_conductor_workers_pool_size: 100
 ironic_conductor_api_url: "http://{{ ansible_default_ipv4.address }}:6385/"
 ironic_conductor_sync_power_state_interval: 60
@@ -78,85 +62,94 @@ ironic_conductor_inspect_timeout: 1800
 ironic_conductor_automated_clean: False
 #ironic_conductor_configdrive_swift: "ironic_configdrive"
 
-# Database options:
+
+### Database
 ironic_database_connection: "sqlite:///var/lib/ironic/ironic.db"
-#ironic_database_mysql_host: "localhost"
+#ironic_database_slave_connection:
+ironic_database_mysql_host: "localhost"
 #ironic_database_mysql_userid: "ironic"
 #ironic_database_mysql_password: "ironic"
-#ironic_database_mysql_db: "ironic"
+ironic_database_mysql_port: 3306
+ironic_database_mysql_db: "ironic"
 ironic_database_idle_timeout: 600
 ironic_database_pool_size: 10
-#ironic_database_pool_timeout: 
+#ironic_database_max_retries: -1
+#ironic_database_pool_timeout:
 ironic_database_use_db_reconnect: True
 
-# Keystone options:
-ironic_keystone_region_name: "RegionOne"
-# keystone adminURL, if defined
-ironic_keystone_authtoken_identity_uri:
-ironic_keystone_authtoken_service_user: "ironic"
-ironic_keystone_authtoken_service_password: "ironic"
-ironic_keystone_authtoken_service_tenant_name: "ironic"
-# keystone publicURL
-ironic_keystone_authtoken_auth_uri:
-ironic_keystone_authtoken_auth_version: "v3.0"
 
-# Neutron options. If not defined, you will need an external dhcp service: 
-#ironic_neutron_url:
-#ironic_neutron_auth_strategy: "keystone"
-#ironic_neutron_cleaning_network_uuid:
-
-# Oslo messaging options:
+### Messaging
+ironic_transport_url: "rabbit://guest:guest@localhost:5672/"
+ironic_messaging_backend: "rabbit"
+ironic_messaging_host: "localhost"
+ironic_messaging_port: 5672
+#ironic_messaging_userid: "guest"
+#ironic_messaging_password: "guest"
+ironic_messaging_virtual_host: "ironic"
+# Messaging options:
 ironic_oslo_concurrency_lock_path: "/var/lock/ironic"
-ironic_oslo_messaging_amqp_container_name:
+#ironic_oslo_messaging_amqp_container_name:
 ironic_oslo_messaging_amqp_idle_timeout: 0
 ironic_oslo_messaging_rabbit_rpc_conn_pool_size: 30
 ironic_oslo_messaging_rabbit_amqp_durable_queues: False
 ironic_oslo_messaging_rabbit_amqp_auto_delete: False
-ironic_oslo_messaging_rabbit_host: "localhost"
-ironic_oslo_messaging_rabbit_port: 5672
-ironic_oslo_messaging_rabbit_userid: "guest"
-ironic_oslo_messaging_rabbit_password: "guest"
 ironic_oslo_messaging_rabbit_login_method: "AMQPLAIN"
-ironic_oslo_messaging_rabbit_virtual_host: "ironic"
-ironic_oslo_messaging_rabbit_max_retries: 0
 ironic_oslo_messaging_rabbit_ha_queues: False
 ironic_oslo_messaging_heartbeat_timeout_threshold: 60
-# If defined, it will copy the file
-ironic_oslo_policy_file:
+ironic_oslo_messaging_pool_max_size: 10
+ironic_oslo_messaging_pool_timeout: 30
+ironic_oslo_messaging_pool_recycle: 600
+ironic_oslo_messaging_pool_stale: 60
+ironic_oslo_messaging_notification_persistence: False
+#ironic_oslo_messaging_notification_driver: [ "messaging" ]
+#ironic_oslo_messaging_notification_topics: "notifications"
+# If defined, it will copy the file if not contains $pybasedir
+#ironic_oslo_policy_file:
 
-# Deploy options:
+
+### Metrics, enabled by defining a statsd host
+#ironic_metrics_statsd_host:
+ironic_metrics_statsd_port: 8125
+ironic_metrics_agent: True
+ironic_metrics_prepend_host: True
+ironic_metrics_global_prefix: "ironic"
+ironic_metrics_global_prefix_agent: "ironic.agent"
+
+### CORS: http://docs.openstack.org/developer/oslo.middleware/cors.html
+#ironic_cors_allowed_origin: "*"
+#ironic_cors_allow_credentials: True
+#ironic_cors_expose_headers: ["Content-Type", "Cache-Control", "Content-Language", "Expires", "Last-Modified", "Pragma"]
+#ironic_cors_max_age: 3600
+#ironic_cors_allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+#ironic_cors_allow_headers: ["Content-Type", "Cache-Control", "Content-Language", "Expires", "Last-Modified", "Pragma"]
+#
+# CORS subdomains
+#ironic_cors_domains:
+#  localhost_webclient:
+#     allowed_origin: "http://localhost:8080"
+#     allow_credentials: True
+
+
+### Deploy
 #ironic_deploy_http_url: 
 ironic_deploy_http_root: "/var/lib/ironic/httpboot"
-ironic_deploy_erase_devices_priority: 10
+# Disable erase devices ...
+ironic_deploy_erase_devices_priority: 0
+ironic_deploy_shred_random_overwrite_iterations: 0
+# ... but enable deleting metadata (mbr, gpt ...)
+ironic_deploy_erase_devices_metadata_priority: 99
+# Whether to write zeros to a node's block devices after writing random data
+ironic_deploy_shred_final_overwrite_with_zeros: False
+# What to do if an ATA secure erase operation fails during cleaning. If False,
+# the cleaning operation will fail and the node will be put in clean failed state.
+# If True, shred will be invoked and cleaning will continue.
+ironic_deploy_continue_if_disk_secure_erase_fails: True
+ironic_deploy_power_off_after_deploy_failure: False
+# Default boot option to use when no boot option is requested in node's driver_info.
+ironic_deploy_default_boot_option: "netboot"
 
-# Disk utils options:
-ironic_disk_utils_efi_system_partition_size: 200
-ironic_disk_utils_dd_block_size: "1M"
 
-# Inspector options:
-ironic_inspector_enabled: False
-ironic_inspector_service_url: "http://{{ ansible_default_ipv4.address }}:5050"
-ironic_inspector_status_check_period: 60
-
-# Glance options
-# Allowed values: swift, radosgw
-#ironic_glance_temp_url_endpoint_type: "swift"
-#ironic_glance_api_servers: [ ]
-#ironic_glace_auth_strategy: "keystone"
-# Swift backend options for glance
-#ironic_glance_swift_endpoint_url:
-#ironic_glance_swift_temp_url_key:
-#ironic_glance_swift_api_version: v1
-#ironic_glance_swift_temp_url_cache_enabled: False
-#ironic_glance_swift_temp_url_duration: 1200
-#ironic_glance_swift_container: "glance"
-#ironic_glance_swift_account:
-
-# Console options:
-ironic_console_terminal: "shellinaboxd"
-ironic_console_terminal_pid_dir: "/tmp"
-
-# Agent options:
+### Agent
 ironic_agent_manage_boot: True
 ironic_agent_memory_consumed: 0
 ironic_agent_api_version: "v1"
@@ -166,17 +159,15 @@ ironic_agent_api_version: "v1"
 # image to a tmpfs partition. Streaming may be undesirable if
 # writing to disk is slower than the network
 ironic_agent_stream_raw_images: True
+# Collect the deployment logs on deployment failure (on_failure), always or never
+ironic_agent_deploy_logs_collect: "on_failure"
+# Where put those logs, local ...
+ironic_agent_deploy_logs_local_path: "/var/log/ironic/deploy"
+# or swift (local takes preference)
+#ironic_agent_deploy_logs_swift_container: "ironic_deploy_logs_container"
 
-# IPMI options:
-ironic_ipmi_retry_timeout: 60
-ironic_ipmi_min_command_interval: 8
 
-# ILO
-#ironic_ilo_clean_priority_erase_devices:
-#ironic_ilo_swift_ilo_container: "ironic_ilo_container"
-ironic_ilo_clean_priority_reset_ilo: 1
-
-# PXE options:
+# PXE
 ironic_pxe_append_params: ["nofb", "nomodeset", "vga=normal"]
 ironic_pxe_default_ephemeral_format: "ext4"
 ironic_pxe_images_path: "/var/lib/ironic/images"
@@ -189,31 +180,119 @@ ironic_pxe_tftp_server: "{{ ansible_eth0.ipv4.address }}"
 ironic_pxe_tftp_root: "/var/lib/ironic/tftpboot"
 ironic_pxe_tftp_master_path: "/var/lib/ironic/tftpboot/master_images"
 ironic_pxe_bootfile_name: "pxelinux.0"
-ironic_pxe_uefi_pxe_bootfile_name: "elilo.efi"
-# If defined, it will copy the next template files
-#ironic_pxe_config_template:
-#ironic_pxe_uefi_pxe_config_template:
-
+ironic_pxe_config_template: "$pybasedir/drivers/modules/pxe_config.template"
+# Elilo or Grub2 for PXE UEFI boot: grubx64.efi, elilo.efi or ipxe.efi
+# Grub2 is default, if you change to elilo, you also need to define the template
+ironic_pxe_uefi_pxe_bootfile_name: "grubx64.efi"
+#ironic_pxe_uefi_pxe_config_template: "$pybasedir/drivers/modules/pxe_grub_config.template"
+#ironic_pxe_uefi_pxe_bootfile_name: "elilo.efi"
+#ironic_pxe_uefi_pxe_config_template: "$pybasedir/drivers/modules/elilo_efi_pxe_config.template"
 # Ironic Python Agent to be deployed on ironic_deploy_http_root
 ironic_pxe_ipa_download: True
-ironic_pxe_ipa_img_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem-stable-{{ ironic_release }}.cpio.gz"
-ironic_pxe_ipa_img_checksum: "sha1:435f974d6cd21101a140151af1a9fc239835f901"
-ironic_pxe_ipa_img_name: "coreos_production_pxe_image-oem.cpio.gz"
-ironic_pxe_ipa_kernel_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe-stable-{{ ironic_release }}.vmlinuz"
-ironic_pxe_ipa_kernel_checksum: "sha1:7c1f31fba3747197fc8356f03aa4ad7372ba643e"
-ironic_pxe_ipa_kernel_name: "coreos_production_pxe.vmlinuz"
-
 # Tiny Core Ironic Python Agent
 ironic_pxe_tinyipa_download: True
-ironic_pxe_tinyipa_img_url: "https://tarballs.openstack.org/ironic-python-agent/tinyipa/files/tinyipa-stable-{{ ironic_release }}.gz"
-ironic_pxe_tinyipa_img_checksum: "sha1:c71dfa31c970a7b3d81e4153c668b2451f058aac"
-ironic_pxe_tinyipa_img_name: "tinyipa-master.gz"
-ironic_pxe_tinyipa_kernel_url: "https://tarballs.openstack.org/ironic-python-agent/tinyipa/files/tinyipa-stable-{{ ironic_release }}.vmlinuz"
-ironic_pxe_tinyipa_kernel_checksum: "sha1:1a936929b57a8d3f1ccc378d241103c5f1b93097"
-ironic_pxe_tinyipa_kernel_name: "tinyipa-master.vmlinuz"
+# Enabling iPXE (ironic_pxe_uefi_pxe_bootfile_name == ipxe.efi)
+#ironic_pxe_bootfile_name: "undionly.kpxe"
+#ironic_pxe_uefi_pxe_bootfile_name: "ipxe.efi"
+#ironic_pxe_config_template: "$pybasedir/drivers/modules/ipxe_config.template"
+#ironic_pxe_uefi_pxe_config_template: "$pybasedir/drivers/modules/ipxe_config.template"
+#ironic_pxe_ipxe_boot_script: "$pybasedir/drivers/modules/boot.ipxe"
+# For iPXE define also:
+#ironic_deploy_http_url:
+#ironic_deploy_http_root:
+#
+# If 'ironic_pxe_config_template' or 'ironic_pxe_uefi_pxe_config_template'
+# or 'ironic_pxe_ipxe_boot_script' do not include '$pybasedir', it will be
+# searched locally and they will be copied to remote server.
 
-# Enabling iPXE
-ironic_ipxe: False
-# If defined, it will copy the file
-#ironic_pxe_ipxe_boot_script:
+
+### Console
+ironic_console_terminal: "shellinaboxd"
+ironic_console_terminal_pid_dir: "/tmp"
+
+
+### Disk utils
+#ironic_disk_utils_efi_system_partition_size: 200
+#ironic_disk_utils_dd_block_size: "1M"
+
+
+### Keystone (ironic_auth_strategy == keystone)
+ironic_keystone_region_name: "RegionOne"
+#ironic_keystone_authtoken_auth_uri:
+ironic_keystone_authtoken_auth_version: "v3.0"
+# Default options for glance, swift, inspector, service_catalog
+#ironic_auth_url:
+#ironic_domain_name:
+#ironic_project_name:
+#ironic_username:
+#ironic_password:
+
+
+### Service catalog
+#ironic_service_catalog_auth_url:
+#ironic_service_catalog_domain_name:
+#ironic_service_catalog_project_name:
+#ironic_service_catalog_username:
+#ironic_service_catalog_password:
+
+
+### Inspector
+ironic_inspector_enabled: False
+ironic_inspector_service_url: "http://{{ ansible_default_ipv4.address }}:5050"
+ironic_inspector_status_check_period: 60
+#ironic_inspector_auth_url:
+#ironic_inspector_domain_name:
+#ironic_inspector_project_name:
+#ironic_inspector_username:
+#ironic_inspector_password:
+
+
+### Swift
+#ironic_swift_auth_url:
+#ironic_swift_domain_name:
+#ironic_swift_project_name:
+#ironic_swift_username:
+#ironic_swift_password:
+
+
+### Neutron
+#ironic_neutron_url:
+#ironic_neutron_auth_url:
+#ironic_neutron_auth_strategy: "keystone"
+#ironic_neutron_cleaning_network_uuid:
+#ironic_neutron_provisioning_network_uuid:
+#ironic_neutron_domain_name:
+#ironic_neutron_project_name:
+#ironic_neutron_username:
+#ironic_neutron_password:
+
+
+### Glance
+# Allowed values: swift, radosgw
+#ironic_glance_temp_url_endpoint_type: "swift"
+#ironic_glance_api_servers: [ ]
+#ironic_glance_auth_strategy: "keystone"
+#ironic_glance_auth_url:
+#ironic_glance_domain_name:
+#ironic_glance_project_name:
+#ironic_glance_username:
+#ironic_glance_password:
+# Swift backend options for glance
+#ironic_glance_swift_endpoint_url:
+#ironic_glance_swift_temp_url_key:
+#ironic_glance_swift_api_version: v1
+#ironic_glance_swift_temp_url_cache_enabled: False
+#ironic_glance_swift_temp_url_duration: 1200
+#ironic_glance_swift_container: "glance"
+#ironic_glance_swift_account:
+
+
+### Drivers
+#ironic_ipmi_retry_timeout: 60
+#ironic_ipmi_min_command_interval: 8
+#ironic_ilo_swift_ilo_container: "ironic_ilo_container"
+#ironic_ilo_clean_priority_reset_ilo: 1
+#ironic_oneview_manager_url:
+#ironic_oneview_username:
+#ironic_oneview_password:
 

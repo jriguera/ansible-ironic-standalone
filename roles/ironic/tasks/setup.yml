@@ -17,20 +17,26 @@
     group: "{{ ironic_group }}"
     mode: 0755
     state: directory
-  when: >
-    ironic_tempdir is defined and
-    ironic_tempdir != '/tmp'
+  when: ironic_tempdir is defined and ironic_tempdir != '/tmp'
 
-- name: Create the logging folder
+- name: Create logs folder
   file:
     path: "{{ ironic_log | dirname }}"
+    owner: "{{ ironic_user }}"
+    mode: 0750
+    state: directory
+  when: ironic_log is defined and ironic_log != 'syslog'
+
+- name: Create the deploy logging folder
+  file:
+    path: "{{ ironic_agent_deploy_logs_local_path }}"
     owner: "{{ ironic_user }}"
     group: "{{ ironic_group }}"
     mode: 0750
     state: directory
   when: >
-    ironic_log is defined and 
-    ironic_log != 'syslog'
+    ironic_agent_deploy_logs_local_path is defined
+    and not ironic_agent_deploy_logs_local_path is none
 
 - name: Downloading syslinux tarball from url
   get_url:
@@ -49,10 +55,11 @@
   when: __ironic_syslinux_change | changed
 
 - name: Set fact syslinux change
-  set_fact: _ironic_syslinux_change="{{ __ironic_syslinux_change | changed }}"
+  set_fact:
+    _ironic_syslinux_change: "{{ __ironic_syslinux_change | changed }}"
 
 - name: Define syslinux path
-  set_fact: ironic_isolinux_bin="{{ ironic_syslinux_basedir }}/syslinux-{{ ironic_pxe_syslinux_version }}/bios/core/isolinux.bin"
+  set_fact:
+    ironic_isolinux_bin: "{{ ironic_syslinux_basedir }}/syslinux-{{ ironic_pxe_syslinux_version }}/bios/core/isolinux.bin"
   when: ironic_isolinux_bin is not defined
-
 
