@@ -2,8 +2,6 @@
 # /etc/ironic-inspector/inspector.conf
 
 [DEFAULT]
-### From ironic_inspector
-
 # IP to listen on. (string value)
 # Deprecated group/name - [discoverd]/listen_address
 listen_address={{ ironic_inspector_listen_address | default('0.0.0.0') }}
@@ -66,7 +64,9 @@ introspection_delay={{ ironic_inspector_introspection_delay | default('5') }}
 # as root (string value)
 rootwrap_config = /etc/ironic-inspector/rootwrap.conf
 
-### From oslo.log
+# Limit the number of elements an API list-call returns (integer value)
+# Minimum value: 1
+#api_max_limit = 1000
 
 # Print debugging output (set logging level to DEBUG instead of
 # default INFO level). (boolean value)
@@ -112,21 +112,31 @@ log_dir={{ ironic_inspector_log | dirname }}
 use_stderr=true
 {% endif %}
 
-# Format string to use for log messages with context. (string value)
-logging_context_format_string = %(asctime)s.%(msecs)03d %(process)d %(levelname)s %(name)s [%(request_id)s %(user_identity)s] %(instance)s%(message)s
+# Uses logging handler designed to watch file system. When log file is
+# moved or removed this handler will open a new log file with
+# specified path instantaneously. It makes sense only if log_file
+# option is specified and Linux platform is used. This option is
+# ignored if log_config_append is set. (boolean value)
+watch_log_file={{ ironic_inspector_watch_log_file | ternary('true','false') }}
 
-# Format string to use for log messages without context. (string
-# value)
-logging_default_format_string = %(asctime)s.%(msecs)03d %(process)d %(levelname)s %(name)s [-] %(instance)s%(message)s
+# Format string to use for log messages with context. (string value)
+logging_context_format_string=%(asctime)s.%(msecs)03d %(process)d %(levelname)s %(name)s [%(request_id)s %(user_identity)s] %(instance)s%(message)s
+
+# Format string to use for log messages without context. (string value)
+logging_default_format_string=%(asctime)s.%(msecs)03d %(process)d %(levelname)s %(name)s [-] %(instance)s%(message)s
 
 # Data to append to log format when level is DEBUG. (string value)
-logging_debug_format_suffix = %(funcName)s %(pathname)s:%(lineno)d
+logging_debug_format_suffix=%(funcName)s %(pathname)s:%(lineno)d
 
 # Prefix each line of exception output with this format. (string value)
-logging_exception_prefix = %(asctime)s.%(msecs)03d %(process)d ERROR %(name)s %(instance)s
+logging_exception_prefix=%(asctime)s.%(msecs)03d %(process)d ERROR %(name)s %(instance)s
+
+# Defines the format string for %(user_identity)s that is used in
+# logging_context_format_string. (string value)
+#logging_user_identity_format = %(user)s %(tenant)s %(domain)s %(user_domain)s %(project_domain)s
 
 # List of logger=LEVEL pairs. (list value)
-#default_log_levels = amqp=WARN,amqplib=WARN,boto=WARN,qpid=WARN,sqlalchemy=WARN,suds=INFO,oslo.messaging=INFO,iso8601=WARN,requests.packages.urllib3.connectionpool=WARN,urllib3.connectionpool=WARN,websocket=WARN,requests.packages.urllib3.util.retry=WARN,urllib3.util.retry=WARN,keystonemiddleware=WARN,routes.middleware=WARN,stevedore=WARN,taskflow=WARN
+#default_log_levels = amqp=WARN,amqplib=WARN,boto=WARN,qpid=WARN,sqlalchemy=WARN,suds=INFO,oslo.messaging=INFO,iso8601=WARN,requests.packages.urllib3.connectionpool=WARN,urllib3.connectionpool=WARN,websocket=WARN,requests.packages.urllib3.util.retry=WARN,urllib3.util.retry=WARN,keystonemiddleware=WARN,routes.middleware=WARN,stevedore=WARN,taskflow=WARN,keystoneauth=WARN,oslo.cache=INFO,dogpile.core.dogpile=INFO
 
 # Enables or disables publication of error events. (boolean value)
 publish_errors={{ ironic_inspector_publish_errors | default(true) | ternary('true','false') }}
@@ -144,9 +154,87 @@ fatal_deprecations={{ ironic_inspector_fatal_deprecations | default(false) | ter
 
 
 
-[database]
-### From oslo.db
+[capabilities]
+# Whether to store the boot mode (BIOS or UEFI). (boolean value)
+boot_mode={{ ironic_inspector_capabilities_boot_mode | default(false) | ternary('true','false') }}
 
+# Mapping between a CPU flag and a capability to set if this flag is
+# present. (dict value)
+#cpu_flags = aes:cpu_aes,pdpe1gb:cpu_hugepages_1g,pse:cpu_hugepages,smx:cpu_txt,svm:cpu_vt,vmx:cpu_vt
+
+
+
+[cors]
+# Indicate whether this resource may be shared with the domain
+# received in the requests "origin" header. (string value)
+#allowed_origin=
+{% if ironic_inspector_cors_allowed_origin is defined and not ironic_inspector_cors_allowed_origin is none -%}
+allowed_origin={{ ironic_inspector_cors_allowed_origin }}
+{% endif %}
+
+# Indicate that the actual request can include user
+# credentials (boolean value)
+allow_credentials={{ ironic_inspector_cors_allow_credentials | default(True) | ternary('true','false') }}
+
+# Indicate which headers are safe to expose to the API.
+# Defaults to HTTP Simple Headers. (list value)
+#expose_headers=Content-Type,Cache-Control,Content-Language,Expires,Last-Modified,Pragma
+{% if ironic_cors_expose_headers is defined -%}
+expose_headers={{ ironic_inspector_cors_expose_headers | join(',') }}
+{% endif %}
+
+# Maximum cache age of CORS preflight requests. (integer value)
+max_age={{ ironic_inspector_cors_max_age | default('3600') }}
+
+# Indicate which methods can be used during the actual request. (list value)
+#allow_methods = GET,POST,PUT,HEAD,PATCH,DELETE,OPTIONS
+{% if ironic_inspector_cors_allow_methods is defined -%}
+allow_methods={{ ironic_inspector_cors_allow_methods | join(',') }}
+{% endif %}
+
+# Indicate which header field names may be used during the
+# actual request. (list value)
+#allow_headers = X-Auth-Token,X-OpenStack-Ironic-Inspector-API-Minimum-Version,X-OpenStack-Ironic-Inspector-API-Maximum-Version,X-OpenStack-Ironic-Inspector-API-Version
+{% if ironic_inspector_cors_allow_headers is defined -%}
+allow_headers={{ ironic_inspector_cors_allow_headers | join(',') }}
+{% endif %}
+
+
+
+### [cors.subdomain]
+{% if ironic_inspector_cors_domains is defined -%}
+{% for (key, values) in ironic_inspector_cors_domains.iteritems() %}
+[cors.{{ key }}]
+{% if values["allowed_origin"] is defined -%}
+allowed_origin={{ values["allowed_origin"] }}
+{% endif %}
+
+{%- if values["allow_credentials"] is defined -%}
+allow_credentials={{ values["allow_credentials"] | ternary('true','false') }}
+{% endif %}
+
+{%- if values["expose_headers"] is defined -%}
+expose_headers={{ values["expose_headers"] | join(',') }}
+{% endif %}
+
+{%- if values["max_age"] is defined -%}
+max_age={{ values["max_age"] | default('3600') }}
+{% endif %}
+
+{%- if values["allow_methods"] is defined -%}
+allow_methods={{ values["allow_methods"] | join(',') }}
+{% endif %}
+
+{%- if values["allow_headers"] is defined -%}
+allow_headers={{ values["allow_headers"] | join(',') }}
+{% endif %}
+
+{% endfor %}
+{% endif %}
+
+
+
+[database]
 # The back end to use for the database. (string value)
 # Deprecated group/name - [DEFAULT]/db_backend
 backend=sqlalchemy
@@ -268,81 +356,7 @@ use_db_reconnect={{ ironic_inspector_database_use_db_reconnect | default(false) 
 
 
 
-[cors]
-# Options defined in oslo.middleware.cors
-
-# Indicate whether this resource may be shared with the domain
-# received in the requests "origin" header. (string value)
-#allowed_origin=
-{% if ironic_inspector_cors_allowed_origin is defined and not ironic_inspector_cors_allowed_origin is none -%}
-allowed_origin={{ ironic_inspector_cors_allowed_origin }}
-{% endif %}
-
-# Indicate that the actual request can include user
-# credentials (boolean value)
-allow_credentials={{ ironic_inspector_cors_allow_credentials | default(True) | ternary('true','false') }}
-
-# Indicate which headers are safe to expose to the API.
-# Defaults to HTTP Simple Headers. (list value)
-#expose_headers=Content-Type,Cache-Control,Content-Language,Expires,Last-Modified,Pragma
-{% if ironic_cors_expose_headers is defined -%}
-expose_headers={{ ironic_inspector_cors_expose_headers | join(',') }}
-{% endif %}
-
-# Maximum cache age of CORS preflight requests. (integer value)
-max_age={{ ironic_inspector_cors_max_age | default('3600') }}
-
-# Indicate which methods can be used during the actual request. (list value)
-#allow_methods = GET,POST,PUT,HEAD,PATCH,DELETE,OPTIONS
-{% if ironic_inspector_cors_allow_methods is defined -%}
-allow_methods={{ ironic_inspector_cors_allow_methods | join(',') }}
-{% endif %}
-
-# Indicate which header field names may be used during the
-# actual request. (list value)
-#allow_headers = X-Auth-Token,X-OpenStack-Ironic-Inspector-API-Minimum-Version,X-OpenStack-Ironic-Inspector-API-Maximum-Version,X-OpenStack-Ironic-Inspector-API-Version
-{% if ironic_inspector_cors_allow_headers is defined -%}
-allow_headers={{ ironic_inspector_cors_allow_headers | join(',') }}
-{% endif %}
-
-
-
-### [cors.subdomain]
-{% if ironic_inspector_cors_domains is defined -%}
-{% for (key, values) in ironic_inspector_cors_domains.iteritems() %}
-[cors.{{ key }}]
-{% if values["allowed_origin"] is defined -%}
-allowed_origin={{ values["allowed_origin"] }}
-{% endif %}
-
-{%- if values["allow_credentials"] is defined -%}
-allow_credentials={{ values["allow_credentials"] | ternary('true','false') }}
-{% endif %}
-
-{%- if values["expose_headers"] is defined -%}
-expose_headers={{ values["expose_headers"] | join(',') }}
-{% endif %}
-
-{%- if values["max_age"] is defined -%}
-max_age={{ values["max_age"] | default('3600') }}
-{% endif %}
-
-{%- if values["allow_methods"] is defined -%}
-allow_methods={{ values["allow_methods"] | join(',') }}
-{% endif %}
-
-{%- if values["allow_headers"] is defined -%}
-allow_headers={{ values["allow_headers"] | join(',') }}
-{% endif %}
-
-{% endfor %}
-{% endif %}
-
-
-
 [discovery]
-### From ironic_inspector.plugins.discovery
-
 # The name of the Ironic driver used by the enroll hook when creating
 # a new node in Ironic. (string value)
 enroll_node_driver={{ ironic_inspector_discovery_enroll_driver | default('fake') }}
@@ -350,8 +364,6 @@ enroll_node_driver={{ ironic_inspector_discovery_enroll_driver | default('fake')
 
 
 [firewall]
-### From ironic_inspector
-
 # Whether to manage firewall rules for PXE port. (boolean value)
 # Deprecated group/name - [discoverd]/manage_firewall
 manage_firewall={{ ironic_inspector_firewall_manage | default(False) | ternary('true','false') }}
@@ -374,8 +386,6 @@ firewall_chain={{ ironic_inspector_firewall_chain | default('ironic-inspector') 
 
 
 [ironic]
-### From ironic_inspector
-
 # Method to use for authentication: noauth or keystone. (string value)
 # Allowed values: keystone, noauth
 {% if ironic_inspector_keystone_authtoken_auth_uri is defined and not ironic_inspector_keystone_authtoken_auth_uri is none -%}
@@ -401,6 +411,76 @@ os_endpoint_type={{ ironic_inspector_ironic_os_endpoint_type | default('internal
 # Maximum number of retries in case of conflict error (HTTP 409).
 # (integer value)
 #max_retries = 30
+
+# Authentication type to load (string value)
+#auth_type = <None>
+
+# PEM encoded Certificate Authority to use when verifying
+# HTTPs connections. (string value)
+#cafile = <None>
+
+# PEM encoded client certificate cert file (string value)
+#certfile = <None>
+
+# Optional domain ID to use with v3 and v2 parameters. It will
+# be used for both the user and project domain in v3 and
+# ignored in v2 authentication. (string value)
+#default_domain_id = <None>
+
+# Optional domain name to use with v3 API and v2 parameters.
+# It will be used for both the user and project domain in v3
+# and ignored in v2 authentication. (string value)
+{% if ironic_inspector_ironic_domain_name is defined and ironic_inspector_ironic_domain_name -%}
+default_domain_name={{ ironic_inspector_ironic_domain_name }}
+{% endif %}
+
+# Domain ID to scope to (string value)
+#domain_id = <None>
+
+# Domain name to scope to (string value)
+#domain_name = <None>
+
+# Verify HTTPS connections. (boolean value)
+#insecure = false
+
+# PEM encoded client certificate key file (string value)
+#keyfile = <None>
+
+# Domain ID containing project (string value)
+#project_domain_id = <None>
+
+# Domain name containing project (string value)
+#project_domain_name = <None>
+
+# Project ID to scope to (string value)
+# Deprecated group/name - [glance]/tenant-id
+#project_id = <None>
+
+# Project name to scope to (string value)
+{% if ironic_inspector_ironic_project_name is defined and ironic_inspector_ironic_project_name -%}
+project_name={{ ironic_inspector_ironic_project_name }}
+{% endif %}
+
+# Timeout value for http requests (integer value)
+#timeout = <None>
+
+# Trust ID (string value)
+#trust_id = <None>
+
+# User's domain id (string value)
+#user_domain_id = <None>
+
+# User's domain name (string value)
+#user_domain_name = <None>
+
+# User id (string value)
+#user_id = <None>
+
+# Username (string value)
+{% if ironic_inspector_ironic_username is defined and ironic_inspector_ironic_username -%}
+username={{ ironic_inspector_ironic_username }}
+password={{ ironic_inspector_ironic_password | default('') }}
+{% endif %}
 
 
 
@@ -542,33 +622,27 @@ delay_auth_decision={{ ironic_inspector_keystone_authtoken_delay_auth_decision |
 # (list value)
 #hash_algorithms=md5
 
-{% if ironic_inspector_keystone_authtoken_identity_uri is defined and not ironic_inspector_keystone_authtoken_identity_uri is none -%}
-# Complete admin Identity API endpoint. This should specify
-# the unversioned root endpoint e.g. https://localhost:35357/
-# (string value)
-identity_uri={{ ironic_inspector_keystone_authtoken_identity_uri }}
-{% endif %}
 
-{% if ironic_inspector_keystone_authtoken_service_user is defined and not ironic_inspector_keystone_authtoken_service_user is none -%}
-# Service username. (string value)
-admin_user={{ ironic_inspector_keystone_authtoken_service_user }}
-{% endif %}
+# Authentication type to load (string value)
+# Deprecated group/name - [keystone_authtoken]/auth_plugin
+#auth_type = <None>
 
-{% if ironic_inspector_keystone_authtoken_service_password is defined and not ironic_inspector_keystone_authtoken_service_password is none -%}
-# Service user password. (string value)
-admin_password={{ ironic_inspector_keystone_authtoken_service_password }}
-{% endif %}
-
-# Service tenant name. (string value)
-admin_tenant_name={{ ironic_inspector_keystone_authtoken_service_tenant_name | default('admin') }}
+# Config Section from which to load plugin specific options (string value)
+#auth_section = <None>
 
 {% endif %}
+
+
+
+[pci_devices]
+# An alias for PCI device identified by 'vendor_id' and 'product_id'
+# fields. Format: {"vendor_id": "1234", "product_id": "5678", "name":
+# "pci_dev1"} (multi valued)
+#alias =
 
 
 
 [processing]
-### From ironic_inspector
-
 # Which MAC addresses to add as ports during introspection. Possible
 # values: all (all MAC addresses), active (MAC addresses of NIC with
 # IP addresses), pxe (only MAC address of NIC node PXE booted from,
@@ -603,7 +677,7 @@ enable_setting_ipmi_credentials={{ ironic_inspector_processing_enable_setting_ip
 # the Nova scheduler. Hook 'validate_interfaces' ensures that valid
 # NIC data was provided by the ramdisk.Do not exclude these two unless
 # you really know what you're doing. (string value)
-#default_processing_hooks = ramdisk_error,root_disk_selection,scheduler,validate_interfaces
+#default_processing_hooks = ramdisk_error,root_disk_selection,scheduler,validate_interfaces,capabilities,pci_devices
 default_processing_hooks={{ ironic_inspector_processing_default_processing_hooks | join(',') }}
 {% endif %}
 
@@ -638,7 +712,7 @@ node_not_found_hook={{ ironic_inspector_processing_node_not_found_hook }}
 # Method for storing introspection data. If set to 'none',
 # introspection data will not be stored. (string value)
 # Allowed values: none, swift
-{% if ironic_inspector_swift_os_auth_url is defined and not ironic_inspector_swift_os_auth_url is none -%}
+{% if ironic_inspector_swift_auth_url is defined and not ironic_inspector_swift_auth_url is none -%}
 store_data=swift
 {% else %}
 store_data=none
@@ -657,12 +731,17 @@ disk_partitioning_spacing={{ ironic_inspector_processing_disk_partitioning_spaci
 # processing. (boolean value)
 log_bmc_address={{ ironic_inspector_processing_log_bmc_address | default(True) | ternary('true','false') }}
 
+# File name template for storing ramdisk logs. The following
+# replacements can be used: {uuid} - node UUID or "unknown", {bmc} -
+# node BMC address or "unknown", {dt} - current UTC date and time,
+# {mac} - PXE booting MAC or "unknown". (string value)
+#ramdisk_logs_filename_format = {uuid}_{dt:%Y%m%d-%H%M%S.%f}.tar.gz
+
+# Whether to power off a node after introspection. (boolean value)
+power_off={{ ironic_inspector_processing_power_off | default(True) | ternary('true','false') }}
 
 
 [swift]
-### From ironic_inspector.common.swift
-
-{% if ironic_inspector_swift_os_auth_url is defined and not ironic_inspector_swift_os_auth_url is none -%}
 # Maximum number of times to retry a Swift request, before failing.
 # (integer value)
 #max_retries = 2
@@ -674,27 +753,79 @@ delete_after={{ ironic_inspector_swift_delete_after | default('0') }}
 # Default Swift container to use when creating objects. (string value)
 container={{ ironic_inspector_swift_container | default('ironic-inspector') }}
 
-# User name for accessing Swift API. (string value)
-username={{ ironic_inspector_swift_username | default('admin') }}
-
-{% if ironic_inspector_swift_password is defined -%}
-# Password for accessing Swift API. (string value)
-password={{ ironic_inspector_swift_password }}
-{% endif %}
-
-# Tenant name for accessing Swift API. (string value)
-tenant_name={{ ironic_inspector_swift_tenant_name | default('admin') }}
-
 # Complete public Identity API endpoint. (string value)
-os_auth_url={{ ironic_inspector_swift_os_auth_url }}
-
-# API version of the admin Identity API endpoint. (string value)
-os_auth_version={{ ironic_inspector_swift_os_auth_version | default('2') }}
-
-# Swift service type. (string value)
-os_service_type={{ ironic_inspector_swift_os_service_type | default('object-store') }}
-
-# Swift endpoint type. (string value)
-os_endpoint_type={{ ironic_inspector_swift_os_endpoint_type | default('internalURL') }}
+{% if ironic_inspector_swift_auth_url is defined and ironic_inspector_swift_auth_url -%}
+auth_url={{ ironic_inspector_swift_auth_url }}
 {% endif %}
+
+# Authentication type to load (string value)
+#auth_type = <None>
+
+# PEM encoded Certificate Authority to use when verifying
+# HTTPs connections. (string value)
+#cafile = <None>
+
+# PEM encoded client certificate cert file (string value)
+#certfile = <None>
+
+# Optional domain ID to use with v3 and v2 parameters. It will
+# be used for both the user and project domain in v3 and
+# ignored in v2 authentication. (string value)
+#default_domain_id = <None>
+
+# Optional domain name to use with v3 API and v2 parameters.
+# It will be used for both the user and project domain in v3
+# and ignored in v2 authentication. (string value)
+{% if ironic_inspector_swift_domain_name is defined and ironic_inspector_swift_domain_name -%}
+default_domain_name={{ ironic_inspector_swift_domain_name }}
+{% endif %}
+
+# Domain ID to scope to (string value)
+#domain_id = <None>
+
+# Domain name to scope to (string value)
+#domain_name = <None>
+
+# Verify HTTPS connections. (boolean value)
+#insecure = false
+
+# PEM encoded client certificate key file (string value)
+#keyfile = <None>
+
+# Domain ID containing project (string value)
+#project_domain_id = <None>
+
+# Domain name containing project (string value)
+#project_domain_name = <None>
+
+# Project ID to scope to (string value)
+# Deprecated group/name - [glance]/tenant-id
+#project_id = <None>
+
+# Project name to scope to (string value)
+{% if ironic_inspector_swift_project_name is defined and ironic_inspector_swift_project_name -%}
+project_name={{ ironic_inspector_swift_project_name }}
+{% endif %}
+
+# Timeout value for http requests (integer value)
+#timeout = <None>
+
+# Trust ID (string value)
+#trust_id = <None>
+
+# User's domain id (string value)
+#user_domain_id = <None>
+
+# User's domain name (string value)
+#user_domain_name = <None>
+
+# User id (string value)
+#user_id = <None>
+
+# Username (string value)
+{% if ironic_inspector_swift_username is defined and ironic_inspector_swift_username -%}
+username={{ ironic_inspector_swift_username }}
+password={{ ironic_inspector_swift_password | default('') }}
+{% endif %}
+
 
