@@ -1,8 +1,9 @@
 ---
-nginx_enabled_on_startup: true
+nginx_enabled: True
+nginx_enabled_on_startup: True
 
 # Install from upstream repos or directly from operating system packages
-nginx_os_packages: true
+nginx_os_packages: True
 
 # Main options
 nginx_error_log: "/var/log/nginx/error.log"
@@ -121,6 +122,7 @@ nginx_server_list: []
 #      - ["80", "default_server"]
 #    access_log: "/var/log/nginx/name_access.log"
 #    upstream:
+#      name: proxybackend
 #      strategy: "ip_hash"
 #      server_list:
 #        - "srv1.example.com"
