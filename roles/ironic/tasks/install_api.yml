@@ -22,12 +22,16 @@
   tags: ["debian", "packages"]
 
 - name: Check if Ironic-API packages were installed
-  set_fact: _ironic_api_reinstalled="{{ __ironic_api_installed_rh.changed or __ironic_api_installed_debian.changed }}" 
+  set_fact:
+    _ironic_api_reinstalled: "{{ __ironic_api_installed_rh.changed or __ironic_api_installed_debian.changed }}" 
 
 # Because Ubuntu starts ironic daemons as part of the install process, 
 # we need to stop it
 - name: Stop Ironic-API daemon after initial install
-  service: name="{{ ironic_api_service_name }}" state=stopped enabled=no
+  service:
+    name: "{{ ironic_api_service_name }}"
+    state: stopped
+    enabled: no
   ignore_errors: yes
   when: _ironic_api_reinstalled
 
@@ -46,13 +50,9 @@
       mode: 0644
     register: __ironic_api_systemd
 
-  - name: Delete upstart configuration
-    file: path="/etc/init/{{ ironic_api_service_name }}.conf" state=absent
-
   - name: Reload systemd
     command: systemctl daemon-reload
     when: __ironic_api_systemd|changed
-  
-  when: ironic_init_system == 'systemd'
+
   tags: ["systemd", "init"]
 

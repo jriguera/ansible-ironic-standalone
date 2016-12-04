@@ -22,7 +22,8 @@
   tags: ["debian", "packages"]
 
 - name: Check if packages were installed
-  set_fact: _ironic_conductor_reinstalled="{{ __ironic_conductor_installed_rh.changed or __ironic_conductor_installed_debian.changed }}"
+  set_fact:
+    _ironic_conductor_reinstalled: "{{ __ironic_conductor_installed_rh.changed or __ironic_conductor_installed_debian.changed }}"
 
 - name: RedHat - Install Ironic-Conductor auxiliary packages
   yum:
@@ -47,7 +48,10 @@
 # Because Ubuntu starts ironic daemons as part of the install process, 
 # we need to stop it
 - name: Stop Ironic-Conductor daemon after initial install
-  service: name="{{ ironic_conductor_service_name }}" state=stopped enabled=no
+  service:
+   name: "{{ ironic_conductor_service_name }}"
+   state: stopped
+   enabled: no
   ignore_errors: yes
   when: _ironic_conductor_reinstalled
 
@@ -66,13 +70,9 @@
       mode: 0644
     register: __ironic_conductor_systemd
 
-  - name: Delete upstart configuration
-    file: path="/etc/init/{{ ironic_conductor_service_name }}.conf" state=absent
-
   - name: Reload systemd
     command: systemctl daemon-reload
     when: __ironic_conductor_systemd|changed
-  
-  when: ironic_init_system == 'systemd'
+
   tags: ["systemd", "init"]
 

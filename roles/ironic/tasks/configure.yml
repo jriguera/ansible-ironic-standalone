@@ -6,19 +6,29 @@
     owner: "{{ ironic_user }}"
     group: "{{ ironic_group }}"
     mode: 0644
-  when: >
-    ironic_oslo_policy_file
-    and ironic_oslo_policy_file is not none
+  when: ironic_oslo_policy_file is defined and ironic_oslo_policy_file
   register: __ironic_policy_file
 
-- name: Defining mysql connection
-  set_fact: >
-    ironic_database_connection="mysql://{{ironic_database_mysql_userid}}:{{ironic_database_mysql_password}}@{{ironic_database_mysql_host}}/{{ironic_database_mysql_db}}"
+- name: Defining MySQL connection
+  set_fact:
+    ironic_database_connection: "mysql+pymysql://{{ ironic_database_mysql_userid }}:{{ ironic_database_mysql_password }}@{{ ironic_database_mysql_host }}:{{ ironic_database_mysql_port }}/{{ ironic_database_mysql_db }}"
   when: >
     ironic_database_mysql_userid is defined and
     ironic_database_mysql_password is defined and
     ironic_database_mysql_host is defined and
+    ironic_database_mysql_port is defined and
     ironic_database_mysql_db is defined
+
+- name: Defining RabbitMQ transport connection
+  set_fact:
+    ironic_transport_url: "{{ ironic_messaging_backend }}://{{ ironic_messaging_userid }}:{{ ironic_messaging_password }}@{{ ironic_messaging_host }}:{{ ironic_messaging_port }}/{{ ironic_messaging_virtual_host }}"
+  when: >
+    ironic_messaging_backend is defined and
+    ironic_messaging_host is defined and
+    ironic_messaging_port is defined and
+    ironic_messaging_userid is defined and
+    ironic_messaging_password is defined and
+    ironic_messaging_virtual_host
 
 - name: Generate the main configuration file
   template:
@@ -30,7 +40,8 @@
   register: __ironic_updated_conf
 
 - name: Check if configuration was updated
-  set_fact: _ironic_updated="{{ __ironic_updated_conf.changed or __ironic_policy_file.changed }}"
+  set_fact:
+    _ironic_updated: "{{ __ironic_updated_conf.changed or __ironic_policy_file.changed }}"
 
 
 # Only Ironic-API is in charge of maintain the DB
@@ -48,7 +59,9 @@
     notify: restart api
 
   - name: Delete SQLite database
-    file: path="{{ ironic_var_dir }}/ironic.db" state=absent
+    file:
+      path: "{{ ironic_var_dir }}/ironic.db"
+      state: absent
     when: not _ironic_previous
 
   when: >
@@ -58,11 +71,15 @@
 
 
 - name: Stop Ironic-API daemon for the new configuration
-  service: name="{{ ironic_api_service_name }}" state=stopped
+  service:
+    name: "{{ ironic_api_service_name }}"
+    state: stopped
   when: ironic_api and _ironic_updated
 
 - name: Stop Ironic-Conductor daemon for the new configuration
-  service: name="{{ ironic_conductor_service_name }}" state=stopped
+  service:
+    name: "{{ ironic_conductor_service_name }}"
+    state: stopped
   when: ironic_conductor and _ironic_updated
 
 - name: Start Ironic-API daemon and ensure it is enabled on boot
