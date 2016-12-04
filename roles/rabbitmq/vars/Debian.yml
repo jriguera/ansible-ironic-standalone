@@ -1,4 +1,6 @@
 ---
+rabbitmq_os_packages: False
+
 rabbitmq_os_repo_url: "deb http://ubuntu-cloud.archive.canonical.com/ubuntu {{ ansible_distribution_release }}-updates/{{ rabbitmq_repo_release }} main"
 rabbitmq_os_repo_key: "ubuntu-cloud-keyring"
 
