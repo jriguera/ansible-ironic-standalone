@@ -1,13 +1,14 @@
 ---
 - name: Check slave replication status
-  mysql_replication: mode=getslave
-  ignore_errors: true
+  mysql_replication:
+    mode: getslave
   register: _mysql_slave
-
+  ignore_errors: yes
 
 - block:
   - name: Check master replication status
-    mysql_replication: mode=getmaster
+    mysql_replication:
+      mode: getmaster
     delegate_to: "{{ mysql_replication_master }}"
     register: _mysql_master
 
@@ -19,11 +20,12 @@
       master_password: "{{ mysql_replication_user.password }}"
       master_log_file: "{{ _mysql_master.File }}"
       master_log_pos: "{{ _mysql_master.Position }}"
-    ignore_errors: True
+    ignore_errors: yes
     when: mysql_replication_user is defined
 
   - name: Start replication on slave
-    mysql_replication: mode=startslave
-      
-  when: _mysql_slave|failed
+    mysql_replication:
+      mode: startslave
+
+  when: _mysql_slave | failed
 

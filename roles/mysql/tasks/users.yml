@@ -1,5 +1,5 @@
 ---
-- name: Ensure MySQL users are present
+- name: Create users
   mysql_user:
     name: "{{ item.name }}"
     host: "{{ item.host | default('localhost') }}"

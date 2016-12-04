@@ -1,5 +1,5 @@
 ---
-- name: Ensure MySQL databases are present
+- name: Create databases
   mysql_db:
     name: "{{ item.name }}"
     collation: "{{ item.collation | default('utf8_general_ci') }}"

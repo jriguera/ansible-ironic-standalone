@@ -3,7 +3,5 @@
 
 - name: Running mysql_upgrade checks
   command: mysql_upgrade --protocol=SOCKET --socket="{{ mysql_socket }}" --password="{{ mysql_root_password }}" --force
-  when: >
-    _mysql_reinstalled
-    and mysql_upgrade_on_reinstall
+  when: _mysql_reinstalled and mysql_upgrade_on_reinstall
 

@@ -10,7 +10,8 @@
   register: __mysql_updated
 
 - name: Check if configuration was updated
-  set_fact: _mysql_updated="{{ __mysql_updated.changed }}"
+  set_fact:
+    _mysql_updated: "{{ __mysql_updated.changed }}"
 
 # For RH
 - name: Create log folder
@@ -20,9 +21,7 @@
     group: "{{ mysql_group }}"
     state: directory
     mode: 0755
-  when: >
-    mysql_log_error is defined
-    and mysql_log_error != 'syslog'
+  when: mysql_log_error is defined and mysql_log_error != 'syslog'
 
 - name: Create slow query log file
   file:
@@ -54,7 +53,9 @@
       state: stopped
 
   - name: Delete innodb log files created after initial install
-    file: path="{{ mysql_datadir }}/{{ item }}" state=absent
+    file:
+      path: "{{ mysql_datadir }}/{{ item }}"
+      state: absent
     with_items:
       - ib_logfile0
       - ib_logfile1

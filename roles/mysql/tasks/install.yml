@@ -2,48 +2,52 @@
 # Debian repository
 - block:
   - name: Debian - Import repository key
-    apt_key: url="{{ mysql_os_repo_key }}" state=present
-    when: >
-      not mysql_os_repo_key is none and
-      mysql_os_repo_key | search("http://.*")
+    apt_key:
+      url: "{{ mysql_os_repo_key }}"
+      state: present
+    when: mysql_os_repo_key and mysql_os_repo_key | search("http://.*")
     ignore_errors: yes
 
   - name: Debian - Add repository package
-    apt: name="{{ mysql_os_repo_key }}" state=latest
-    when: >
-      not mysql_os_repo_key is none and
-      not mysql_os_repo_key | search("http://.*")
+    apt:
+      name: "{{ mysql_os_repo_key }}"
+      state: latest
+    when: mysql_os_repo_key and not mysql_os_repo_key | search("http://.*")
 
   - name: Debian - Add repository url
-    apt_repository: repo="{{ mysql_os_repo_url }}" state=present
+    apt_repository:
+      repo: "{{ mysql_os_repo_url }}"
+      state: present
 
-  when: >
-    ansible_os_family == 'Debian' and 
-    not mysql_os_packages
+  when: ansible_os_family == 'Debian' and not mysql_os_packages
   tags: ["debian", "repository"]
 
 
 # RedHat repository
 - block:
-  - name: RedHat - Add repository
-    yum: name="{{ mysql_os_repo_url }}" state=present
+  - name: RedHat - Add repository url
+    yum:
+      name: "{{ mysql_os_repo_url }}"
+      state: present
 
   - name: RedHat - Import repository key
-    rpm_key: key="{{ mysql_os_repo_key }}" state=present
+    rpm_key:
+      key: "{{ mysql_os_repo_key }}"
+      state: present
     when: mysql_os_repo_key is not none
 
-  when: >
-      ansible_os_family == 'RedHat'
-      and not mysql_os_packages
+  when: ansible_os_family == 'RedHat' and not mysql_os_packages
   tags: ["redhat", "repository"]
 
 
 - name: Check if pidfile exists
-  stat: path="{{ mysql_pidfile }}"
+  stat:
+    path: "{{ mysql_pidfile }}"
   register: __mysql_pidfile
 
 - name: Setup previous installed fact
-  set_fact: _mysql_previous="{{ __mysql_pidfile.stat.exists }}"
+  set_fact:
+    _mysql_previous: "{{ __mysql_pidfile.stat.exists }}"
 
 - name: "RedHat - Install required packages for mysql {{ mysql_version }}"
   yum:
@@ -69,23 +73,19 @@
   tags: ["debian", "packages"]
 
 - name: Check if packages were installed
-  set_fact: _mysql_reinstalled="{{ __mysql_installed_rh.changed or __mysql_installed_debian.changed }}"
+  set_fact:
+    _mysql_reinstalled: "{{ __mysql_installed_rh.changed or __mysql_installed_debian.changed }}"
 
 # Because Debian/Ubuntu starts MySQL as part of the install process, 
 # we need to stop mysql and remove the logfiles in case the user set a 
 # custom log file size.
 - name: Ensure MySQL is stopped after initial install
-  service: name="{{ mysql_daemon }}" state=stopped enabled=no
+  service:
+    name: "{{ mysql_daemon }}"
+    state: stopped
+    enabled: no
   ignore_errors: yes
   when: _mysql_reinstalled
-
-- name: Get init system type
-  command: cat /proc/1/comm
-  register: __mysql_init_system
-  changed_when: False
-
-- name: Set init system type
-  set_fact: mysql_init_system="{{ __mysql_init_system.stdout }}"
 
 
 - block:
@@ -110,19 +110,9 @@
       mode: 0755
       state: directory
 
-  - name: Delete init.d scripts
-    file: path="/etc/init.d/{{ mysql_daemon }}" state=absent
-
   - name: Reload systemd
     command: systemctl daemon-reload
     when: __mysql_systemd|changed
 
-  when: mysql_init_system == "systemd"
-  tags: ["systemd", "init"]
-
-
-# Always ...
-- name: Delete upstart configuration
-  file: path="/etc/init/{{ mysql_daemon }}.conf" state=absent  
   tags: ["systemd", "init"]
 
