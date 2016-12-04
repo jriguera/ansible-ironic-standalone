@@ -8,7 +8,7 @@
 {% if item.upstream is defined %}
 # Upstreams server for caching or load balancing
 # http://nginx.org/en/docs/http/load_balancing.html
-upstream {{ item.name }} {
+upstream {{ item.upstream.name }} {
 {% if item.upstream.strategy is defined %}
         {{ item.upstream.strategy }};
 {% endif %}
