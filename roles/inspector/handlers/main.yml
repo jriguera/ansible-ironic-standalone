@@ -1,13 +1,21 @@
 ---
 - name: restart inspector
-  service: name="{{ ironic_inspector_service_name }}" state=restarted
+  service:
+    name: "{{ ironic_inspector_service_name }}"
+    state: restarted
 
 - name: reload inspector
-  service: name="{{ ironic_inspector_service_name }}" state=reloaded
+  service:
+    name: "{{ ironic_inspector_service_name }}"
+    state: reloaded
 
 - name: start inspector
-  service: name="{{ ironic_inspector_service_name }}" state=started
+  service:
+    name: "{{ ironic_inspector_service_name }}"
+    state: started
 
 - name: stop inspector
-  service: name="{{ ironic_inspector_service_name }}" state=stopped
+  service:
+    name: "{{ ironic_inspector_service_name }}"
+    state: stopped
 

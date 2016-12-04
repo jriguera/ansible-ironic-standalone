@@ -1,19 +1,20 @@
 ---
+# Download and define IPA PXE boot as default
 
 - block:
-  - name: Downloading IPA Coreos ramdisk (~250 MB)
+  - name: Downloading IPA ramdisk (~250 MB)
     get_url:
       checksum: "{{ ironic_inspector_ipa_ramdisk_checksum }}"
       url: "{{ ironic_inspector_ipa_ramdisk_url }}"
       dest: "{{ ironic_inspector_ipa_deploy_path }}/{{ ironic_inspector_ipa_ramdisk }}"
-    
-  - name: Downloading IPA Coreos kernel (~25 MB)
+
+  - name: Downloading IPA kernel (~25 MB)
     get_url:
       checksum: "{{ ironic_inspector_ipa_kernel_checksum }}"
       url: "{{ ironic_inspector_ipa_kernel_url }}"
       dest: "{{ ironic_inspector_ipa_deploy_path }}/{{ ironic_inspector_ipa_kernel }}"
 
-  - name: Change permissions
+  - name: Change permissions of IPA files
     file:
       path: "{{ item }}"
       owner: "{{ ironic_inspector_pxe_owner }}"
@@ -59,14 +60,12 @@
       mode: 0664
     when: ironic_inspector_enabled
 
-  when: >
-    ironic_inspector_ipa_tftproot is not none
-    and ironic_inspector_discovery_enroll
+  when: ironic_inspector_ipa_tftproot and ironic_inspector_discovery_enroll
 
 # Out of the block to be able to disable it
 - name: Delete pxelinux.cfg/default
-  file: dest="{{ ironic_inspector_ipa_tftproot }}/pxelinux.cfg/default" state=absent
-  when: >
-    ironic_inspector_ipa_tftproot is not none
-    and not ironic_inspector_enabled
+  file:
+    dest: "{{ ironic_inspector_ipa_tftproot }}/pxelinux.cfg/default"
+    state: absent
+  when: ironic_inspector_ipa_tftproot and not ironic_inspector_enabled
 

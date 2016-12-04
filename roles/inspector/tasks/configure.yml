@@ -1,34 +1,30 @@
 ---
-- name: Create the ramdisk logs dir
+- name: Create ramdisk logs dir
   file:
     path: "{{ ironic_inspector_processing_ramdisk_logs_dir }}"
     owner: "{{ ironic_inspector_user }}"
-    group: "{{ ironic_inspector_group }}"
     mode: 0755
     state: directory
   when: ironic_inspector_processing_ramdisk_logs_dir is defined
 
-- name: Create the logging folder
+- name: Create logs folder
   file:
     path: "{{ ironic_inspector_log | dirname }}"
     owner: "{{ ironic_inspector_user }}"
-    group: "{{ ironic_inspector_group }}"
     mode: 0755
     state: directory
-  when: >
-    ironic_inspector_log is defined and 
-    ironic_inspector_log != 'syslog'
+  when: ironic_inspector_log is defined and ironic_inspector_log != 'syslog'
 
-- name: Define mysql connection
-  set_fact: >
-    ironic_inspector_database_connection="mysql://{{ironic_inspector_database_mysql_userid}}:{{ironic_inspector_database_mysql_password}}@{{ironic_inspector_database_mysql_host}}/{{ironic_inspector_database_mysql_db}}"
+- name: Define database connection
+  set_fact:
+    ironic_inspector_database_connection: "mysql://{{ironic_inspector_database_mysql_userid}}:{{ironic_inspector_database_mysql_password}}@{{ironic_inspector_database_mysql_host}}/{{ironic_inspector_database_mysql_db}}"
   when: >
-    ironic_inspector_database_mysql_userid is defined and
-    ironic_inspector_database_mysql_password is defined and
-    ironic_inspector_database_mysql_host is defined and
-    ironic_inspector_database_mysql_db is defined
+    ironic_inspector_database_mysql_userid is defined
+    and ironic_inspector_database_mysql_password is defined
+    and ironic_inspector_database_mysql_host is defined
+    and ironic_inspector_database_mysql_db is defined
 
-- name: Generate the main configuration file
+- name: Generate configuration file
   template:
     src: inspector.conf.j2
     dest: "{{ ironic_inspector_config_file }}"
@@ -38,7 +34,13 @@
   register: __ironic_inspector_updated_conf
 
 - name: Checking if configuration was updated
-  set_fact: _ironic_inspector_updated="{{ __ironic_inspector_updated_conf.changed }}"
+  set_fact:
+    _ironic_inspector_updated: "{{ __ironic_inspector_updated_conf.changed }}"
+
+- name: Delete dnsmasq default configuration
+  file:
+    path: "{{ ironic_inspector_config_dir }}/dnsmasq.conf"
+    state: absent
 
 
 # Inspector uses 'upgrade' for initial setup
@@ -54,9 +56,11 @@
     when: ironic_inspector_run_dbsync and _ironic_inspector_previous
     notify: restart inspector
     become_user: "{{ ironic_inspector_user }}"
-    
+
   - name: Delete SQLite database
-    file: path="{{ ironic_inspector_var_dir }}/{{ item }}" state=absent
+    file:
+      path: "{{ ironic_inspector_var_dir }}/{{ item }}"
+      state: absent
     with_items:
       - "{{ ironic_inspector_database_connection | basename }}"
       - "inspectordb"
@@ -68,8 +72,10 @@
     and _ironic_inspector_updated
 
 
-- name: Restart Ironic-Inspector daemon for the new configuration
-  service: name="{{ ironic_inspector_service_name }}" state=restarted sleep=5
+- name: Restart Ironic-Inspector daemon
+  service:
+    name: "{{ ironic_inspector_service_name }}"
+    state: restarted
   when: _ironic_inspector_updated
 
 - name: Ensure Ironic-Inspector is started or stopped as required
