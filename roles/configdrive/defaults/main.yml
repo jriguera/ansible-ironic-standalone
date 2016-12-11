@@ -13,7 +13,7 @@ configdrive_fqdn: "test.example.com"
 configdrive_name: "test"
 configdrive_ssh_public_key:
 configdrive_availability_zone: ""
-configdrive_network_info: True
+configdrive_network_info: False
 configdrive_config_dir: "/var/lib/ironic/images/"
 configdrive_volume_path: "/var/lib/ironic/images/"
 
