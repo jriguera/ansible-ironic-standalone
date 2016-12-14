@@ -2,6 +2,11 @@
 # Enable mysql daemon
 mysql_enabled_on_startup: True
 
+mysql_packages_install_recommends: True
+# Upgrade the database if older than these seconds
+# Time is only valid in Debian, set to 0/False to disable
+mysql_packages_update_cache: 0
+
 # Other settings
 mysql_nice: 0
 mysql_performance_schema: True

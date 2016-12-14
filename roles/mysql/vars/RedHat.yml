@@ -2,11 +2,6 @@
 # It is not include officially in the repos
 mysql_os_packages: False
 
-# Install from upstream repos or directly from operating system packages
-# except for RH/Centos -overwritten in vars files- because it has been replaced
-# by MariaDB
-mysql_os_packages: "True"
-
 #mysql_os_repo_url: "http://repo.mysql.com/mysql-community-release-el{{ ansible_distribution_major_version }}.rpm"
 mysql_os_repo_url: "http://repo.mysql.com/mysql-community-release-el{{ ansible_distribution_major_version }}-{{ mysql_version.split('.') | last }}.noarch.rpm"
 mysql_os_repo: "mysql5{{ mysql_version.split('.') | last }}-community"
