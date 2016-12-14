@@ -3,6 +3,15 @@
 ironic_conductor: True
 # Enable Ironic-API?
 ironic_api: True
+
+# Install from upstream repos or directly from operating system packages
+# (True for Xenial, False otherwise)
+ironic_os_packages: False
+ironic_packages_install_recommends: True
+# Upgrade the database if older than these seconds
+# Time is only valid in Debian, set to 0/False to disable
+ironic_packages_update_cache: 0
+
 # Run ironic-dbsync?
 ironic_run_dbsync: True
 
@@ -52,14 +61,14 @@ ironic_api_port: 6385
 
 ### Ironic-Conductor
 ironic_conductor_workers_pool_size: 100
-ironic_conductor_api_url: "http://{{ ansible_default_ipv4.address }}:6385/"
+ironic_conductor_service_ironic_url: "http://{{ ansible_default_ipv4.address }}:6385/"
 ironic_conductor_sync_power_state_interval: 60
 ironic_conductor_check_provision_state_interval: 60
 ironic_conductor_deploy_callback_timeout: 1800
 ironic_conductor_force_power_state_during_sync: False
 ironic_conductor_send_sensor_data: [ "ALL" ]
 ironic_conductor_inspect_timeout: 1800
-ironic_conductor_automated_clean: False
+ironic_conductor_automated_clean: True
 #ironic_conductor_configdrive_swift: "ironic_configdrive"
 
 
@@ -176,7 +185,7 @@ ironic_pxe_instance_master_path: "/var/lib/ironic/master_images"
 ironic_pxe_image_cache_size: 102400
 ironic_pxe_image_cache_ttl: 10080
 ironic_pxe_disk_devices: ["cciss/c0d0", "sda", "hda", "vda"]
-ironic_pxe_tftp_server: "{{ ansible_eth0.ipv4.address }}"
+ironic_pxe_tftp_server: "{{ ansible_default_ipv4.address }}"
 ironic_pxe_tftp_root: "/var/lib/ironic/tftpboot"
 ironic_pxe_tftp_master_path: "/var/lib/ironic/tftpboot/master_images"
 ironic_pxe_bootfile_name: "pxelinux.0"
@@ -238,8 +247,11 @@ ironic_keystone_authtoken_auth_version: "v3.0"
 
 ### Inspector
 ironic_inspector_enabled: False
-ironic_inspector_service_url: "http://{{ ansible_default_ipv4.address }}:5050"
 ironic_inspector_status_check_period: 60
+ironic_inspector_service_inspector_url: "http://{{ ansible_default_ipv4.address }}:5050/v1"
+ironic_inspector_service_ironic_url: "http://{{ ansible_default_ipv4.address }}:6385/"
+ironic_inspector_ipa_collectors: ["default", "logs", "extra_hardware", "pci-devices"]
+ironic_inspector_enroll_driver: "agent_ipmitool"
 #ironic_inspector_auth_url:
 #ironic_inspector_domain_name:
 #ironic_inspector_project_name:

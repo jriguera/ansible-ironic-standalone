@@ -548,10 +548,10 @@ allow_headers={{ values["allow_headers"] | join(',') }}
 
 
 [conductor]
-{% if ironic_conductor_api_url is defined and not ironic_conductor_api_url is none -%}
+{% if ironic_conductor_service_ironic_url is defined and not ironic_conductor_service_ironic_url is none -%}
 # URL of Ironic API service. If not set ironic can get the
 # current value from the keystone service catalog. (string value)
-api_url={{ ironic_conductor_api_url }}
+api_url={{ ironic_conductor_service_ironic_url }}
 {% endif %}
 
 # Seconds between conductor heart beats. (integer value)
@@ -1717,7 +1717,7 @@ enabled=true
 # ironic-discoverd HTTP endpoint. If this is not set, the
 # ironic-discoverd client default (http://127.0.0.1:5050) will
 # be used. (string value)
-service_url={{ ironic_inspector_service_url | regex_replace('^(https?://)([^:^/]*)(:\\d*)?(.*)$', '\\1\\2\\3') }}
+service_url={{ ironic_inspector_service_inspector_url | regex_replace('^(https?://)([^:^/]*)(:\\d*)?(.*)$', '\\1\\2\\3') }}
 
 # period (in seconds) to check status of nodes on inspection
 # (integer value)

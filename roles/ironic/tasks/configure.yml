@@ -65,7 +65,8 @@
     when: not _ironic_previous
 
   when: >
-    not ironic_database_connection | search("sqlite://.*")
+    ironic_api
+    and not ironic_database_connection | search("sqlite://.*")
     and _ironic_api_reinstalled
     and _ironic_updated
 

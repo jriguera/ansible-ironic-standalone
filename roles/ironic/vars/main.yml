@@ -1,15 +1,7 @@
 ---
-# Install from upstream repos or directly from operating system packages
-# (True for Xenial, False otherwise)
-ironic_os_packages: True
-
 ironic_release: "newton"
 ironic_os_repo_url:
 ironic_os_repo_key:
-ironic_packages_install_recommends: True
-# Upgrade the database if older than these seconds
-# Time is only valid in Debian, set to 0/False to disable
-ironic_packages_update_cache: 1800
 
 ironic_conductor_service_name: ironic-conductor
 ironic_conductor_pidfile: /var/run/ironic/ironic-conductor.pid
