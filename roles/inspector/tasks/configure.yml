@@ -68,7 +68,7 @@
 
   when: >
     not ironic_inspector_database_connection | search("sqlite://.*")
-    and _ironic_inspector_reinstalled 
+    and _ironic_inspector_reinstalled
     and _ironic_inspector_updated
 
 

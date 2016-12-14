@@ -4,6 +4,14 @@
 # Enable or disable inspector daemon and pxe configuration
 ironic_inspector_enabled: True
 ironic_inspector_enabled_on_startup: True
+
+# Install from upstream repos or directly from operating system packages
+ironic_inspector_os_packages: False
+ironic_inspector_packages_install_recommends: True
+# Upgrade the database if older than these seconds
+# Time is only valid in Debian, set to 0/False to disable
+ironic_inspector_packages_update_cache: 0
+
 # Run ironic-dbsync?
 ironic_inspector_run_dbsync: True
 
@@ -41,7 +49,7 @@ ironic_inspector_database_pool_size: 10
 ironic_inspector_database_use_db_reconnect: True
 
 # How to contact Ironic API to define the server
-ironic_inspector_ironic_api_url: "http://{{ ansible_default_ipv4.address }}:6385/"
+ironic_inspector_service_ironic_url: "http://{{ ansible_default_ipv4.address }}:6385/"
 ironic_inspector_ironic_os_service_type: "baremetal"
 ironic_inspector_ironic_os_endpoint_type: "internalURL"
 #ironic_inspector_ironic_domain_name:
@@ -52,43 +60,14 @@ ironic_inspector_ironic_os_endpoint_type: "internalURL"
 # Manage the rules defined in the discovery_rules*.yml files
 ironic_inspector_discovery_manage_rules: True
 
-# IPA ramdisk and kernel definition for inspection
-ironic_inspector_ipa_download: True
-ironic_inspector_ipa_deploy_path: "/var/lib/ironic/images"
-ironic_inspector_ipa_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin"]
-ironic_inspector_ipa_tftproot: "/var/lib/ironic/tftpboot"
-# IPA (Coreos or tinyIPA)
-#ironic_inspector_ipa_ramdisk_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem-stable-{{ ironic_inspector_release }}.cpio.gz"
-#ironic_inspector_ipa_ramdisk_checksum: "sha1:c998ed71ddb4f535b6dde2dd1c77099ec0f9c425"
-#ironic_inspector_ipa_ramdisk: "coreos_production_pxe_image-oem.cpio.gz"
-#ironic_inspector_ipa_kernel_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe-stable-{{ ironic_inspector_release }}.vmlinuz"
-#ironic_inspector_ipa_kernel_checksum: "sha1:934b1fd795557fd7b8b684507cfef008eeb664d9"
-#ironic_inspector_ipa_kernel: "coreos_production_pxe.vmlinuz"
-ironic_inspector_ipa_ramdisk_url: "https://tarballs.openstack.org/ironic-python-agent/tinyipa/files/tinyipa-stable-{{ ironic_release }}.gz"
-ironic_inspector_ipa_ramdisk_checksum: "sha1:4b87ca3b4353a99f84f449890c68a5b0122eeacb"
-ironic_inspector_ipa_ramdisk: "tinyipa-master.gz"
-ironic_inspector_ipa_kernel_url: "https://tarballs.openstack.org/ironic-python-agent/tinyipa/files/tinyipa-stable-{{ ironic_release }}.vmlinuz"
-ironic_inspector_ipa_kernel_checksum: "sha1:1a936929b57a8d3f1ccc378d241103c5f1b93097"
-ironic_inspector_ipa_kernel: "tinyipa-master.vmlinuz"
-
-# If enabled it will create the pxelinux.cfg folder with a  default entry
-# to automatically offer PXE boot to all servers when they boot. If they are not
+# If enabled automatically offer PXE boot to all servers when they boot. If they are not
 # managed by Ironic Conductor they will be defined in Ironic in enroll state
 # using the selected driver and the following rules will be applied to define
 # the rest of the parameters of the node.
 ironic_inspector_discovery_enroll: True
-ironic_inspector_discovery_ipa_collectors: ["default"]
 # Default token
 ironic_inspector_discovery_enroll_token: "token"
 ironic_inspector_discovery_enroll_driver: "agent_ipmitool"
-ironic_inspector_discovery_enroll_deploy_kernel: "file://{{ ironic_inspector_ipa_deploy_path }}/{{ ironic_inspector_ipa_kernel }}"
-ironic_inspector_discovery_enroll_deploy_ramdisk: "file://{{ ironic_inspector_ipa_deploy_path }}/{{ ironic_inspector_ipa_ramdisk }}"
-# IPMI settings for new nodes
-ironic_inspector_discovery_enroll_ipmi_username: "admin"
-ironic_inspector_discovery_enroll_ipmi_password: "ipmi"
-# Ironic owner and group for PXE folder
-ironic_inspector_pxe_owner: "ironic"
-ironic_inspector_pxe_group: "{{ ironic_inspector_group }}"
 
 # Which MAC addresses to add as ports during introspection. Possible
 # values: all (all MAC addresses), active (MAC addresses of NIC with

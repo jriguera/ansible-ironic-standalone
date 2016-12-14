@@ -396,7 +396,7 @@ auth_strategy=noauth
 
 # Ironic API URL, used to set Ironic API URL when auth_strategy option
 # is noauth to work with standalone Ironic without keystone. (string value)
-ironic_url="{{ ironic_inspector_ironic_api_url | default('http://127.0.0.1:6385/') }}"
+ironic_url="{{ ironic_inspector_service_ironic_url | default('http://127.0.0.1:6385/') }}"
 
 # Ironic service type. (string value)
 os_service_type={{ ironic_inspector_ironic_os_service_type | default('baremetal') }}
