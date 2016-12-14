@@ -1,14 +1,7 @@
 ---
-# Install from upstream repos or directly from operating system packages
-rabbitmq_os_packages: True
-
 rabbitmq_repo_release: "newton"
 rabbitmq_os_repo_url:
 rabbitmq_os_repo_key:
-rabbitmq_packages_install_recommends: True
-# Upgrade the database if older than these seconds
-# Time is only valid in Debian, set to 0/False to disable
-rabbitmq_packages_update_cache: 1800
 
 rabbitmq_daemon: rabbitmq-server
 rabbitmq_user: rabbitmq
