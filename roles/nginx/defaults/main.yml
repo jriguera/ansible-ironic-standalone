@@ -4,6 +4,10 @@ nginx_enabled_on_startup: True
 
 # Install from upstream repos or directly from operating system packages
 nginx_os_packages: True
+nginx_packages_install_recommends: true
+# Upgrade the database if older than these seconds
+# Time is only valid in Debian, set to 0/False to disable
+nginx_packages_update_cache: 0
 
 # Main options
 nginx_error_log: "/var/log/nginx/error.log"
