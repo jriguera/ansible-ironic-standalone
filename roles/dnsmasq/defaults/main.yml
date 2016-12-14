@@ -6,6 +6,10 @@ dnsmasq_resolvconf: False
 
 # Install from upstream repos or directly from operating system packages
 dnsmasq_os_packages: True
+dnsmasq_packages_install_recommends: True
+# Upgrade the database if older than these seconds
+# Time is only valid in Debian, set to 0/False to disable
+dnsmasq_packages_update_cache: 0
 
 # Global parameters, settings needed! otherwise are ignored!
 dnsmasq_dhcp: True
