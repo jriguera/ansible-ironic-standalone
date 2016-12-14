@@ -1,7 +1,0 @@
-default introspect
-
-label introspect
-kernel {{ ironic_inspector_ipa_kernel }}
-append initrd={{ ironic_inspector_ipa_ramdisk }} ipa-inspection-callback-url={{ ironic_inspector_api_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/continue ipa-api-url={{ ironic_inspector_ironic_api_url }} ipa-driver-name={{ ironic_inspector_discovery_enroll_driver }} systemd.journald.forward_to_console={{ ironic_inspector_debug | ternary('yes','no') }} ipa-inspection-collectors={{ ironic_inspector_discovery_ipa_collectors | join(',') }} {{ ironic_inspector_ipa_pxe_append_params | join(' ') }}
-ipappend 3
-

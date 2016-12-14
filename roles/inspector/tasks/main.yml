@@ -14,9 +14,6 @@
 - include: install.yml
   tags: ["inspector", "install"]
 
-- include: setup_pxe.yml
-  tags: ["inspector", "setup_pxe", "pxe"]
-
 - include: configure.yml
   tags: ["inspector", "configure"]
 
