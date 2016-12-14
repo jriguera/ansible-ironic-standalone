@@ -4,6 +4,10 @@ monit_enabled_on_startup: True
 
 # Install from upstream repos or directly from operating system packages
 monit_os_packages: True
+monit_packages_install_recommends: True
+# Upgrade the database if older than these seconds
+# Time is only valid in Debian, set to 0/False to disable
+monit_packages_update_cache: 0
 
 # Global options
 # The number of seconds to determine if a process is down or not.

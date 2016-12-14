@@ -2,11 +2,6 @@
 monit_os_repo_url:
 monit_os_repo_key:
 
-monit_packages_install_recommends: True
-# Upgrade the database if older than these seconds
-# Time is only valid in Debian, set to 0/False to disable
-monit_packages_update_cache: 1800
-
 monit_daemon: monit
 monit_user: root
 monit_group: root
@@ -15,3 +10,5 @@ monit_pidfile: /var/run/monit.pid
 monit_idfile: /var/lib/monit/id
 monit_statefile: /var/lib/monit/state
 monit_event_dir: /var/lib/monit/events
+
+monit_ansible_monitors_file: /var/lib/monit/monitors.ansible
