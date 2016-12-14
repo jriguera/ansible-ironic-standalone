@@ -1,21 +1,73 @@
 ---
-- name: RedHat - Install inspector client library packages
-  yum:
-    name: "{{ item.key if ('version' not in item.value) else ('%s-%s' % (item.key, item.value['version'])) }}"
-    state: "{{ item.value.state | default('present') }}"
-    update_cache: "{{ ironic_packages_update_cache | ternary('yes', 'no') }}"
-  with_dict: "{{ ironic_conductor_packages_inspector }}"
-  when: ansible_os_family == 'RedHat'
-  tags: ["install", "redhat", "packages"]
+- block:
+  # When the IPA images are on a different folder we have to link it
+  - name: Create links to IPA image/kernel in the tfpboot folder
+    file:
+      path: "{{ ironic_pxe_tftp_root }}/{{ item }}"
+      src:  "{{ ironic_deploy_http_root }}/{{ item }}"
+      owner: "{{ ironic_user }}"
+      group: "{{ ironic_group }}"
+      state: link
+    with_items:
+      - "{{ ironic_pxe_ipa_img_name }}"
+      - "{{ ironic_pxe_ipa_kernel_name }}"
+    when: ironic_inspector_enabled and ironic_pxe_ipa_download
 
-- name: Debian - Install inspector client library packages
-  apt: 
-    name: "{{ item.key if ('version' not in item.value) else ('%s=%s' % (item.key, item.value['version'])) }}"
-    state: "{{ item.value.state | default('present') }}"
-    install_recommends: "{{ ironic_packages_install_recommends }}"
-    update_cache: "{{ ironic_packages_update_cache | ternary('yes', 'no') }}"
-    cache_valid_time: "{{ ironic_packages_update_cache }}"
-  with_dict: "{{ ironic_conductor_packages_inspector }}"
-  when: ansible_os_family == 'Debian'
-  tags: ["install", "debian", "packages"]
+  - name: Delete links to IPA image/kernel in the tfpboot folder
+    file:
+      path: "{{ ironic_pxe_tftp_root }}/{{ item }}"
+      state: absent
+    with_items:
+      - "{{ ironic_pxe_ipa_img_name }}"
+      - "{{ ironic_pxe_ipa_kernel_name }}"
+    when: not ironic_inspector_enabled and ironic_pxe_ipa_download
+
+  # When the tinyIPA images are on a different folder we have to link it
+  - name: Create links to tiny IPA image/kernel in the tfpboot folder
+    file:
+      path: "{{ ironic_pxe_tftp_root }}/{{ item }}"
+      src:  "{{ ironic_deploy_http_root }}/{{ item }}"
+      owner: "{{ ironic_user }}"
+      group: "{{ ironic_group }}"
+      state: link
+    with_items:
+      - "{{ ironic_pxe_tinyipa_img_name }}"
+      - "{{ ironic_pxe_tinyipa_kernel_name }}"
+    when: ironic_inspector_enabled and ironic_pxe_tinyipa_download
+
+  - name: Delete links to tiny IPA image/kernel in the tfpboot folder
+    file:
+      path: "{{ ironic_pxe_tftp_root }}/{{ item }}"
+      state: absent
+    with_items:
+      - "{{ ironic_pxe_tinyipa_img_name }}"
+      - "{{ ironic_pxe_tinyipa_kernel_name }}"
+    when: not ironic_inspector_enabled and ironic_pxe_tinyipa_download
+
+  - name: Create tftproot pxelinux.cfg folder
+    file:
+      path: "{{ ironic_pxe_tftp_root }}/pxelinux.cfg"
+      owner: "{{ ironic_user }}"
+      group: "{{ ironic_group }}"
+      mode: 0775
+      state: directory
+
+  - name: Generate pxelinux.cfg/default
+    template:
+      src: pxelinux_default.j2
+      dest: "{{ ironic_pxe_tftp_root }}/pxelinux.cfg/default"
+      owner: "{{ ironic_user }}"
+      group: "{{ ironic_group }}"
+      mode: 0664
+    when: ironic_inspector_enabled
+
+  - name: Delete pxelinux.cfg/default
+    file:
+      dest: "{{ ironic_inspector_ipa_tftproot }}/pxelinux.cfg/default"
+      state: absent
+    when: not ironic_inspector_enabled
+
+  when: >
+    ironic_pxe_tftp_root is defined
+    and ironic_pxe_tftp_root
 

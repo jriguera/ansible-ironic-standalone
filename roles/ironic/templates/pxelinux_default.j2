@@ -1,0 +1,8 @@
+default introspect
+
+label introspect
+kernel {% if ironic_pxe_ipa_download %}{{ ironic_pxe_ipa_kernel_name }}{% elif ironic_pxe_tinyipa_download %}{{ ironic_pxe_tinyipa_kernel_name }}{% endif %}
+
+append initrd={% if ironic_pxe_ipa_download %}{{ ironic_pxe_ipa_img_name }}{% elif ironic_pxe_tinyipa_download %}{{ ironic_pxe_tinyipa_img_name }}{% endif %} ipa-inspection-callback-url={{ ironic_inspector_service_inspector_url | trim | regex_replace('^(.*?)\\/+$', '\\1') }}/continue ipa-api-url={{ ironic_inspector_service_ironic_url }} ipa-driver-name={{ ironic_inspector_enroll_driver }} systemd.journald.forward_to_console={{ ironic_debug | ternary('yes','no') }} ipa-inspection-collectors={{ ironic_inspector_ipa_collectors | join(',') }} {{ ironic_pxe_append_params | join(' ') }}
+ipappend 3
+

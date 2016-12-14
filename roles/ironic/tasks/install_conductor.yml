@@ -1,4 +1,28 @@
 ---
+- block:
+  - name: RedHat - Install inspector client library packages
+    yum:
+      name: "{{ item.key if ('version' not in item.value) else ('%s-%s' % (item.key, item.value['version'])) }}"
+      state: "{{ item.value.state | default('present') }}"
+      update_cache: "{{ ironic_packages_update_cache | ternary('yes', 'no') }}"
+    with_dict: "{{ ironic_conductor_packages_inspector }}"
+    when: ansible_os_family == 'RedHat'
+    tags: ["inspector", "redhat", "packages"]
+
+  - name: Debian - Install inspector client library packages
+    apt:
+      name: "{{ item.key if ('version' not in item.value) else ('%s=%s' % (item.key, item.value['version'])) }}"
+      state: "{{ item.value.state | default('present') }}"
+      install_recommends: "{{ ironic_packages_install_recommends }}"
+      update_cache: "{{ ironic_packages_update_cache | ternary('yes', 'no') }}"
+      cache_valid_time: "{{ ironic_packages_update_cache }}"
+    with_dict: "{{ ironic_conductor_packages_inspector }}"
+    when: ansible_os_family == 'Debian'
+    tags: ["inspector", "debian", "packages"]
+
+  when: ironic_inspector_enabled
+
+
 - name: RedHat - Install Ironic-Conductor required packages
   yum:
     name: "{{ item.key if ('version' not in item.value) else ('%s-%s' % (item.key, item.value['version'])) }}"

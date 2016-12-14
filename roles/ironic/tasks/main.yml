@@ -34,10 +34,6 @@
   when: ironic_conductor
   tags: ["conductor", "setup_console"]
 
-- include: setup_inspector.yml
-  when: ironic_conductor and ironic_inspector_enabled
-  tags: ["conductor", "setup_inspector"]
-
 # Database initialization and start
 - include: configure.yml
   tags: ["ironic", "configure"]
@@ -45,9 +41,14 @@
 # Download IPA
 - include: download_ipa.yml
   when: >
-    ironic_deploy_http_root is defined and
-    not ironic_deploy_http_root is none and
-    ironic_deploy_http_url is defined and
-    not ironic_deploy_http_url is none
+    ironic_conductor
+    and ironic_deploy_http_root is defined
+    and not ironic_deploy_http_root is none
+    and ironic_deploy_http_url is defined
+    and not ironic_deploy_http_url is none
   tags: ["ironic", "ipa", "download_ipa"]
+
+- include: setup_inspector.yml
+  when: ironic_conductor
+  tags: ["conductor", "setup_inspector"]
 
