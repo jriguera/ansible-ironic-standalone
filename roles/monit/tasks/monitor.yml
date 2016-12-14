@@ -15,9 +15,17 @@
     file:
       path: "{{ monit_config_dir }}/{{ item.name }}"
       state: absent
-    with_items: "{{ monit_monitoring_list }}"
     when: item.delete is defined and item.delete
+    with_items: "{{ monit_monitoring_list }}"
     notify: reload monit
+
+  - name: Delete monitors from list
+    lineinfile:
+      dest: "{{ monit_ansible_monitors_file }}"
+      regexp: "^{{ item.name }}"
+      state: absent
+    when: item.delete is defined and item.delete
+    with_items: "{{ monit_monitoring_list }}"
 
   - name: Add monitors
     template:
@@ -26,9 +34,18 @@
       owner: "{{ monit_user }}"
       group: "{{ monit_group }}"
       mode: 0644
-    with_items: "{{ monit_monitoring_list }}"
     when: not (item.delete is defined and item.delete)
+    with_items: "{{ monit_monitoring_list }}"
     notify: reload monit
+
+  - name: Add monitor to list
+    lineinfile:
+      dest: "{{ monit_ansible_monitors_file }}"
+      regexp: "^{{ item.name }}"
+      line: "{{ item.name }}"
+      state: present
+    when: not (item.delete is defined and item.delete)
+    with_items: "{{ monit_monitoring_list }}"
 
   when: monit_monitoring_list
 

@@ -11,6 +11,7 @@
     - "{{ monit_idfile | dirname }}"
     - "{{ monit_statefile | dirname }}"
     - "{{ monit_event_dir | dirname }}"
+    - "{{ monit_ansible_monitors_file | dirname }}"
 
 
 - block:
@@ -32,6 +33,14 @@
 
   when: monit_https_client is defined and monit_https_client
   tags: ["ssl"]
+
+- name: Create ansible managed monitors file
+  copy:
+    content: ''
+    dest: "{{ monit_ansible_monitors_file }}"
+    owner: "{{ monit_user }}"
+    force: no
+    mode: 0664
 
 
 - block:
