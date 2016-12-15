@@ -1,0 +1,65 @@
+---
+### Ironic API role
+
+# Disable debug
+ironic_debug: false
+
+ironic_messaging_host: "{{ Ironic_messaging_host }}"
+ironic_messaging_userid: "{{ Ironic_messaging_user }}"
+ironic_messaging_password: "{{ Ironic_messaging_pass }}"
+ironic_messaging_virtual_host: "{{ Ironic_messaging_vhost }}"
+ironic_database_mysql_host: "{{ Ironic_database_host }}"
+ironic_database_mysql_userid: "{{ Ironic_database_user }}"
+ironic_database_mysql_password: "{{ Ironic_database_pass }}"
+ironic_database_mysql_db: "{{ Ironic_database_name }}"
+
+ironic_api_public_endpoint: "{{ Ironic_api_public_url }}"
+ironic_conductor_service_ironic_url: "{{ Ironic_api_internal_url }}"
+ironic_inspector_service_inspector_url: "{{ Ironic_inspector_api_internal_url }}"
+ironic_deploy_http_url: "http://{{ Ironic_private_ip }}/deploy"
+
+ironic_enabled_drivers: "{{ Ironic_conductor_drivers }}"
+ironic_pxe_ipa_download: "{{ Ironic_conductor_download_ipa }}"
+ironic_pxe_tinyipa_download: "{{ Ironic_conductor_download_tinyipa }}"
+ironic_conductor_automated_clean: "{{ Ironic_conductor_clean_nodes }}"
+ironic_conductor_sync_power_state_interval: 90
+ironic_pxe_tftp_server: "{{ Ironic_private_ip }}"
+ironic_pxe_append_params: "{{ Ironic_pxe_params }}"
+ironic_deploy_http_root: "{{ Ironic_deploy_path }}"
+ironic_pxe_images_path: "{{ Ironic_images_path }}"
+ironic_pxe_tftp_root: "{{ Ironic_pxe_path }}"
+
+ironic_cors_domains:
+  ironic_webclient_private:
+    allowed_origin: "http://{{ Ironic_private_ip }}"
+    allow_credentials: True
+  ironic_webclient_public:
+    allowed_origin: "http://{{ Ironic_public_ip }}"
+    allow_credentials: True
+  ironic_webclient_ip:
+    allowed_origin: "http://{{ ansible_default_ipv4.address }}"
+    allow_credentials: True
+  ironic_webclient_fqdn:
+    allowed_origin: "http://{{ ansible_fqdn }}"
+    allow_credentials: True
+  ironic_webclient_host:
+    allowed_origin: "http://{{ ansible_hostname }}"
+    allow_credentials: True
+
+
+### Ironic inspector role
+
+ironic_inspector_debug: false
+ironic_inspector_enabled: true
+ironic_inspector_discovery_enroll: true
+
+ironic_inspector_enroll_driver: "agent_ipmitool"
+
+ironic_inspector_api_url: "{{ Ironic_inspector_api_public_url }}"
+ironic_inspector_service_ironic_url: "{{ Ironic_api_internal_url }}"
+
+ironic_inspector_database_mysql_host: "{{ Ironic_database_host }}"
+ironic_inspector_database_mysql_userid: "{{ Ironic_inspector_database_user }}"
+ironic_inspector_database_mysql_password: "{{ Ironic_inspector_database_pass }}"
+ironic_inspector_database_mysql_db: "{{ Ironic_inspector_database_name }}"
+

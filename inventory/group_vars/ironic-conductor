@@ -1,0 +1,38 @@
+---
+
+### Ironic role
+
+# Disable api on these hosts
+ironic_api: false
+
+
+### Dnsmasq role for PXE on Conductor
+
+dnsmasq_conf_domain: "{{ Ironic_dhcp_domain }}"
+dnsmasq_conf_dhcp:
+- device: "{{ Ironic_dhcp_iface }}"
+  range: "{{ Ironic_dhcp_params }}"
+  ignore_names: true
+  generate_names: true
+  option: "{{ Ironic_dhcp_options }}"
+  boot:
+  - "{{ ironic_pxe_bootfile_name }}"
+  tftp: "{{ Ironic_pxe_path }}"
+
+
+
+### Monit role setup for Conductor
+
+monit_monitoring_list:
+- name: ironic-conductor
+  target: "{{ ironic_conductor_pidfile }}"
+  script: "/usr/sbin/service {{ ironic_conductor_service_name }} %"
+  rules:
+  - "if 3 restarts within 3 cycles then timeout"
+- name: dnsmasq
+  target: "{{ dnsmasq_pidfile }}"
+  script: "/usr/sbin/service {{ dnsmasq_daemon }} %"
+  rules:
+  - "if failed port 53 type tcp protocol dns then restart"
+  - "if 3 restarts within 3 cycles then timeout"
+

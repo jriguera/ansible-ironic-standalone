@@ -1,0 +1,73 @@
+---
+
+### Ironic role
+
+# Disable conductor on these hosts
+ironic_conductor: false
+
+
+### Nginx role
+
+nginx_server_list:
+- name: "{{ ansible_hostname }}"
+  listen:
+  - ["80", "default_server"]
+  root: "{{ Ironic_http_path }}"
+  client_body_temp_path: "{{ Ironic_http_path }}/tmp"
+  access_log: "/var/log/nginx/{{ ansible_hostname }}-server_access.log"
+  location_list:
+  - name: "/"
+    autoindex: "on"
+  - name: "/images/"
+    autoindex: "on"
+    client_body_buffer_size: "16k" 
+    client_max_body_size: "50G"
+    create_full_put_path: "on"
+    dav_access: "user:rw group:rw all:r"
+    dav_methods: "PUT DELETE MKCOL COPY MOVE"
+    default_type: "application/octet-stream"
+  - name: "/metadata/"
+    autoindex: "on"
+    client_body_buffer_size: "16k" 
+    client_max_body_size: "100M"
+    create_full_put_path: "on"
+    dav_access: "user:rw group:rw all:r"
+    dav_methods: "PUT DELETE MKCOL COPY MOVE"
+    default_type: "application/octet-stream"
+  - name: "/deploy/"
+    autoindex: "on"
+    client_body_buffer_size: "16k" 
+    client_max_body_size: "100M"
+    create_full_put_path: "on"
+    dav_access: "user:rw group:rw all:r"
+    dav_methods: "PUT DELETE MKCOL COPY MOVE"
+    default_type: "application/octet-stream"
+
+
+### Role ironic_webclient
+
+webclient_webdir_owner: "{{ nginx_user }}"
+webclient_webdir_group: "{{ ironic_group }}"
+
+
+### Monit role setup for API server
+
+monit_monitoring_list:
+- name: ironic-api
+  target: "{{ ironic_api_pidfile }}"
+  script: "/usr/sbin/service {{ ironic_api_service_name }} %"
+  rules:
+  - "if failed port {{ ironic_api_port }} type tcp then restart"
+  - "if 3 restarts within 3 cycles then timeout"
+- name: ironic-inspector
+  target: "{{ ironic_inspector_pidfile }}"
+  script: "/usr/sbin/service {{ ironic_inspector_service_name }} %"
+  rules:
+  - "if 3 restarts within 3 cycles then timeout"
+- name: nginx
+  target: "{{ nginx_pidfile }}"
+  script: "/usr/sbin/service {{ nginx_daemon }} %"
+  rules:
+  - "if failed port 80 type tcp then restart"
+  - "if 3 restarts within 3 cycles then timeout"
+

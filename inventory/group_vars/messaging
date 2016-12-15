@@ -1,0 +1,24 @@
+---
+### RabbitMQ role settings
+
+rabbitmq_vhost_definition_list:
+- name: "{{ Ironic_messaging_vhost }}"
+
+rabbitmq_users_definition_list:
+- user: "{{ Ironic_messaging_user }}"
+  password: "{{ Ironic_messaging_pass }}"
+  vhost: "{{ Ironic_messaging_vhost }}"
+  tags: [ "administrator", "management" ]
+
+
+
+### Monit role settings for RabbitMQ
+
+monit_monitoring_list:
+- name: rabbitmq
+  target: "{{ rabbitmq_pidfile }}"
+  script: "/usr/sbin/service {{ rabbitmq_daemon }} %"
+  rules:
+  - "if failed port {{ rabbitmq_tcp_port }} type tcp then restart"
+  - "if 3 restarts within 3 cycles then timeout"
+

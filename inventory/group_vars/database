@@ -1,0 +1,31 @@
+---
+### MySQL role settings
+
+mysql_root_password: "{{ Ironic_database_root_password }}"
+
+mysql_database_list:
+- name: "{{ Ironic_database_name }}"
+- name: "{{ Ironic_inspector_database_name }}"
+
+mysql_user_list:
+- name: "{{ Ironic_database_user }}"
+  password: "{{ Ironic_database_pass }}"
+  priv: "{{ Ironic_database_name }}.*:ALL"
+  host: "%"
+- name: "{{ Ironic_inspector_database_user }}"
+  password: "{{ Ironic_inspector_database_pass }}"
+  priv: "{{ Ironic_inspector_database_name }}.*:ALL"
+  host: "%"
+
+
+
+### Monit role settings for MySQL
+
+monit_monitoring_list:
+- name: mysql
+  target: "{{ mysql_pidfile }}"
+  script: "/usr/sbin/service {{ mysql_daemon }} %"
+  rules:
+  - "if failed port {{ mysql_port }} protocol mysql then restart"
+  - "if 3 restarts within 3 cycles then timeout"
+
