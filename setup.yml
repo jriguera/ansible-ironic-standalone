@@ -1,0 +1,50 @@
+---
+- name: Ensure package cache is up-to-date
+  hosts: server
+  become: yes
+  serial: 1
+  vars:
+    package_cache_update: true
+  tasks:
+  - name: Update apt package cache
+    apt:
+      update_cache: yes
+    when: package_cache_update and ansible_os_family == 'Debian'
+
+  - name: Update yum package cache
+    yum:
+      update_cache: yes
+    when: package_cache_update and ansible_os_family == 'RedHat'
+
+- name: MySQL database setup
+  hosts: database
+  become: yes
+  roles:
+  - role: mysql
+  - role: monit
+
+- name: RabbitMQ messaging setup
+  hosts: messaging
+  become: yes
+  roles:
+  - role: rabbitmq
+  - role: monit
+
+- name: Ironic API setup
+  hosts: ironic-api
+  become: yes
+  roles:
+  - role: ironic
+  - role: inspector
+  - role: nginx
+  - role: webclient
+  - role: monit
+
+- name: Ironic Conductor setup
+  hosts: ironic-conductor
+  become: yes
+  roles:
+  - role: ironic
+  - role: dnsmasq
+  - role: monit
+
