@@ -49,13 +49,13 @@
   - name: Create initial database schema
     command: ironic-dbsync --config-file "{{ ironic_config_file }}" create_schema
     when: ironic_run_dbsync and not _ironic_previous
-    become_user: "{{ ironic_user }}"
+    # become_user: "{{ ironic_user }}"
     notify: restart api
 
   - name: Update database schema
     command: ironic-dbsync --config-file "{{ ironic_config_file }}" upgrade
     when: ironic_run_dbsync and _ironic_previous
-    become_user: "{{ ironic_user }}"
+    # become_user: "{{ ironic_user }}"
     notify: restart api
 
   - name: Delete SQLite database
