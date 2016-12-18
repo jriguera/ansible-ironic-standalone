@@ -1,0 +1,23 @@
+---
+# Calculate load the cloudconfig for a host in the inventory
+# If the variable 'baremetal_cloudconfig' is defined, it will load
+# point to that file, otherwise it will try to find a '.cloudconfig' file
+# next to the inventory host_vars file.
+############################################################################
+
+- name: Check for configdrive definition
+  become: False
+  local_action: stat path="{{ baremetal_cloudconfig }}"
+  when: baremetal_cloudconfig is defined and baremetal_cloudconfig
+  register: _configdrive_config_user_data_path
+
+- name: "Check for configdrive file: inventory/host_vars/{{ id }}.cloudconfig"
+  become: False
+  local_action: stat path="inventory/host_vars/{{ id }}.cloudconfig"
+  when: not(baremetal_cloudconfig is defined and baremetal_cloudconfig)
+  register: _configdrive_config_user_data_path
+
+- name: Load configdrive definition
+  set_fact: 
+    baremetal_cloudconfig: "{{ _configdrive_config_user_data_path.stat.exists | ternary(_configdrive_config_user_data_path.stat.path, None) }}"
+
