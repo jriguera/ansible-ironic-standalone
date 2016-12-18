@@ -23,10 +23,10 @@ ironic_inspector_discovery_enroll_deploy:
     actions:
       - action: "set-attribute"
         path: "/driver_info/deploy_kernel"
-        value: "{{ ironic_inspector_discovery_enroll_deploy_kernel }}"
+        value: "{{ Ironic_deploy_kernel }}"
       - action: "set-attribute"
         path: "/driver_info/deploy_ramdisk"
-        value: "{{ ironic_inspector_discovery_enroll_deploy_ramdisk }}"
+        value: "{{ Ironic_deploy_ramdisk }}"
 
   - description: "Set driver_info.deploy_ramdisk if empty"
     conditions:
@@ -35,7 +35,7 @@ ironic_inspector_discovery_enroll_deploy:
     actions:
       - action: "set-attribute"
         path: "/driver_info/deploy_ramdisk"
-        value: "{{ ironic_inspector_discovery_enroll_deploy_ramdisk }}"
+        value: "{{ Ironic_deploy_ramdisk }}"
 
   - description: "Set driver_info.deploy_kernel if empty"
     conditions:
@@ -44,5 +44,5 @@ ironic_inspector_discovery_enroll_deploy:
     actions:
       - action: "set-attribute"
         path: "/driver_info/deploy_kernel"
-        value: "{{ ironic_inspector_discovery_enroll_deploy_kernel }}"
+        value: "{{ Ironic_deploy_kernel }}"
 

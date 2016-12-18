@@ -23,10 +23,10 @@ ironic_inspector_discovery_enroll_ipmi:
     actions:
       - action: "set-attribute"
         path: "/driver_info/ipmi_username"
-        value: "{{ ironic_inspector_discovery_enroll_ipmi_username }}"
+        value: "USERID"
       - action: "set-attribute"
         path: "/driver_info/ipmi_password"
-        value: "{{ ironic_inspector_discovery_enroll_ipmi_password }}"
+        value: "PASSW0RD"
 
   - description: "Set IPMI address if empty"
     conditions:
