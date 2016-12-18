@@ -4,17 +4,9 @@
   become: yes
   serial: 1
   vars:
-    package_cache_update: true
+    _package_cache_update: true
   tasks:
-  - name: Update apt package cache
-    apt:
-      update_cache: yes
-    when: package_cache_update and ansible_os_family == 'Debian'
-
-  - name: Update yum package cache
-    yum:
-      update_cache: yes
-    when: package_cache_update and ansible_os_family == 'RedHat'
+    - include: tasks/package_cache_update.yml
 
 - name: MySQL database setup
   hosts: database
