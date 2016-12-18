@@ -22,14 +22,14 @@ ironic_config_dir: /etc/ironic/
 ironic_var_dir: /var/lib/ironic/
 
 ironic_pxe_ipa_img_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe_image-oem-stable-{{ ironic_release }}.cpio.gz"
-ironic_pxe_ipa_img_checksum: "sha1:c998ed71ddb4f535b6dde2dd1c77099ec0f9c425"
+ironic_pxe_ipa_img_checksum: "sha1:1366b9f05d7827d07ac9c03bb1acfc7b7a8618c7"
 ironic_pxe_ipa_img_name: "coreos_production_pxe_image-oem.cpio.gz"
 ironic_pxe_ipa_kernel_url: "http://tarballs.openstack.org/ironic-python-agent/coreos/files/coreos_production_pxe-stable-{{ ironic_release }}.vmlinuz"
 ironic_pxe_ipa_kernel_checksum: "sha1:934b1fd795557fd7b8b684507cfef008eeb664d9"
 ironic_pxe_ipa_kernel_name: "coreos_production_pxe.vmlinuz"
 
 ironic_pxe_tinyipa_img_url: "https://tarballs.openstack.org/ironic-python-agent/tinyipa/files/tinyipa-stable-{{ ironic_release }}.gz"
-ironic_pxe_tinyipa_img_checksum: "sha1:4b87ca3b4353a99f84f449890c68a5b0122eeacb"
+ironic_pxe_tinyipa_img_checksum: "sha1:005276172635b4f90751d2bcc86a9514bf252b00"
 ironic_pxe_tinyipa_img_name: "tinyipa-master.gz"
 ironic_pxe_tinyipa_kernel_url: "https://tarballs.openstack.org/ironic-python-agent/tinyipa/files/tinyipa-stable-{{ ironic_release }}.vmlinuz"
 ironic_pxe_tinyipa_kernel_checksum: "sha1:1a936929b57a8d3f1ccc378d241103c5f1b93097"
