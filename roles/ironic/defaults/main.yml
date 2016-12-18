@@ -250,7 +250,7 @@ ironic_inspector_enabled: False
 ironic_inspector_status_check_period: 60
 ironic_inspector_service_inspector_url: "http://{{ ansible_default_ipv4.address }}:5050/v1"
 ironic_inspector_service_ironic_url: "http://{{ ansible_default_ipv4.address }}:6385/"
-ironic_inspector_ipa_collectors: ["default", "logs", "extra_hardware", "pci-devices"]
+ironic_inspector_ipa_collectors: ["default", "logs", "pci-devices"]
 ironic_inspector_enroll_driver: "agent_ipmitool"
 #ironic_inspector_auth_url:
 #ironic_inspector_domain_name:
