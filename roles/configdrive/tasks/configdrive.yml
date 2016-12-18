@@ -63,6 +63,6 @@
 - name: Create configdrive volume file
   shell: > 
     genisoimage -R -V "{{ configdrive_voume_name }}" "{{ configdrive_config_dir }}/{{ configdrive_instance_dir }}" 
-    | gzip -c | base64 > "{{ configdrive_volume_path }}/{{ configdrive_instance_dir }}.gz"
-  when: configdrive_volume_path is defined and not configdrive_volume_path is none
+    | gzip -c | base64 > "{{ configdrive_volume_path }}/{{ configdrive_instance_dir }}{{ configdrive_volume_ext }}"
+  when: configdrive_volume and configdrive_volume_path is defined and configdrive_volume_path
 
