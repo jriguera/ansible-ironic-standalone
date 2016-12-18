@@ -1,55 +1,86 @@
 ---
-# Define the name based on the fqdn
-
-- name: Define the server domain
-  set_fact: baremetal_domain="{{ baremetal_fqdn.split('.', 1) | last }}"
-  when: not baremetal_domain is defined and baremetal_fqdn
-  
-- name: Define the server name
-  set_fact: baremetal_name="{{ baremetal_fqdn.split('.') | first }}"
-  when: not baremetal_name is defined and baremetal_fqdn
-
-- name: Define the server name as MAC
-  set_fact: baremetal_name="{{ baremetal_mac | regex_replace(':', '-') }}"
-  when: not baremetal_name is defined
-
-
-# Assign network definitions for configdrive depending on the variables
-# defined on the network vars file
-
-- name: Assign network parameters
-  set_fact: baremetal_network_device_list="{{ baremetal_network_list }}"
-  when: >
-    (baremetal_ip is defined and baremetal_ip|trim != '') and
-    baremetal_network_list is defined
-
-- name: Assign network parameters with DHCP
-  set_fact: baremetal_network_device_list="{{ baremetal_network_dhcp_list }}"
-  when: >
-    (not baremetal_ip is defined or baremetal_ip|trim == '') and
-    baremetal_network_dhcp_list is defined
-
-- name: Check if the network needs an IP address for the server
-  fail: msg="IP address not defined on the provided network!"
-  when: >
-    (not baremetal_ip is defined or baremetal_ip|trim == '') and
-    not baremetal_network_dhcp_list is defined and
-    baremetal_network is defined and 
-    baremetal_network|trim != ''
-
+# Check the length of the MAC, IPMI ip ...
+- name: Validate MAC address(es)
+  fail:
+    msg: "MAC address incorrect!"
+  when: item | length != 17
+  with_items: "{{ baremetal_macs }}"
 
 # Check the length of the MAC, IPMI ip ...
-
-- name: Checking if MAC address is correct
-  fail: msg="MAC address incorrect!"
+- name: Validate IPMI settings
+  fail:
+    msg: "IPMI settings incorrect!"
   when: >
-    baremetal_mac | length != 17 and
-    baremetal_mac is defined
+    baremetal_ipmi_ip is not defined or not baremetal_ipmi_ip
+    or baremetal_ipmi_user is not defined or not baremetal_ipmi_user
+    or baremetal_ipmi_pass is not defined or not baremetal_ipmi_pass
+
+# Define the name based on the fqdn
+- name: Define the server domain
+  set_fact:
+    baremetal_domain: "{{ baremetal_fqdn.split('.', 1) | last }}"
+  when: not (baremetal_domain is defined and baremetal_domain) and baremetal_fqdn
+  
+- name: Define the server name
+  set_fact:
+    baremetal_name: "{{ baremetal_fqdn.split('.') | first }}"
+  when: not (baremetal_name is defined and baremetal_name) and baremetal_fqdn
+
+- name: Define the server name as MAC
+  set_fact:
+    baremetal_name: "{{ baremetal_macs | first | regex_replace(':', '-') }}"
+  when: baremetal_macs and not (baremetal_name is defined and baremetal_name)
 
 - name: Define the IPMI web console port for shellinabox
-  set_fact: baremetal_console_port="{{ baremetal_ipmi_ip.split('.')[-1]|int + 10000 }}"
-  when: >
-    baremetal_ipmi_ip is defined and
-    (not baremetal_console_port is defined or baremetal_console_port|trim == '')
+  set_fact:
+    baremetal_console_port: "{{ baremetal_ipmi_ip.split('.')[-1]|int + 10000 }}"
+  when: baremetal_ipmi_ip and not (baremetal_console_port is defined and baremetal_console_port)
 
+
+# Ironic checks
+- block:
+  - name: Check if the node is defined in Ironic
+    shell: >
+      ironic
+      --os-auth-token="{{ Ironic_api_token }}"
+      --ironic-url="{{ Ironic_api_public_url }}"
+      node-list | awk -F '|' "/ {{ baremetal_name }} /{ print \$2 }"
+    register: __baremetal_new
+    ignore_errors: yes
+    delegate_to: "{{ groups.client[0] }}"
+
+  - name: Define the new baremetal node in Ironic
+    shell: >
+      ironic
+      --os-auth-token="{{ Ironic_api_token }}"
+      --ironic-url="{{ Ironic_api_public_url }}"
+      node-create -n "{{ baremetal_name }}" -d "{{ baremetal_driver }}"
+      -i ipmi_address="{{ baremetal_ipmi_ip }}"
+      -i ipmi_username="{{ baremetal_ipmi_user }}"
+      -i ipmi_password="{{ baremetal_ipmi_pass }}"
+      -i ipmi_terminal_port="{{ baremetal_console_port }}"
+      -i deploy_kernel="{{ baremetal_deploy_kernel }}"
+      -i deploy_ramdisk="{{ baremetal_deploy_ramdisk }}"
+      | awk "/ uuid /{ print \$4 }"
+    register: __baremetal_defined
+    delegate_to: "{{ groups.client[0] }}"
+    when: __baremetal_new.stdout | trim == ''
+    run_once: yes
+
+  - name: Get Ironic UUID
+    set_fact:
+      baremetal_uuid: "{{ (__baremetal_new.stdout | trim == '') | ternary(__baremetal_defined.stdout, __baremetal_new.stdout) | trim }}"
+
+  - name: Define the MAC address ports in Ironic
+    command: > 
+      ironic 
+      --os-auth-token="{{ Ironic_api_token }}"
+      --ironic-url="{{ Ironic_api_public_url }}"
+      port-create -n "{{ baremetal_uuid }}" -a "{{ item }}"
+    with_items: "{{ baremetal_macs }}"
+    when: baremetal_macs and __baremetal_new.stdout | trim == ''
+    delegate_to: "{{ groups.client[0] }}"
+    run_once: yes
+
+  when: _baremetal_create is defined and baremetal_create
 
