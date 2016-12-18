@@ -1,0 +1,25 @@
+---
+# Update cache tasks
+############################################################################
+
+- block:
+  - name: Update apt package cache
+    apt:
+      update_cache: yes
+    when: ansible_os_family == 'Debian'
+
+  - name: Update yum package cache
+    yum:
+      update_cache: yes
+    when: ansible_os_family == 'RedHat'
+
+  when: _package_cache_update is defined and _package_cache_update
+
+
+# https://docs.ansible.com/ansible/become.html#becoming-an-unprivileged-user
+# or setup ansible_ssh_pipelining: true if you do not want the acl package
+#- name:
+#  package:
+#    name: acl
+#    state: latest
+
