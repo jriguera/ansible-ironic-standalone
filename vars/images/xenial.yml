@@ -1,0 +1,17 @@
+---
+# The driver is linked to the image definition on purpose
+# because the images could be created for a specific driver
+baremetal_driver: "agent_ipmitool"
+
+# Folder relative to the servers
+baremetal_deploy_kernel: "{{ Ironic_deploy_kernel }}"
+baremetal_deploy_ramdisk: "{{ Ironic_deploy_ramdisk }}"
+
+# Depends on the image
+baremetal_image_type: "Debian"
+baremetal_image: "{{ Ironic_http_internal_url }}/images/ubuntu-xenial-16.04.1.qcow2"
+#baremetal_image_checksum: "a3547cfba2757bdf7f6a2eb336613666"
+baremetal_image_checksum:
+baremetal_image_kernel:
+baremetal_image_ramdisk:
+baremetal_image_rootsize:
