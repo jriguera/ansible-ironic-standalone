@@ -48,14 +48,14 @@
   - name: Create initial database schema
     command: ironic-inspector-dbsync --config-file "{{ ironic_inspector_config_file }}" upgrade
     when: ironic_inspector_run_dbsync and not _ironic_inspector_previous
+    # become_user: "{{ ironic_inspector_user }}"
     notify: restart inspector
-    become_user: "{{ ironic_inspector_user }}"
 
   - name: Update database schema
     command: ironic-inspector-dbsync --config-file "{{ ironic_inspector_config_file }}" upgrade
     when: ironic_inspector_run_dbsync and _ironic_inspector_previous
+    # become_user: "{{ ironic_inspector_user }}"
     notify: restart inspector
-    become_user: "{{ ironic_inspector_user }}"
 
   - name: Delete SQLite database
     file:
