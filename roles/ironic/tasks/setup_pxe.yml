@@ -105,23 +105,39 @@
 
 # Get pxelinux from syslinux
 # http://www.syslinux.org/wiki/index.php?title=Library_modules#All_Syslinux_variants_need_an_additional_ldlinux_module
-- name: Copy syslinux binaries to PXE folder
-  shell: cp -v "{{ item }}" "{{ ironic_pxe_tftp_root }}" && chgrp "{{ ironic_group }}" "{{ ironic_pxe_tftp_root }}/{{ item | basename }}" && chmod 0664  "{{ ironic_pxe_tftp_root }}/{{ item | basename }}"
-  with_items:
+- block:
+  - name: Check if pxelinux exits
+    stat:
+      path: "{{ ironic_pxe_tftp_root }}/pxelinux.0"
+    register: __syslinux_tftp_pxelinux
+
+  - name: Check if pxelinux has changed
+    stat:
+      path: "{{ ironic_syslinux_basedir }}/syslinux-{{ ironic_pxe_syslinux_version }}/bios/core/pxelinux.0"
+    register: __syslinux_basedir_pxelinux
+
+  - name: Copy syslinux binaries to PXE folder
+    shell: cp -v "{{ item }}" "{{ ironic_pxe_tftp_root }}" && chgrp "{{ ironic_group }}" "{{ ironic_pxe_tftp_root }}/{{ item | basename }}" && chmod 0664  "{{ ironic_pxe_tftp_root }}/{{ item | basename }}"
+    with_items:
     - bios/core/pxelinux.0
     - bios/memdisk/memdisk
     - bios/com32/elflink/ldlinux/ldlinux.c32
     - bios/com32/libutil/libutil.c32
     - bios/com32/lib/libcom32.c32
     - bios/com32/chain/chain.c32
+    when: >
+        not __syslinux_tftp_pxelinux.stat.exists
+        or __syslinux_tftp_pxelinux.stat.md5 != __syslinux_basedir_pxelinux.stat.md5
+    args:
+      chdir: "{{ ironic_syslinux_basedir }}/syslinux-{{ ironic_pxe_syslinux_version }}"
+    tags: ["pxelinux"]
+
   when: >
-    _ironic_syslinux_change and
     ironic_pxe_tftp_root is defined and
     ironic_pxe_tftp_root and
+    ironic_syslinux_basedir is defined and
+    ironic_syslinux_basedir and
     ironic_pxe_bootfile_name == 'pxelinux.0'
-  args:
-    chdir: "{{ ironic_syslinux_basedir }}/syslinux-{{ ironic_pxe_syslinux_version }}"
-  tags: ["pxelinux"]
 
 
 - block:
@@ -146,7 +162,7 @@
     ironic_pxe_uefi_pxe_bootfile_name is defined
 
 
-- name: Reload Ironic daemons
+- name: Reload Ironic Conductor daemon
   service:
     name: "{{ ironic_conductor_service_name }}"
     state: reloaded

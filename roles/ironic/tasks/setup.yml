@@ -54,10 +54,6 @@
     copy: no
   when: __ironic_syslinux_change | changed
 
-- name: Set fact syslinux change
-  set_fact:
-    _ironic_syslinux_change: "{{ __ironic_syslinux_change | changed }}"
-
 - name: Define syslinux path
   set_fact:
     ironic_isolinux_bin: "{{ ironic_syslinux_basedir }}/syslinux-{{ ironic_pxe_syslinux_version }}/bios/core/isolinux.bin"
