@@ -47,15 +47,17 @@
 # Only Ironic-API is in charge of maintain the DB
 - block:
   - name: Create initial database schema
-    command: ironic-dbsync --config-file "{{ ironic_config_file }}" create_schema
+    shell: sudo -u "{{ ironic_user | quote }}" ironic-dbsync --config-file "{{ ironic_config_file | quote }}" create_schema
+    args:
+      warn: no
     when: ironic_run_dbsync and not _ironic_previous
-    # become_user: "{{ ironic_user }}"
     notify: restart api
 
   - name: Update database schema
-    command: ironic-dbsync --config-file "{{ ironic_config_file }}" upgrade
+    shell: sudo -u "{{ ironic_user | quote }}" ironic-dbsync --config-file "{{ ironic_config_file | quote }}" upgrade
+    args:
+      warn: no
     when: ironic_run_dbsync and _ironic_previous
-    # become_user: "{{ ironic_user }}"
     notify: restart api
 
   - name: Delete SQLite database
