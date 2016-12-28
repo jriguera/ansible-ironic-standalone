@@ -1,121 +1,162 @@
 ---
-# Please check the dnsmasq_conf_dhcp variable interface!
+# For Ubuntu 16.04 and Centos 7
+# This is also an example of a playbook with all needed variables
+# defined here instead of using the Ansible inventory.
+# Please check the dhcp/pxe interface and ip address also defined in Vagrantfile!
 
 - hosts: all
   become: yes
   # Normally these vars are defined in the inventory file or in group_vars
   vars:
-    baremetal_server_database_rootpass: root
-    baremetal_server_database_name: ironic
-    baremetal_server_database_user: ironic
-    baremetal_server_database_pass: mysql
-    baremetal_server_inspector_database_name: inspector
-    baremetal_server_inspector_database_user: inspector
-    baremetal_server_inspector_database_pass: mysql
-    baremetal_server_msg_vhost: ironic
-    baremetal_server_msg_user: ironic
-    baremetal_server_msg_pass: rabbitmq
-    baremetal_server_dhcp_params: ["10.0.0.100", "10.0.0.200", "infinite"]
-    baremetal_server_dhcp_domain: pxe.local
-    baremetal_server_http_root_path: /var/lib/ironic/http
-    baremetal_server_images_path: /var/lib/ironic/http/images
-    baremetal_server_metadata_path: /var/lib/ironic/http/metadata
-    baremetal_server_images_deploy_path: /var/lib/ironic/http/deploy
-    baremetal_server_inspector_enabled: True
-    baremetal_server_inspector_default_pxe: True
+    Ironic_database_root_password: "root"
+    Ironic_database_host: "127.0.0.1"
+    Ironic_messaging_host: "127.0.0.1"
+    Ironic_messaging_user: "ironic"
+    Ironic_messaging_pass: "rabbitmq"
+    Ironic_messaging_vhost: "ironic"
+    Ironic_database_user: "ironic"
+    Ironic_database_pass: "ironic"
+    Ironic_database_name: "ironic"
+    Ironic_inspector_database_user: "inspector"
+    Ironic_inspector_database_pass: "inspector"
+    Ironic_inspector_database_name: "inspector"
+    # IP address with default gateway
+    Ironic_public_ip: "{{ ansible_default_ipv4.address }}"
+    # Last IP address for PXE (2nd if the server has 2 ips)
+    Ironic_private_ip: "10.0.0.10"
+    # APIs
+    Ironic_api_token: "fake"
+    Ironic_api_public_url: "http://{{ Ironic_public_ip }}:6385/"
+    Ironic_api_internal_url: "http://{{ Ironic_private_ip }}:6385/"
+    Ironic_inspector_api_public_url: "http://{{ Ironic_public_ip }}:5050/v1/"
+    Ironic_inspector_api_internal_url: "http://{{ Ironic_private_ip }}:5050/v1/"
+    Ironic_http_public_url: "http://{{ Ironic_public_ip }}"
+    Ironic_http_internal_url: "http://{{ Ironic_private_ip }}"
+    # Conductor
+    Ironic_conductor_drivers: ["pxe_ipmitool", "agent_ipmitool", "agent_vbox"]
+    Ironic_conductor_clean_nodes: true
+    Ironic_conductor_download_tinyipa: true
+    Ironic_conductor_download_ipa: true
+    # PXE
+    Ironic_dhcp_iface: "enp0s8"
+    Ironic_dhcp_params: ["10.0.0.100", "10.0.0.200", "30m"]
+    Ironic_dhcp_domain: "pxe.local"
+    Ironic_dhcp_options: ["option:dns-server,8.8.8.8"]
+    Ironic_pxe_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin", "console=tty0", "console=ttyS0,115200n8"]
+    # Paths
+    Ironic_http_path: "/var/lib/ironic/http"
+    Ironic_images_path: "/var/lib/ironic/http/images"
+    Ironic_metadata_path: "/var/lib/ironic/http/metadata"
+    Ironic_deploy_path: "/var/lib/ironic/http/deploy"
+    Ironic_pxe_path: "/var/lib/ironic/tftpboot"
+    # Bosh Lua registry
+    Ironic_bosh_registry: true
+    Ironic_bosh_registry_password: "{PLAIN}hola"
+    # Additional variables for inspector rules
+    Ironic_deploy_kernel: "file://{{ Ironic_deploy_path }}/coreos_production_pxe.vmlinuz"
+    Ironic_deploy_ramdisk: "file://{{ Ironic_deploy_path }}/coreos_production_pxe_image-oem.cpio.gz"
+    Ironic_configdrive_url: "{{ Ironic_http_internal_url }}/metadata"
 
   roles:
     - role: mysql
-      mysql_root_password: "{{ baremetal_server_database_rootpass }}"
+      mysql_root_password: "{{ Ironic_database_root_password }}"
       mysql_database_list:
-        - name: "{{ baremetal_server_database_name }}"
-        - name: "{{ baremetal_server_inspector_database_name }}"
+        - name: "{{ Ironic_database_name }}"
+        - name: "{{ Ironic_inspector_database_name }}"
       mysql_user_list:
-        - name: "{{ baremetal_server_database_user }}"
-          password: "{{ baremetal_server_database_pass }}"
-          priv: "{{ baremetal_server_database_name }}.*:ALL"
+        - name: "{{ Ironic_database_user }}"
+          password: "{{ Ironic_database_pass }}"
+          priv: "{{ Ironic_database_name }}.*:ALL"
           host: "%"
-        - name: "{{ baremetal_server_inspector_database_user }}"
-          password: "{{ baremetal_server_inspector_database_pass }}"
-          priv: "{{ baremetal_server_inspector_database_name }}.*:ALL"
+        - name: "{{ Ironic_inspector_database_user }}"
+          password: "{{ Ironic_inspector_database_pass }}"
+          priv: "{{ Ironic_inspector_database_name }}.*:ALL"
           host: "%"
 
     - role: rabbitmq
       rabbitmq_vhost_definition_list:
-        - name: "{{ baremetal_server_msg_vhost }}"
+        - name: "{{ Ironic_messaging_vhost }}"
       rabbitmq_users_definition_list:
-        - user: "{{ baremetal_server_msg_user }}"
-          password: "{{ baremetal_server_msg_pass }}"
-          vhost: "{{ baremetal_server_msg_vhost }}"
+        - user: "{{ Ironic_messaging_user }}"
+          password: "{{ Ironic_messaging_pass }}"
+          vhost: "{{ Ironic_messaging_vhost }}"
           tags: [ "administrator", "management" ]
 
     - role: ironic
       ironic_debug: true
-      ironic_my_ip: "{{ ansible_default_ipv4.address }}"
-      # ironic_api_public_endpoint: "http://{{ ansible_default_ipv4.address }}"
-      ironic_conductor_api_url: "http://10.0.0.10:6385/"
-      ironic_pxe_tftp_server: "10.0.0.10"
-      ironic_messaging_host: "localhost"
-      ironic_messaging_userid: "{{ baremetal_server_msg_user }}"
-      ironic_messaging_password: "{{ baremetal_server_msg_pass }}"
-      ironic_messaging_virtual_host: "{{ baremetal_server_msg_vhost }}"
-      ironic_database_mysql_host: "localhost"
-      ironic_database_mysql_userid: "{{ baremetal_server_database_user }}"
-      ironic_database_mysql_password: "{{ baremetal_server_database_pass }}"
-      ironic_database_mysql_db: "{{ baremetal_server_database_name }}"
-      ironic_pxe_images_path: "{{ baremetal_server_images_path }}"
-      # To configure web console with shellinabox
-      ironic_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin", "console=tty0", "console=ttyS0,115200n8"]
-      ironic_deploy_http_url: "http://10.0.0.10/deploy"
-      ironic_deploy_http_root: "{{ baremetal_server_images_deploy_path }}"
-      ironic_deploy_erase_devices_priority: 0
-      ironic_enabled_drivers: ["pxe_ipmitool", "agent_ipmitool", "agent_vbox"]
-      # Inspeccion enabled (add also the role)
-      ironic_inspector_enabled: "{{ baremetal_server_inspector_enabled }}"
-      ironic_inspector_service_url: "http://10.0.0.10:5050"
-      # For ironic webclient
+      ironic_inspector_enabled: true
+      ironic_messaging_host: "{{ Ironic_messaging_host }}"
+      ironic_messaging_userid: "{{ Ironic_messaging_user }}"
+      ironic_messaging_password: "{{ Ironic_messaging_pass }}"
+      ironic_messaging_virtual_host: "{{ Ironic_messaging_vhost }}"
+      ironic_database_mysql_host: "{{ Ironic_database_host }}"
+      ironic_database_mysql_userid: "{{ Ironic_database_user }}"
+      ironic_database_mysql_password: "{{ Ironic_database_pass }}"
+      ironic_database_mysql_db: "{{ Ironic_database_name }}"
+      ironic_api_public_endpoint: "{{ Ironic_api_public_url }}"
+      ironic_conductor_service_ironic_url: "{{ Ironic_api_internal_url }}"
+      ironic_inspector_service_ironic_url: "{{ Ironic_api_internal_url }}"
+      ironic_inspector_service_inspector_url: "{{ Ironic_inspector_api_internal_url }}"
+      ironic_deploy_http_url: "http://{{ Ironic_private_ip }}/deploy"
+      ironic_enabled_drivers: "{{ Ironic_conductor_drivers }}"
+      ironic_pxe_ipa_download: "{{ Ironic_conductor_download_ipa }}"
+      ironic_pxe_tinyipa_download: "{{ Ironic_conductor_download_tinyipa }}"
+      ironic_conductor_automated_clean: "{{ Ironic_conductor_clean_nodes }}"
+      ironic_conductor_sync_power_state_interval: 90
+      ironic_pxe_tftp_server: "{{ Ironic_private_ip }}"
+      ironic_pxe_append_params: "{{ Ironic_pxe_params }}"
+      ironic_deploy_http_root: "{{ Ironic_deploy_path }}"
+      ironic_pxe_images_path: "{{ Ironic_images_path }}"
+      ironic_pxe_tftp_root: "{{ Ironic_pxe_path }}"
       ironic_cors_domains:
-        ironic_webclient:
-          allowed_origin: "http://localhost:8080"
+        ironic_webclient_private:
+          allowed_origin: "http://{{ Ironic_private_ip }}"
+          allow_credentials: True
+        ironic_webclient_public:
+          allowed_origin: "http://{{ Ironic_public_ip }}"
+          allow_credentials: True
+        ironic_webclient_ip:
+          allowed_origin: "http://{{ ansible_default_ipv4.address }}"
+          allow_credentials: True
+        ironic_webclient_fqdn:
+          allowed_origin: "http://{{ ansible_fqdn }}"
+          allow_credentials: True
+        ironic_webclient_host:
+          allowed_origin: "http://{{ ansible_hostname }}"
           allow_credentials: True
 
     - role: inspector
-      ironic_inspector_debug: False
-      ironic_inspector_enabled: "{{ baremetal_server_inspector_enabled }}"
-      # Enable default PXE for automatic enroll of discovery nodes in Ironic
-      ironic_inspector_discovery_enroll: "{{ baremetal_server_inspector_default_pxe }}"
-      ironic_inspector_ipa_download: False
-      ironic_inspector_api_url: "http://10.0.0.10:5050/v1/"
-      ironic_inspector_ironic_api_url: "http://10.0.0.10:6385/"
-      ironic_inspector_database_mysql_host: "localhost"
-      ironic_inspector_database_mysql_userid: "{{ baremetal_server_inspector_database_user }}"
-      ironic_inspector_database_mysql_password: "{{ baremetal_server_inspector_database_pass }}"
-      ironic_inspector_database_mysql_db: "{{ baremetal_server_inspector_database_name }}"
-      ironic_inspector_ipa_deploy_path: "{{ baremetal_server_images_deploy_path }}"
-      ironic_inspector_ipa_tftproot: "{{ ironic_pxe_tftp_root }}"
-      ironic_inspector_ipa_images_path: "{{ ironic_pxe_images_path }}"
-      ironic_inspector_ipa_pxe_append_params: ["nofb", "nomodeset", "vga=normal", "coreos.autologin", "console=tty0", "console=ttyS0,115200n8"]
+      ironic_inspector_debug: true
+      ironic_inspector_enabled: true
+      ironic_inspector_discovery_enroll: true
+      ironic_inspector_enroll_driver: "agent_ipmitool"
+      ironic_inspector_api_url: "{{ Ironic_inspector_api_public_url }}"
+      ironic_inspector_service_ironic_url: "{{ Ironic_api_internal_url }}"
+      ironic_inspector_database_mysql_host: "{{ Ironic_database_host }}"
+      ironic_inspector_database_mysql_userid: "{{ Ironic_inspector_database_user }}"
+      ironic_inspector_database_mysql_password: "{{ Ironic_inspector_database_pass }}"
+      ironic_inspector_database_mysql_db: "{{ Ironic_inspector_database_name }}"
 
     - role: dnsmasq
-      dnsmasq_conf_domain: "{{ baremetal_server_dhcp_domain }}"
+      dnsmasq_conf_domain: "{{ Ironic_dhcp_domain }}"
       dnsmasq_conf_dhcp:
-        - device: "enp0s8"
-          range: "{{ baremetal_server_dhcp_params }}"
-          ignore_names: True
-          generate_names: True
-          option:
-            - "option:router,{{ ansible_default_ipv4.gateway }}"
-            - "option:dns-server,{{ ansible_default_ipv4.address }}"
+        - device: "{{ Ironic_dhcp_iface }}"
+          range: "{{ Ironic_dhcp_params }}"
+          ignore_names: true
+          generate_names: true
+          option: "{{ Ironic_dhcp_options }}"
           boot:
-            - "{{ ironic_pxe_bootfile_name }}"
-          tftp: "{{ ironic_pxe_tftp_root }}"
+          - "{{ ironic_pxe_bootfile_name }}"
+          tftp: "{{ Ironic_pxe_path }}"
 
     - role: nginx
-      nginx_lua: True
+      nginx_lua: "{{ Ironic_bosh_registry }}"
       nginx_server_list:
         - name: "{{ ansible_hostname }}"
-          root: "{{ baremetal_server_http_root_path }}"
-          client_body_temp_path: "{{ baremetal_server_http_root_path }}/tmp"
+          listen:
+            - ["80", "default_server"]
+          root: "{{ Ironic_http_path }}"
+          client_body_temp_path: "{{ Ironic_http_path }}/tmp"
           access_log: "/var/log/nginx/{{ ansible_hostname }}-server_access.log"
           lua_files: 
             - "files/bosh_webdav_lua_registry/webdav-registry.lua"
@@ -169,7 +210,7 @@
               auth:
                 title: "BOSH Registry Auth"
                 users:
-                  boshagent: "{PLAIN}hola"
+                  bosh: "{{ Ironic_bosh_registry_password }}"
 
     - role: webclient
       webclient_webdir_owner: "{{ nginx_user }}"
@@ -180,24 +221,43 @@
         - name: mysql
           target: "{{ mysql_pidfile }}"
           script: "/usr/sbin/service {{ mysql_daemon }} %"
+          rules:
+          - "if failed port {{ mysql_port }} protocol mysql then restart"
+          - "if 3 restarts within 3 cycles then timeout"
         - name: rabbitmq
           target: "{{ rabbitmq_pidfile }}"
           script: "/usr/sbin/service {{ rabbitmq_daemon }} %"
+          rules:
+          - "if failed port {{ rabbitmq_tcp_port }} type tcp then restart"
+          - "if 3 restarts within 3 cycles then timeout"
         - name: ironic-api
           target: "{{ ironic_api_pidfile }}"
           script: "/usr/sbin/service {{ ironic_api_service_name }} %"
-        - name: ironic-conductor
-          target: "{{ ironic_conductor_pidfile }}"
-          script: "/usr/sbin/service {{ ironic_conductor_service_name }} %"
+          rules:
+          - "if failed port {{ ironic_api_port }} type tcp then restart"
+          - "if 3 restarts within 3 cycles then timeout"
         - name: ironic-inspector
           target: "{{ ironic_inspector_pidfile }}"
           script: "/usr/sbin/service {{ ironic_inspector_service_name }} %"
-        - name: dnsmasq
-          target: "{{ dnsmasq_pidfile }}"
-          script: "/usr/sbin/service {{ dnsmasq_daemon }} %"
+          rules:
+          - "if 3 restarts within 3 cycles then timeout"
         - name: nginx
           target: "{{ nginx_pidfile }}"
           script: "/usr/sbin/service {{ nginx_daemon }} %"
+          rules:
+          - "if failed port 80 type tcp then restart"
+          - "if 3 restarts within 3 cycles then timeout"
+        - name: ironic-conductor
+          target: "{{ ironic_conductor_pidfile }}"
+          script: "/usr/sbin/service {{ ironic_conductor_service_name }} %"
+          rules:
+          - "if 3 restarts within 3 cycles then timeout"
+        - name: dnsmasq
+          target: "{{ dnsmasq_pidfile }}"
+          script: "/usr/sbin/service {{ dnsmasq_daemon }} %"
+          rules:
+          - "if failed port 53 type tcp protocol dns then restart"
+          - "if 3 restarts within 3 cycles then timeout"
 
 #  tasks:
 #
