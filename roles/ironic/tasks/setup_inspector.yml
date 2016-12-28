@@ -63,7 +63,7 @@
 
   - name: Delete pxelinux.cfg/default
     file:
-      dest: "{{ ironic_inspector_ipa_tftproot }}/pxelinux.cfg/default"
+      dest: "{{ ironic_pxe_tftp_root }}/pxelinux.cfg/default"
       state: absent
     when: not ironic_inspector_enabled
 
