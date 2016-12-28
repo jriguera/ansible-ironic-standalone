@@ -8,10 +8,10 @@
       update_cache: yes
     when: ansible_os_family == 'Debian'
 
-  - name: Update yum package cache
-    yum:
-      update_cache: yes
-    when: ansible_os_family == 'RedHat'
+#  - name: Update yum package cache
+#    yum:
+#      update_cache: yes
+#    when: ansible_os_family == 'RedHat'
 
   when: _package_cache_update is defined and _package_cache_update
 

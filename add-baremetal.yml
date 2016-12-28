@@ -35,6 +35,11 @@
 
     # Sanity checks of the variables and check Ironic server definition
     - include: tasks/baremetal_prepare.yml _baremetal_create=true
+      when: id != 'vbox'
+
+    # Sanity checks of the variables and check Ironic server definition
+    - include: tasks/baremetal_vbox.yml _baremetal_create=true
+      when: id == 'vbox'
 
     - include: tasks/baremetal_md5.yml
       when: baremetal_image_checksum is not defined or not baremetal_image_checksum

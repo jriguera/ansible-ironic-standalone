@@ -28,6 +28,11 @@
 
     # Sanity checks of the variables and check Ironic server definition
     - include: tasks/baremetal_prepare.yml
+      when: id != 'vbox'
+
+    # Sanity checks of the variables and check Ironic server definition
+    - include: tasks/baremetal_vbox.yml
+      when: id == 'vbox'
 
   tasks:
     - name: Get list of defined servers
