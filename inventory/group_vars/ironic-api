@@ -8,40 +8,55 @@ ironic_conductor: false
 
 ### Nginx role
 
+# Nginx with LUA support for BOSH registry (see /registry location)
+# It will overwrite the variables defined in the group_vars.
+nginx_lua: "{{ Ironic_bosh_registry }}"
 nginx_server_list:
 - name: "{{ ansible_hostname }}"
   listen:
-  - ["80", "default_server"]
+    - ["80", "default_server"]
   root: "{{ Ironic_http_path }}"
   client_body_temp_path: "{{ Ironic_http_path }}/tmp"
   access_log: "/var/log/nginx/{{ ansible_hostname }}-server_access.log"
+  lua_files:
+    - "files/bosh_webdav_lua_registry/webdav-registry.lua"
+    - "files/bosh_webdav_lua_registry/JSON.lua"
   location_list:
-  - name: "/"
-    autoindex: "on"
-  - name: "/images/"
-    autoindex: "on"
-    client_body_buffer_size: "16k" 
-    client_max_body_size: "50G"
-    create_full_put_path: "on"
-    dav_access: "user:rw group:rw all:r"
-    dav_methods: "PUT DELETE MKCOL COPY MOVE"
-    default_type: "application/octet-stream"
-  - name: "/metadata/"
-    autoindex: "on"
-    client_body_buffer_size: "16k" 
-    client_max_body_size: "100M"
-    create_full_put_path: "on"
-    dav_access: "user:rw group:rw all:r"
-    dav_methods: "PUT DELETE MKCOL COPY MOVE"
-    default_type: "application/octet-stream"
-  - name: "/deploy/"
-    autoindex: "on"
-    client_body_buffer_size: "16k" 
-    client_max_body_size: "100M"
-    create_full_put_path: "on"
-    dav_access: "user:rw group:rw all:r"
-    dav_methods: "PUT DELETE MKCOL COPY MOVE"
-    default_type: "application/octet-stream"
+    - name: "/"
+      autoindex: "on"
+    - name: "/images/"
+      autoindex: "on"   
+      client_body_buffer_size: "16k"
+      client_max_body_size: "50G"
+      create_full_put_path: "on"
+      dav_access: "user:rw group:rw all:r"
+      dav_methods: "PUT DELETE MKCOL COPY MOVE"
+      default_type: "application/octet-stream"
+    - name: "/metadata/"
+      autoindex: "on"
+      client_body_buffer_size: "16k"
+      client_max_body_size: "100M"
+      create_full_put_path: "on"
+      dav_access: "user:rw group:rw all:r"
+      dav_methods: "PUT DELETE MKCOL COPY MOVE"
+      default_type: "application/octet-stream"
+    - name: "/deploy/"
+      autoindex: "on"
+      client_body_buffer_size: "16k"
+      client_max_body_size: "100M"
+      create_full_put_path: "on"
+      dav_access: "user:rw group:rw all:r"
+      dav_methods: "PUT DELETE MKCOL COPY MOVE"
+      default_type: "application/octet-stream"
+    - name: "/registry/"
+      autoindex: "off"
+      default_type: "application/json"
+      client_max_body_size: "10M"
+      content_by_lua_file: "webdav-registry.lua"
+      auth:
+        title: "BOSH Registry Auth"
+        users:
+          bosh: "{{ Ironic_bosh_registry_password }}"
 
 
 ### Role ironic_webclient
