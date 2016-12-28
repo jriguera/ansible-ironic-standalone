@@ -1,0 +1,20 @@
+#cloud-config
+
+# THIS IS AN cloud-init EXAMPLE ... 
+
+users:
+  - name: admin
+    lock_passwd: False
+    plain_text_passwd: 'admin'
+    gecos: Admin User
+    groups: [wheel, adm, audio, cdrom, dialout, floppy, video, dip]
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    shell: /bin/bash
+    ssh-authorized-keys:
+      - "ssh-rsa AAAAB3NzaC ... mation"
+
+runcmd:
+  - date >> /tmp/boot.txt
+  - lvextend -r -l +30%FREE /dev/mapper/system-root
+  - lvextend -r -l +60%FREE /dev/mapper/system-var
+  - lvextend -r -l +10%FREE /dev/mapper/system-tmp

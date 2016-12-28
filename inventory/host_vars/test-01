@@ -1,0 +1,21 @@
+# Specific variables for this server
+baremetal_ipmi_ip: 10.0.100.204
+baremetal_ipmi_user: USERID
+baremetal_ipmi_pass: PASSW0RD
+baremetal_fqdn: test-01.example.com
+baremetal_macs: ["e4:1f:13:e6:d6:d4"]
+# Image name, defined in vars/images/<name>.yml
+baremetal_os: xenial
+# If you change the interface name to eth1 (for example)
+# Remember to change the backend devices!
+baremetal_network:
+  - device: "eno1"
+    address: "10.0.0.204"
+    netmask: "255.255.255.0"
+    gateway: "10.0.0.1"
+    nameservers: ["8.8.8.8"]
+    domain: "example.com"
+
+# The rest of the variables for Ironic are not defined here, they are
+# defined on the inventory, you can define more variables here
+# for other playbooks

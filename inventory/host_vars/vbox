@@ -1,0 +1,25 @@
+# Special server definition for testing
+
+# Specific variables for this server
+baremetal_ipmi_ip: 10.0.2.2
+baremetal_fqdn: vbox.example.com
+baremetal_macs: ["08:00:27:26:00:8E"]
+# Image name, defined in vars/images/<name>.yml
+baremetal_os: xenial
+# If you change the interface name to eth1 (for example)
+# Remember to change the backend devices!
+baremetal_network:
+  - device: "bond0"
+    type: "bond"
+    bond_mode: "1"
+    address: "10.0.1.200"
+    netmask: "255.255.255.0"
+    gateway: "10.0.1.1"
+    nameservers: ["8.8.8.8"]
+    domain: "example.com"
+    backend: ["eno1"]
+
+# The rest of the variables for Ironic are not defined here, they are
+# defined on the inventory, you can define more variables here
+# for other playbooks
+
