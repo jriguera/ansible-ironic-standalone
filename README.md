@@ -13,7 +13,11 @@ This repository uses tags!
 |------|-------------------|----------------|----------------------------|
 | v1.x | Kilo (2015.4)     | 2015.1.n       |             -              |
 | v2.x | Liberty (2015.10) | 4.2.n          |        v1.x -> v2.x        |
-| v3.x | Mitaka (2016.5)   | 5.1.n          | v1.x -> v3.x, V2.x -> V3.x |
+| v3.x | Mitaka (2016.5)   | 5.1.n          | v1.x -> v3.x, v2.x -> v3.x |
+| v4.x | Newton (2016.10)  | 6.2.n          | v3.x -> v4.x               |
+
+Since v4 (OpenStack Newton), only Ubuntu Xenial (16.04) and Centos 7.x are the
+operating systems supported to run the Ansible roles/playbooks.
 
 
 For more information about Ironic go to:
@@ -42,12 +46,10 @@ install the Ironic client package on the server where they will run. No local
 dependencies are required to run `setup-ironic` (except Ansible 2.0).
 
 Every requirements on the server are managed by the roles, they were tested on
-Ubuntu Trusty (14.04), Xenial (16.04) and Centos 7.2. The roles use the official 
-OpenStack repositories for each distro (ubuntu-cloud and RDO -except for Ubuntu
-Xenial which does not require external repositories, MySQL is not officially 
-included in Centos 7, the official MySQL repository is used), no development 
-packages are installed. Ubuntu Xenial and Centos 7.2 use MySQL 5.7, while 
-Trusty uses MySQL 5.6.
+Ubuntu Xenial (16.04) and Centos 7. The roles use the official 
+OpenStack repositories for each distribution (ubuntu-cloud and RDO, MySQL is not 
+officially included in Centos 7, the official MySQL repository is used), no 
+development packages are installed. The *mysql* role uses MySQL 5.7 .
 
 
 # Project structure
@@ -83,38 +85,54 @@ when they run for first time, just uninstall the packages and delete the main
 configuration file to get a clean installation and try again.
 
 
-There are 5 main playbooks here:
+There are 4 main playbooks here:
 
- * `setup-ironic.yml` to deploy a real server configuring all the software. 
+ * `setup.yml` to deploy a real server configuring all the software. 
  Probably you will have to adapt some parameters there like dnsmasq 
  interfaces (e.g. *eth1*, *em1* ...). The rest of the parameters 
- (IP's, DNS, ...) are defined in the Ansible inventory (see *hosts/allinone*)
- and/or in *group_vars* folder.
+ (IP's, DNS, ...) are defined in the Ansible inventory (see *inventory/inventory.ini*)
+ and/or in *inventory/group_vars* folder.
  * `add-baremetal.yml` to manually define and deploy a server with Ironic. 
  When it runs, it will ask you for an id (name) which has to match to a file 
- with a server parameters definition (IPMI, networks, bonding ...) in *servers*
- folder (optionally you can also define a *.cloudconfig* configuration in the
- same way).
+ with a server parameters definition (IPMI, networks, bonding ...) in *inventory/host_vars*
+ folder (or using the symbolic link *servers*). Optionally you can also define 
+ a *.cloudconfig* configuration in the same folder.
  * `del-baremetal.yml` to delete a server defined in Ironic with the previous
  playbook. When it runs, it will power off the server and remove it from Ironic.
  It does not trigger additional cleaning steps like wipe the disks.
- * `site.yml` and `add-vbox.yml` just for a demo with Vagrant, see below.
- * `setup-ironic-boshregistry.yml` does the same as `setup-ironic` plus
- deploys a Lua implementation for BOSH Registry API using Nginx or OpenResty 
- (in Centos/RHEL).
+ * `site.yml` is just for a demo playbook for Vagrant/VirtualBox, see below.
 
 
 Notes:
 
+ * Since version 4 (Newton) the structure of the repository has changed 
+ according to the Ansible recommendations. *inventory* is a folder to keep
+ the inventory(ies) with the main variables and the server(s) 
+ involved in the deployment (see *inventory.ini*). The functionality is defined
+ in 4 groups: `database`, `messaging`, `ironic-api`, `ironic-conductor` with 
+ the variables for each group in *inventory/group_vars*. This setup allows you
+ to add servers to each group and setup clusters for Ironic API and Conductor.
+ The *vars* folder keeps the variables to define the images to deploy and the
+ rules to enroll new discovered servers by inspector. Change the rules
+ according to your infrastructure.
+ 
+ * Ironic Python Agent has two official flavors Coreos IPA and Tiny IPA, both 
+ are downloaded, but the one defined as default in the inventory 
+ (*Ironic_deploy_kernel* and *Ironic_deploy_ramdisk* variables) is Coreos IPA.
+ TinyIPA is also a good choice, it is really small and can speed up the
+ baremetal deployments.
+ 
  * Although this set-up installs all the requirements for `pxe_ipmitool` driver, 
  now it is only focused on the `agent_ipmitool` driver, which requires a 
  HTTP server (*nginx* role) and a special deploy image running Ironic Python 
  Agent (IPA), which is downloaded automatically within the *ironic* role.
  
- * This version switched to MySQL 5.6 instead of MySQL 5.5 on Ubuntu Trusty
- (14.04), The rest of supported distributions will use MySQL 5.7. The migration is
- safe, because the *mysql* role stops the previous version, deletes 
- `ib_logfiles`, starts MySQL again and runs `mysql_upgrade`.
+ * This version uses MySQL 5.7 for Centos and Ubuntu Xenial since the
+ the previous versions of these operating systems is no longer supported.
+ The *mysql* role is capable of migrating some versions (depending on the
+ distribution), by deleting `ib_logfiles`, starting MySQL again and running
+ `mysql_upgrade`. Anyway, is much safer doing an export of the databases, import 
+ them again and manually run `ironic-dbsync` and `ironic-inspector-dbsync`.
  
  * There is a new web interface installed with the role `webclient`. It is taken
  from https://github.com/openstack/ironic-webclient , is not completely functional
@@ -126,9 +144,11 @@ Notes:
  repository for images and metadata, so you can `PUT` the files with curl,
  without connecting the server. The approach is just to have a kind of
  repository compatible with HTTP API calls. Of course it supports basic access 
- authentication. In the future Nginx will proxy the Ironic API via WSGI.
+ authentication. There is a preliminary setup of a reverse proxy to the Ironic
+ API using the `/v1/` endpoint, but, because of some issues in Ironic client is 
+ not used.
 
- * Version 3.x (from Mitaka) supports the Ironic Inspector package (deployed 
+ * Since version 3 (Mitaka) supports the Ironic Inspector package (deployed 
  with the new role *inspector* ) which provides instropection and if the variable 
  *ironic_inspector_discovery_enroll* is True will also provide automatic 
  discovery for new baremetal servers. Of course, you can stil use the 
@@ -148,7 +168,7 @@ Notes:
  depend on the Ironic client locally installed to do all the actions but you 
  could use the new Ansible modules for that!).
 
- * The services installed by `setup-ironic` are managed with Monit (yes even on 
+ * The services installed by `setup` are managed with Monit (yes even on 
  the systemd systems!). So when you stop a process not via Monit, it'll be 
  started again!, use the command line and remember, Monit has a web interface ... 
  use it!
@@ -157,8 +177,9 @@ Notes:
  Coreos IPA image automatically (~250 MB) you will need a decent internet 
  connection and about 30 minutes to get everything deployed. Be patient.
 
- * [BOSH](https://bosh.io) Registry support via Nginx Lua (using `setup-ironic-boshregistry.yml` 
- playbook and `files/bosh_webdav_lua_registry` Lua files). It offers a BOSH 
+ * [BOSH](https://bosh.io) Registry support via Nginx Lua (using the inventory
+ variables *Ironic_bosh_registry* and *Ironic_bosh_registry_password* for
+ the *nginx* role and `files/bosh_webdav_lua_registry` Lua files). It offers a BOSH 
  Registry API to store the BOSH Agent settings using the WebDAV *metadata* 
  location. More details in the section below and in 
  https://github.com/jriguera/bosh-ironic-cpi-release. This implementation 
@@ -171,6 +192,7 @@ Notes:
  Those packages will be installed only if the parameter `nginx_lua` is True 
  (defined on the `nginx` role).
 
+
 ## Running on Vagrant
 
 There is a Vagrantfile to demo the entire sofware using VM's in your computer.
@@ -179,35 +201,29 @@ to manage physical servers, it is a bit difficult to simulate the behaviour with
 VM's -have a look at the Vagrantfile-. The automatic enrollment of nodes does 
 not work properly on VirtualBox because the client VM (*baremetal*) has no IPMI
 settings and no real memory (*dmidecode* fails on the IPA image) and without 
-those parameters Ironic Inspector refuses to apply the enroll rules. 
+those parameters Ironic Inspector refuses to apply the enrollment rules. 
 
 If you want to test the traditional functionality: defining all the baremetal
-parameters and deploy with configdrive, instead of using the `add-baremetal` 
-playbook you have to use  `add-vbox` (only because of the conductor driver 
-type: IPMI for real servers vs VBoxService for Virtualbox). Be aware it will 
-create two VMs: one with 2GB (called *ironic*) and other with 6GB (called 
-*baremetal*, the pxe client), yes! 6GB for the client, due to the fact IPA 
-stores the image in tmpfs in memory ... well, with the new Mitaka version
-that is not needed anymore, but it is here because of the previous versions and 
-do not worry, it will not get the 6GB inmediatelly. Anyway, you can stop it if 
-you do not want to entirely run the demo (only the Ironic server). Vagrant will 
-define the internal network and will try to launch locally the VboxService to 
-allow Ironic to controll the client baremetal (in the same way as IPMI works). 
-Also, because the baremetal VM client is empty, vagrant will fail saying that 
-it was not able to ssh it.
+parameters and deploy with configdrive, you can use `add-baremetal.yml` 
+playbook with the id `vbox` (already defined in the inventory). Be aware it will 
+create two VMs: one with 2GB (called *ironic*) and other with 2GB (called 
+*baremetal*, the pxe client). Vagrant will define the internal network and will
+try to launch locally the VboxService to allow Ironic controlling the baremetal 
+client (in the same way as IPMI works). Also, because the baremetal VM is empty,
+vagrant will fail saying that it was not able to ssh it.
 
 Ready?
 
 
-### vagrant up
+### `vagrant up`
 
 Type `vagrant up` to run all the setup (playbook and roles: `site.yml`), 
 after that just launch `vagrant ssh ironic` to have a look at the configuration.
 
 Vagrant tries to update the VM and install some python dependencies for 
 VirtualBox driver (*agent_vbox*), after that, it runs the roles and finally 
-it configures Python Ironic client and Ansible inside the vm. Those tasks are 
-not included in the `setup-ironic` playbook because they are not needed in a 
+it configures Python Ironic client and Ansible inside the VM. Those tasks are 
+not included in the `setup.yml` playbook because they are not needed in a 
 real production server.
 
 Vagrant will launch two VM's, first the Ironic server and then a PXE client
@@ -231,7 +247,7 @@ Remember you also have to create the images (see below) and copy them to
 `ironic_pxe_images_path` (`/var/lib/ironic/http/images/` or just use
 curl with PUT -it is a webdav repository!) on the server and reference them 
 as `http://<server>/images/image.bin`. These references are managed in the 
-`add-baremetal`, `add-vbox` and `del-baremetal` playbooks together with the 
+`add-baremetal.yml`, and `del-baremetal.yml` playbooks together with the 
 local references to the IPA images on the Ironic Conductor (they have to be 
 referenced locally).
 
@@ -248,10 +264,10 @@ roles/playbooks!), so you can log in `vagrant ssh ironic` and then type
 
 ## Creating Images
 
-If you want to easily create QCOW2 images with LVM and bonding support, have a
-look to: https://github.com/jriguera/packer-ironic-images. Once the images are
-created, *PUT* them to the HTTP repository (pay attention to the change on the 
-file extension for the md5 checksum, it is created with: 
+If you want to easily create QCOW2 images with LVM and network bonding support,
+have a look to: https://github.com/jriguera/packer-ironic-images. Once the 
+images are created, just *PUT* them to the HTTP repository (pay attention to 
+the change on the file extension for the md5 checksum, created with: 
 `md5sum trusty.qcow2 > trusty.meta`):
 
  * `curl -T trusty.qcow2 http://localhost:8080/images/`
@@ -283,27 +299,29 @@ the files.
 
 ## Production set-up
 
-Deploying this setup on a physical server is the reason why it was created. Get
-to a datacenter, take a server, install Ubuntu and run the playbook. 
-Define the Ansible inventory file in `hosts` folder and run `setup-ironic.yml` 
-using it. *allinone* is a good example for inventory, just change the the names
-and IP's. "All in one" setup is capable of manage at least 100 physical servers. 
+Deploying this setup on a physical server was the main reason to create this
+project. Get to a datacenter, take a server, install Ubuntu and run the playbook. 
+Define the Ansible inventory file in `inventory` folder and run `setup.yml` 
+using it. *inventory.ini* is a good example for inventory, just change the
+the names and IP's. 
 
-Ironic Inspector is a new daemon which provides automatic server discovery, 
-enrollment and hardware inspection. You can disable automatic discovery and 
-enroll by switching the variable `ironic_inspector_enabled=False` (which only 
-defines a default PXE entry). The variable `ironic_inspector_discovery_enroll=True` 
+The setup was created to work with two network interfaces: one for public
+API's (*Ironic_public_ip*) and the other one for PXE baremetal deployment 
+(*Ironic_private_ip*), but you can manage everything with one network 
+interface by using the same IP in both variables. You could also enable a third
+interface to offer DHCP for IPMI, which, together with Ironic Inspector can 
+make the job of add new physical servers in a datacenter really easy (well, 
+there are some issues with Inspector to get/set the IPMI address: it does not 
+work on all brands, but you can give a try ;-)
+
+Ironic Inspector is a daemon to provide automatic server discovery, enrollment 
+and hardware inspection. You can disable automatic discovery and enroll by 
+switching the variable `ironic_inspector_enabled: false` (which only defines a 
+default PXE entry). The variable `ironic_inspector_discovery_enroll: True` 
 defines a set of Inspector rules to apply to new discovered servers (see 
-`roles/inspector/default/discovery_rules*`). You can disable whenever you want 
+`vars/inspector/discovery_rules*`). You can disable whenever you want 
 Ironic Inspector by just changing to the variable `ironic_inspector_enabled` 
 and re-run the playbook.
-
-You can manage everything with one network interface (depending on your 
-network configuration), but you can also enable a second interface to offer 
-DHCP for IPMI, which, together with Ironic Inspector can make the job of add
-new physical servers in a datacenter really easy (well, there are some issues
-with Inspector to get/set the IPMI address: it does not work on all brands, but
-you can give a try ;-)
 
 The settings for MySQL are good enough for a normal server nowadays, taking into
 account the workload of the databases, but you can fine tune them. Moreover, if
@@ -312,6 +330,12 @@ roles from the playbook and change the database and/or RabbitMQ variables to
 point to the proper server. In the same way, you can split the API vs Conductor
 services in different servers to create a cluster of Conductors.
 
+To sum up; update the file *inventory/inventory.ini* according to your needs 
+(pay attention to the IP addresses and ranges and network interfaces), 
+change the inventory hosts for all groups (*database*, *messaging*, *ironic-api* and
+*ironic-conductor*) and run:
+
+`ansible-playbook -i inventory/inventory.ini setup.yml`
 
 
 ## About BOSH
@@ -343,12 +367,10 @@ which translates BOSH requests in Ironic requests and uses Nginx as
 WebDAV backend to store the Stemcells (QCOW2 Images with BOSH Agent
 installed). To run it:
 
- 1. Adjust the Registry user and/or password defined in the playbook 
- `setup-ironic-boshregistry.yml` acording to the BOSH Director set-up 
- (instead of defining those settings in the playbook, you can also do 
- it in `host_groups`, or even via the inventory). 
+ 1. Adjust the Registry password defined in the inventory variable
+  `Ironic_bosh_registry_password` (and also enable `Ironic_bosh_registry`).
 
- 2. Run `ansible-playbook -i hosts/allinone setup-ironic-boshregistry.yml`
+ 2. Run `ansible-playbook -i inventory/<inventory.ini> setup.yml`
 
 The implementation is in `files/bosh_webdav_lua_registry/webdav-registry.lua`
 an it relies on Nginx with Lua support. For Debian/Ubuntu is already provided 
@@ -421,9 +443,7 @@ To automatically define (and delete) baremetal host using the driver
 There are two playbooks which are using the `configdrive` role to create
 the initial Cloud-Init configuration with the correct network definition.
 Have a look at the playbooks and at the `/vars` folder to see how to define the 
-variables for your infrastructure. Also, you can define more Images by creating
-files in `images` folder and referring them from the baremetal host definition
-file in `servers`.
+variables for new images and enrollment rules for your infrastructure.
 
 The configdrive volume generated is provided to the IPA clients from the HTTP 
 server running on the Ironic server.
@@ -448,8 +468,12 @@ First, create a Trusty image as described previously and upload to
 
 #### Deploying a baremetal server
 
+Create the definition of the new server in `inventory/host_vars` folder (or via
+the `servers` symlink) and add it to the Ansible inventory under the `[baremetal]`
+section. Run the playbook:
+
 ```
-# ansible-playbook -i hosts/allinone add-baremetal.yml 
+# ansible-playbook -i inventory/production.ini add-baremetal.yml 
 Server Name: test-server-01
 Deploy the server (y) or just just define it (n)? [y]:
 
@@ -458,184 +482,7 @@ PLAY [Define and deploy physical servers using Ironic] *************************
 TASK [setup] *******************************************************************
 ok: [ironic]
 
-TASK [Include network definitions] *********************************************
-ok: [ironic]
-
-TASK [Include image definitions] ***********************************************
-ok: [ironic]
-
-TASK [include] *****************************************************************
-included: /home/jriguera/devel/ansible-ironic-standalone/tasks/baremetal_md5.yml for ironic
-
-TASK [Define the MD5 checksum URI if needed] ***********************************
-ok: [ironic]
-
-TASK [Get the url image MD5 checksum] ******************************************
-changed: [ironic]
- [WARNING]: Consider using get_url module rather than running curl
-
-
-TASK [Load the previous MD5 checksum] ******************************************
-ok: [ironic]
-
-TASK [Workout the checksum with the image url] *********************************
-skipping: [ironic]
-
-TASK [Load the previous MD5 checksum] ******************************************
-skipping: [ironic]
-
-TASK [Check MD5 image checksum is defined] *************************************
-skipping: [ironic]
-
-TASK [Check if servername configdrive exists] **********************************
-ok: [ironic -> localhost]
-
-TASK [Load servername configdrive] *********************************************
-ok: [ironic]
-
-TASK [include] *****************************************************************
-included: /home/jriguera/devel/ansible-ironic-standalone/tasks/baremetal_prepare.yml for ironic
-
-TASK [Define the server domain] ************************************************
-skipping: [ironic]
-
-TASK [Define the server name] **************************************************
-ok: [ironic]
-
-TASK [Define the server name as MAC] *******************************************
-skipping: [ironic]
-
-TASK [Assign network parameters] ***********************************************
-ok: [ironic]
-
-TASK [Assign network parameters with DHCP] *************************************
-skipping: [ironic]
-
-TASK [Check if the network needs an IP address for the server] *****************
-skipping: [ironic]
-
-TASK [Checking if MAC address is correct] **************************************
-skipping: [ironic]
-
-TASK [Define the IPMI web console port for shellinabox] ************************
-ok: [ironic]
-
-TASK [Check if the new node was defined] ***************************************
-changed: [ironic -> localhost]
-
-TASK [Define the new baremetal node] *******************************************
-changed: [ironic -> localhost]
-
-TASK [Get the new server UUID] *************************************************
-ok: [ironic]
-
-TASK [Get the current server UUID] *********************************************
-skipping: [ironic]
-
-TASK [configdrive : Install required packages to create the images] ************
-ok: [ironic] => (item={'value': {u'state': u'latest'}, 'key': u'gzip'})
-ok: [ironic] => (item={'value': {u'state': u'latest'}, 'key': u'coreutils'})
-ok: [ironic] => (item={'value': {u'state': u'latest'}, 'key': u'genisoimage'})
-
-TASK [configdrive : Include OS specific variables] *****************************
-ok: [ironic]
-
-TASK [configdrive : Setup configdrive instance folder] *************************
-ok: [ironic]
-
-TASK [configdrive : Create configdrive metadata folders] ***********************
-changed: [ironic] => (item=openstack/2012-08-10)
-changed: [ironic] => (item=openstack/latest)
-changed: [ironic] => (item=openstack/content)
-
-TASK [configdrive : include] ***************************************************
-included: /home/jriguera/devel/ansible-ironic-standalone/roles/configdrive/tasks/configdrive.yml for ironic
-
-TASK [configdrive : Create configdrive temporary metadata folder] **************
-changed: [ironic] => (item=openstack/_)
-
-TASK [configdrive : Setup temporary folder for include files] ******************
-ok: [ironic]
-
-TASK [configdrive : include] ***************************************************
-skipping: [ironic]
-
-TASK [configdrive : include] ***************************************************
-included: /home/jriguera/devel/ansible-ironic-standalone/roles/configdrive/tasks/network.yml for ironic
-
-TASK [configdrive : Get a list the backend devices] ****************************
-ok: [ironic] => (item=eth0)
-
-TASK [configdrive : Create network_info.json] **********************************
-changed: [ironic] => (item=openstack/2012-08-10)
-changed: [ironic] => (item=openstack/latest)
-
-TASK [configdrive : Create the network configuration folders] ******************
-changed: [ironic] => (item=/etc/network/interfaces.d/)
-
-TASK [configdrive : Setup resolver file resolv.conf] ***************************
-skipping: [ironic]
-
-TASK [configdrive : Setup static hosts file] ***********************************
-skipping: [ironic]
-
-TASK [configdrive : Setup network/interfaces for Debian] ***********************
-changed: [ironic]
-
-TASK [configdrive : Setup undefined backend devices] ***************************
-changed: [ironic] => (item=eth0)
-
-TASK [configdrive : Setup all defined devices] *********************************
-changed: [ironic] => (item={u'domain': u'springer-sbm.com', u'nameservers': [u'8.8.8.8'], u'bond_mode': u'1', u'netmask': u'255.255.255.0', u'address': u'10.230.44.253', u'device': u'bond0', u'type': u'bond', u'gateway': u'10.230.44.1', u'backend': [u'eth0']})
-
-TASK [configdrive : Setup route configuration for RedHat] **********************
-skipping: [ironic] => (item={u'domain': u'springer-sbm.com', u'nameservers': [u'8.8.8.8'], u'bond_mode': u'1', u'netmask': u'255.255.255.0', u'address': u'10.230.44.253', u'device': u'bond0', u'type': u'bond', u'gateway': u'10.230.44.1', u'backend': [u'eth0']}) 
-
-TASK [configdrive : List the include files on temporary folder] ****************
-changed: [ironic]
-
-TASK [configdrive : Get the list of include files on temporary folder] *********
-ok: [ironic]
-
-TASK [configdrive : Move files to destination from temporary folder] ***********
-changed: [ironic] => (item=(0, u'/etc/network/interfaces'))
-changed: [ironic] => (item=(1, u'/etc/network/interfaces.d/ifcfg-eth0'))
-changed: [ironic] => (item=(2, u'/etc/network/interfaces.d/ifcfg-bond0'))
-
-TASK [configdrive : Delete temporary folder] ***********************************
-changed: [ironic]
-
-TASK [configdrive : Create meta_data.json] *************************************
-changed: [ironic] => (item=openstack/2012-08-10)
-changed: [ironic] => (item=openstack/latest)
-
-TASK [configdrive : Copy metadata file user_data] ******************************
-changed: [ironic] => (item=openstack/2012-08-10)
-changed: [ironic] => (item=openstack/latest)
-
-TASK [configdrive : Create configdrive volume file] ****************************
-changed: [ironic]
-
-TASK [configdrive : Cleanup instance configdrive folder] ***********************
-skipping: [ironic]
-
-TASK [Define the install image for the node] ***********************************
-changed: [ironic -> localhost]
-
-TASK [Define the kernel and ramdisk for the image] *****************************
-skipping: [ironic]
-
-TASK [Create the MAC address ports for the new node] ***************************
-changed: [ironic -> localhost]
-
-TASK [Add reference to config-drive in metadata info] **************************
-changed: [ironic -> localhost]
-
-TASK [Define the configdrive parameter] ****************************************
-ok: [ironic -> localhost]
-
-TASK [Define the configdrive parameter when enabled configdrive] ***************
-ok: [ironic -> localhost]
+...
 
 TASK [Active and deploy the server] ********************************************
 changed: [ironic -> localhost]
@@ -836,7 +683,7 @@ In the *available* and *enroll* states you can definitely remove the server
 from Ironic by using the `del-baremetal.yml` playbook:
 
 ```
-# ansible-playbook -i hosts/allinone del-baremetal.yml
+# ansible-playbook -i inventory/production.ini del-baremetal.yml
 Server Name: test-server-01
 
 PLAY [Poweroff and delete servers using Ironic] ********************************
@@ -844,53 +691,7 @@ PLAY [Poweroff and delete servers using Ironic] ********************************
 TASK [setup] *******************************************************************
 ok: [ironic]
 
-TASK [Include network definitions] *********************************************
-ok: [ironic]
-
-TASK [include] *****************************************************************
-included: /home/jriguera/devel/ansible-ironic-standalone/tasks/baremetal_prepare.yml for ironic
-
-TASK [Define the server domain] ************************************************
-skipping: [ironic]
-
-TASK [Define the server name] **************************************************
-ok: [ironic]
-
-TASK [Define the server name as MAC] *******************************************
-skipping: [ironic]
-
-TASK [Assign network parameters] ***********************************************
-ok: [ironic]
-
-TASK [Assign network parameters with DHCP] *************************************
-skipping: [ironic]
-
-TASK [Check if the network needs an IP address for the server] *****************
-skipping: [ironic]
-
-TASK [Checking if MAC address is correct] **************************************
-skipping: [ironic]
-
-TASK [Define the IPMI web console port for shellinabox] ************************
-ok: [ironic]
-
-TASK [List the defined servers] ************************************************
-changed: [ironic -> localhost]
-
-TASK [Checking if server name exists] ******************************************
-skipping: [ironic]
-
-TASK [Power off the server] ****************************************************
-skipping: [ironic]
-
-TASK [Pause half a minute] *****************************************************
-skipping: [ironic]
-
-TASK [Delete the server] *******************************************************
-changed: [ironic -> localhost]
-
-TASK [Delete config-drive] *****************************************************
-changed: [ironic]
+...
 
 PLAY RECAP *********************************************************************
 ironic                     : ok=9    changed=3    unreachable=0    failed=0   
@@ -924,7 +725,7 @@ defined in Ironic:
 
 The inspector role defines a set of rules automatically apply after the 
 inspection. You can modify or add more by re-defining the variables defined 
-in the files `roles/inspector/discovery_rules*.yml`. Be aware If you change
+in the files `vars/inspector/discovery_rules*.yml`. Be aware If you change
 a rule but not its name, it wont be applied because the Ansible task only 
 checks if it exists by name, not by the content. You can delete all the 
 rules before running ansible with `curl -X DELETE http://<server>:5050/v1/rules`
@@ -1077,23 +878,7 @@ The static variables are defined in `Vagrantfile` and `site.yml`, pay attention
 to the local IP and MAC addresses.
 
 Then, `vagrant ssh ironic` and become root `sudo -s` and go to `/vagrant` and
-run `ansible-playbook -i hosts/vbox add-vbox.yml`:
-
-```
-root@vagrant-ubuntu-trusty-64:/vagrant# ansible-playbook -i hosts/vbox add-vbox.yml 
-Server Name: vbox
-Deploy the server (y) or just just define it (n)? [y]:
-
-PLAY [Define and deploy physical servers using Ironic] *************************
-
-TASK [setup] *******************************************************************
-ok: [ironic]
-
-[ ... ] 
-
-PLAY RECAP *********************************************************************
-ironic                     : ok=42   changed=19   unreachable=0    failed=0   
-```
+run `ansible-playbook -i inventory/inventory.ini -e id=vbox add-baremetal.yml`
 
 Ironic will contact with `VBXWebSrv` and start the VM called *baremetal*. After
 a while it will be installed and rebooting running Ubuntu. If you do not type
