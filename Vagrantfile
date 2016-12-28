@@ -5,7 +5,7 @@
 # just go to /vagrant and run the add-vbox.yml playbook
 $script = <<"SCRIPT"
 echo "export IRONIC_URL=http://localhost:6385/" > /etc/profile.d/ironic.sh
-echo "export OS_AUTH_TOKEN=' '" >> /etc/profile.d/ironic.sh
+echo "export OS_AUTH_TOKEN='fake'" >> /etc/profile.d/ironic.sh
 chmod +x /etc/profile.d/ironic.sh
 pip install python-ironicclient 
 pip install ansible 
@@ -117,9 +117,9 @@ Vagrant.configure(2) do |config|
     # Enable provisioning with a shell script. Additional provisioners such as
     # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
     # documentation for more information about their specific syntax and use.
-#    master.vm.provision "shell" do |s|
-#        s.inline = $script
-#    end
+    master.vm.provision "shell" do |s|
+        s.inline = $script
+    end
   end
 
   config.vm.define "baremetal" do |slave|
@@ -143,8 +143,7 @@ Vagrant.configure(2) do |config|
     slave.vm.provider "virtualbox" do |vb, override|
        vb.gui = true
        vb.name = name
-       # It needs lot of memory to uncompress the image on /tmp
-       vb.memory = "6100"
+       vb.memory = "2000"
        # piix3 chipset
        #vb.customize ["modifyvm", :id, "--chipset", "piix3"]
        # Disable USB
