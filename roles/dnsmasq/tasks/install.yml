@@ -96,3 +96,12 @@
   tags: ["systemd", "init"]
 
 
+- name: Get the Dnsmasq version
+  shell: dnsmasq -v | sed -n 's/.*version[[:space:]]\+\([0-9.]\+\)[[:space:]]\+Copyright.*/\1/Ip'
+  register: __dnsmasq_version
+  changed_when: False
+
+- name: Set Dnsmasq version
+  set_fact:
+    _dnsmasq_version: "{{ __dnsmasq_version.stdout }}"
+
