@@ -106,3 +106,12 @@
   tags: ["systemd", "init"]
 
 
+- name: Get the RabbitMQ version
+  shell: rabbitmqctl status | sed -n 's/.*{rabbit,"RabbitMQ","\(.*\)"}.*/\1/p'
+  register: __rabbitmq_version
+  changed_when: False
+
+- name: Set RabbitMQ version
+  set_fact:
+    _rabbitmq_version: "{{ __rabbitmq_version.stdout }}"
+
