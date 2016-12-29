@@ -4,8 +4,12 @@
 # TFPT configuration
 
 {% if dnsmasq_conf_dhcp -%}
-# Enable the TFTP server function.
+# Enable the TFTP server function
+{% if _dnsmasq_version | version_compare('2.67', '>=') %}
 enable-tftp={% for v in dnsmasq_conf_dhcp if v["tftp"] is defined -%}{{ v["device"] }}{% if not loop.last -%},{% endif %}{% endfor %}
+{% else %}
+enable-tftp
+{% endif %}
 
 {% for values in dnsmasq_conf_dhcp %}
 {% set key=values["device"] %}

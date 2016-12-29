@@ -202,4 +202,6 @@ host-record={{ host | join(',') }}
 {% endfor %}
 {% endif %}
 
+# Additional config files
+conf-dir={{ dnsmasq_config_dir }},*.conf
 
