@@ -1,7 +1,7 @@
 ---
 - name: Define and deploy physical servers using Ironic
   hosts: ironic-api
-  become: true
+  become: yes
   vars_prompt:
     - name: "id"
       prompt: "Server Name"
@@ -16,8 +16,8 @@
     - name: Load hostvars
       set_fact: 
         baremetal_ipmi_ip: "{{ hostvars[id]['baremetal_ipmi_ip'] }}"
-        baremetal_ipmi_user: "{{ hostvars[id]['baremetal_ipmi_user'] }}"
-        baremetal_ipmi_pass: "{{ hostvars[id]['baremetal_ipmi_pass'] }}"
+        baremetal_ipmi_user: "{{ hostvars[id]['baremetal_ipmi_user'] | default(None) }}"
+        baremetal_ipmi_pass: "{{ hostvars[id]['baremetal_ipmi_pass'] | default(None) }}"
         baremetal_os: "{{ hostvars[id]['baremetal_os'] }}"
         baremetal_macs: "{{ hostvars[id]['baremetal_macs'] | default([]) }}"
         baremetal_network: "{{ hostvars[id]['baremetal_network'] | default([]) }}"
@@ -79,6 +79,7 @@
             extra/deploy_date="{{ ansible_date_time.iso8601 }}"
             extra/deploy_host="{{ ansible_hostname }}"
       delegate_to: "{{ groups.client[0] }}"
+      become: no
       run_once: yes
 
     - name: Define the kernel and ramdisk for the image
@@ -92,6 +93,7 @@
             instance_info/root_gb="{{ baremetal_image_rootsize }}"
       when: baremetal_image_kernel and baremetal_image_ramdisk
       delegate_to: "{{ groups.client[0] }}"
+      become: no
       run_once: yes
 
     - name: Add reference to config-drive in metadata info
@@ -103,6 +105,7 @@
         instance_info/configdrive="{{ Ironic_configdrive_url }}/{{ baremetal_uuid }}"
       when: baremetal_use_configdrive
       delegate_to: "{{ groups.client[0] }}"
+      become: no
       run_once: yes
 
     - name: Define configdrive url param
@@ -117,5 +120,6 @@
         node-set-provision-state {{ __configdrive }} "{{ baremetal_uuid }}" active
       when: deploy | trim == "y"
       delegate_to: "{{ groups.client[0] }}"
+      become: no
       run_once: yes
 
