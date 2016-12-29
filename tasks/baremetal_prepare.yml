@@ -46,8 +46,9 @@
       --ironic-url="{{ Ironic_api_public_url }}"
       node-list | awk -F '|' "/ {{ baremetal_name }} /{ print \$2 }"
     register: __baremetal_new
-    ignore_errors: yes
     delegate_to: "{{ groups.client[0] }}"
+    become: no
+    ignore_errors: yes
 
   - name: Define the new baremetal node in Ironic
     shell: >
@@ -65,6 +66,7 @@
     register: __baremetal_defined
     delegate_to: "{{ groups.client[0] }}"
     when: __baremetal_new.stdout | trim == ''
+    become: no
     run_once: yes
 
   - name: Get Ironic UUID
@@ -80,7 +82,8 @@
     with_items: "{{ baremetal_macs }}"
     when: baremetal_macs and __baremetal_new.stdout | trim == ''
     delegate_to: "{{ groups.client[0] }}"
+    become: no
     run_once: yes
 
-  when: _baremetal_create is defined and baremetal_create
+  when: _baremetal_create is defined and _baremetal_create
 
