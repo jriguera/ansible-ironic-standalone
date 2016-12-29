@@ -260,6 +260,6 @@
           - "if 3 restarts within 3 cycles then timeout"
 
 #  tasks:
-#
 #   - name: Display all variables/facts known for a host
 #     debug: var=hostvars[inventory_hostname]
+
