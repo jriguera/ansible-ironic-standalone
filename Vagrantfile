@@ -43,6 +43,7 @@ Vagrant.configure(2) do |config|
     master.vm.box = "bento/ubuntu-16.04"
     # On Centos the interfaces are not eth0 ... change the playbooks!
     #master.vm.box = "bento/centos-7.2"
+    #master.vm.box = "bento/centos-7.3"
 
     # Disable automatic box update checking. If you disable this, then
     # boxes will only be checked for updates when the user runs
@@ -62,7 +63,7 @@ Vagrant.configure(2) do |config|
     # Create a private network, which allows host-only access to the machine
     # using a specific IP.
     master.vm.network "private_network", ip: "10.0.0.10", virtualbox__intnet: "intnet"
-    # With Xenial the previous setting does not work, so, when vagrant up fails ... comment it out
+    # With Xenial if the previous setting does not work, so, when vagrant up fails ... comment it out
     # and try this is the workaround:
     #master.vm.network "private_network", ip: "10.0.0.10", virtualbox__intnet: "intnet", auto_config: false
 
