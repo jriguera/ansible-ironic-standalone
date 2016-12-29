@@ -1,8 +1,8 @@
 ---
 - name: Define and deploy physical servers using Ironic
   hosts: ironic-api
-  become: true
-  gather_facts: true
+  become: yes
+  gather_facts: yes
   vars_prompt:
     - name: "id"
       prompt: "Server Name"
@@ -13,8 +13,8 @@
     - name: Load hostvars
       set_fact: 
         baremetal_ipmi_ip: "{{ hostvars[id]['baremetal_ipmi_ip'] }}"
-        baremetal_ipmi_user: "{{ hostvars[id]['baremetal_ipmi_user'] }}"
-        baremetal_ipmi_pass: "{{ hostvars[id]['baremetal_ipmi_pass'] }}"
+        baremetal_ipmi_user: "{{ hostvars[id]['baremetal_ipmi_user'] | default(None) }}"
+        baremetal_ipmi_pass: "{{ hostvars[id]['baremetal_ipmi_pass'] | default(None) }}"
         baremetal_os: "{{ hostvars[id]['baremetal_os'] }}"
         baremetal_macs: "{{ hostvars[id]['baremetal_macs'] | default([]) }}"
         baremetal_network: "{{ hostvars[id]['baremetal_network'] | default([]) }}"
@@ -44,17 +44,21 @@
       register: __baremetal_new
       delegate_to: "{{ groups.client[0] }}"
       ignore_errors: yes
+      become: no
       run_once: yes
 
     - name: Checking if server name exists
-      fail: msg="Server name '{{ baremetal_name }}' does not exist!"
+      fail:
+        msg: "Server name '{{ baremetal_name }}' does not exist!"
       when: __baremetal_new.stdout | trim  == ''
 
     - name: Define server facts
-      set_fact: _baremetal_new="{{ __baremetal_new.stdout_lines }}"
+      set_fact:
+        _baremetal_new: "{{ __baremetal_new.stdout_lines }}"
 
     - name: Checking if server status is correct
-      fail: msg="Server name '{{ baremetal_name }}' is not in <available> or <enroll> status"
+      fail:
+        msg: "Server name '{{ baremetal_name }}' is not in <available> or <enroll> status"
       when: >
         not (_baremetal_new[2] | trim == 'available'
         or _baremetal_new[2] | trim == 'enroll')
@@ -67,12 +71,16 @@
         node-set-power-state "{{ baremetal_name }}" off
       when: _baremetal_new[1].split() | last | trim  == 'on'
       delegate_to: "{{ groups.client[0] }}"
+      become: no
       run_once: yes
 
     - name: Pause half a minute
-      pause: seconds=30 prompt="Giving some time to stop the server ..."
+      pause:
+        seconds: 30
+        prompt: "Giving some time to stop the server ..."
       when: _baremetal_new[1].split() | last | trim == 'on'
       delegate_to: "{{ groups.client[0] }}"
+      become: no
       run_once: yes
 
     - name: Delete the server definition from Ironic
@@ -82,6 +90,7 @@
         --ironic-url="{{ Ironic_api_public_url }}"
         node-delete "{{ baremetal_name }}"
       delegate_to: "{{ groups.client[0] }}"
+      become: no
       run_once: yes
 
     - name: Delete config-drive from the repository
