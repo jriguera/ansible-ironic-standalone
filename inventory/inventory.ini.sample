@@ -1,0 +1,45 @@
+# ansible-playbook -i inventory/inventory.ini setup.yml
+[all:children]
+ironic
+
+[ironic:children]
+server
+client
+baremetal
+
+[ironic:vars]
+# This variable defines a folder in vars in order to define different configuration
+# settings for different environments. The rest of the variables are defined in
+# vars/{{ deployment }} folder.
+deployment="default"
+
+[server:children]
+database
+messaging
+ironic-api
+ironic-conductor
+
+[database]
+mysql # ansible_host=$IP ansible_user='vagrant'
+
+[messaging]
+rabbitmq # ansible_host=$IP ansible_user='vagrant'
+
+[ironic-api]
+api # ansible_host=$IP ansible_user='vagrant'
+
+[ironic-conductor]
+conductor # ansible_host=$IP ansible_user='vagrant'
+
+[client]
+localhost ansible_host=127.0.0.1 ansible_connection=local ansible_become=false
+
+
+[baremetal:vars]
+# Defined in vars/{{ deployment}}/Baremetal.yml
+
+# Placeholder for Ironic nodes
+# Define the baremetal for each host in host_vars/<name>
+[baremetal]
+
+

@@ -39,3 +39,4 @@ ironic_inspector_discovery_enroll_ipmi:
       - action: "set-attribute"
         path: "/driver_info/ipmi_address"
         value: "{data[inventory][bmc_address]}"
+

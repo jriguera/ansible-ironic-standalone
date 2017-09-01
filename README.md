@@ -90,7 +90,7 @@ There are 4 main playbooks here:
  * `setup.yml` to deploy a real server configuring all the software. 
  Probably you will have to adapt some parameters there like dnsmasq 
  interfaces (e.g. *eth1*, *em1* ...). The rest of the parameters 
- (IP's, DNS, ...) are defined in the Ansible inventory (see *inventory/inventory.ini*)
+ (IP's, DNS, ...) are defined in the Ansible inventory (see *inventory/inventory.ini.sample*)
  and/or in *inventory/group_vars* folder.
  * `add-baremetal.yml` to manually define and deploy a server with Ironic. 
  When it runs, it will ask you for an id (name) which has to match to a file 
@@ -108,13 +108,13 @@ Notes:
  * Since version 4 (Newton) the structure of the repository has changed 
  according to the Ansible recommendations. *inventory* is a folder to keep
  the inventory(ies) with the main variables and the server(s) 
- involved in the deployment (see *inventory.ini*). The functionality is defined
+ involved in the deployment (see *inventory.ini.sample*). The functionality is defined
  in 4 groups: `database`, `messaging`, `ironic-api`, `ironic-conductor` with 
  the variables for each group in *inventory/group_vars*. This setup allows you
  to add servers to each group and setup clusters for Ironic API and Conductor.
- The *vars* folder keeps the variables to define the images to deploy and the
- rules to enroll new discovered servers by inspector. Change the rules
- according to your infrastructure.
+ The *vars* folder keeps the variables (grouped per $deployment) to define the
+ images to deploy and the rules to enroll new discovered servers by inspector.
+ Change the rules according to your infrastructure.
  
  * Ironic Python Agent has two official flavors Coreos IPA and Tiny IPA, both 
  are downloaded, but the one defined as default in the inventory 
@@ -302,8 +302,13 @@ the files.
 Deploying this setup on a physical server was the main reason to create this
 project. Get to a datacenter, take a server, install Ubuntu and run the playbook. 
 Define the Ansible inventory file in `inventory` folder and run `setup.yml` 
-using it. *inventory.ini* is a good example for inventory, just change the
+using it. *inventory.ini.sample* is a good example for inventory, just change the
 the names and IP's. 
+
+For the rest of variables used in the playbooks, you can define then in files
+in `vars` folder. There is an special variable called `deployment` which allows
+you to define different environments with different parameters. All files
+under `vars` can be encrypted using ansible-vault.
 
 The setup was created to work with two network interfaces: one for public
 API's (*Ironic_public_ip*) and the other one for PXE baremetal deployment 
@@ -330,8 +335,10 @@ roles from the playbook and change the database and/or RabbitMQ variables to
 point to the proper server. In the same way, you can split the API vs Conductor
 services in different servers to create a cluster of Conductors.
 
-To sum up; update the file *inventory/inventory.ini* according to your needs 
-(pay attention to the IP addresses and ranges and network interfaces), 
+To sum up; update the `deployment` variable in file *inventory/inventory.ini.sample*,
+copy `vars/vbox` folder to a new folder with the same name as `deployment` and
+update `vars/$deployment/Ironic.yml` and `vars/$deployment/Baremetal.yml` according
+to your needs (pay attention to the IP addresses and ranges and network interfaces), 
 change the inventory hosts for all groups (*database*, *messaging*, *ironic-api* and
 *ironic-conductor*) and run:
 
@@ -367,7 +374,7 @@ which translates BOSH requests in Ironic requests and uses Nginx as
 WebDAV backend to store the Stemcells (QCOW2 Images with BOSH Agent
 installed). To run it:
 
- 1. Adjust the Registry password defined in the inventory variable
+ 1. Adjust the Registry password defined in the variable (`vars/$deployment/Ironic.yml`)
   `Ironic_bosh_registry_password` (and also enable `Ironic_bosh_registry`).
 
  2. Run `ansible-playbook -i inventory/<inventory.ini> setup.yml`
@@ -473,7 +480,7 @@ the `servers` symlink) and add it to the Ansible inventory under the `[baremetal
 section. Run the playbook:
 
 ```
-# ansible-playbook -i inventory/production.ini add-baremetal.yml 
+# ansible-playbook -i inventory/inventory.ini add-baremetal.yml 
 Server Name: test-server-01
 Deploy the server (y) or just just define it (n)? [y]:
 
@@ -878,7 +885,7 @@ The static variables are defined in `Vagrantfile` and `site.yml`, pay attention
 to the local IP and MAC addresses.
 
 Then, `vagrant ssh ironic` and become root `sudo -s` and go to `/vagrant` and
-run `ansible-playbook -i inventory/inventory.ini -e id=vbox add-baremetal.yml`
+run `ansible-playbook -i inventory/vbox.ini -e id=vbox add-baremetal.yml`
 
 Ironic will contact with `VBXWebSrv` and start the VM called *baremetal*. After
 a while it will be installed and rebooting running Ubuntu. If you do not type

@@ -81,7 +81,8 @@ ironic_inspector_processing_add_ports: "all"
 ironic_inspector_processing_keep_ports: "all"
 ironic_inspector_processing_overwrite_existing: True
 ironic_inspector_processing_enable_setting_ipmi_credentials: False
-ironic_inspector_processing_default_processing_hooks: ["ramdisk_error", "root_disk_selection", "scheduler", "validate_interfaces", "capabilities", "pci_devices"]
+#ironic_inspector_processing_default_processing_hooks: ["ramdisk_error", "root_disk_selection", "scheduler", "validate_interfaces", "capabilities", "pci_devices"]
+ironic_inspector_processing_default_processing_hooks: ["ramdisk_error", "root_disk_selection", "scheduler", "capabilities", "pci_devices"]
 #ironic_inspector_processing_processing_hooks:
 ironic_inspector_processing_node_not_found_hook: "enroll"
 ironic_inspector_processing_ramdisk_logs_dir: "/var/log/ironic-inspector"
@@ -138,4 +139,7 @@ ironic_inspector_discovery_enroll_ipmi: []
 ironic_inspector_discovery_enroll_rules: []
 # Define rules to be deleted (by uuid or by description)
 ironic_inspector_discovery_enroll_rules_delete: []
+# Folder with vars files defining the previous variables to load
+# by ansible
+ironic_inspector_discovery_enroll_dir: "vars/inspector"
 

@@ -12,26 +12,41 @@
       default: "y"
 
   pre_tasks:
-    # Minimun set of variables required
+    - name: "Load Ironic (encrypted) variables"
+      include_vars: "{{ item }}"
+      with_first_found:
+      - "vars/{{ deployment }}/Ironic.yml"
+      - "vars/Ironic.yml"
+
+    - name: "Load (encrypted) baremetal variables"
+      include_vars: "{{ item }}"
+      with_first_found:
+      - "vars/{{ deployment }}/Baremetal.yml"
+      - "vars/Baremetal.yml"
+
+    # Minimun set of variables required, defaults are taken from the previous load
     - name: Load hostvars
       set_fact: 
-        baremetal_ipmi_ip: "{{ hostvars[id]['baremetal_ipmi_ip'] }}"
-        baremetal_ipmi_user: "{{ hostvars[id]['baremetal_ipmi_user'] | default(None) }}"
-        baremetal_ipmi_pass: "{{ hostvars[id]['baremetal_ipmi_pass'] | default(None) }}"
-        baremetal_os: "{{ hostvars[id]['baremetal_os'] }}"
-        baremetal_macs: "{{ hostvars[id]['baremetal_macs'] | default([]) }}"
-        baremetal_network: "{{ hostvars[id]['baremetal_network'] | default([]) }}"
-        baremetal_fqdn: "{{ hostvars[id]['baremetal_fqdn'] | default(None) }}"
-        baremetal_domain: "{{ hostvars[id]['baremetal_domain'] | default(None) }}"
-        baremetal_name: "{{ hostvars[id]['baremetal_name'] | default(None) }}"
-        baremetal_console_port: "{{ hostvars[id]['baremetal_console_port'] | default(None) }}"
-        baremetal_cloudconfig: "{{ hostvars[id]['baremetal_cloudconfig'] | default(None) }}"
-        baremetal_ssh_public_key: "{{ hostvars[id]['baremetal_ssh_public_key'] | default(None) }}"
-        baremetal_ssh_public_key_path: "{{ hostvars[id]['baremetal_ssh_public_key_path'] | default(None) }}"
-        baremetal_use_configdrive: "{{ hostvars[id]['baremetal_use_configdrive'] | default(true) }}"
+        baremetal_ipmi_ip: "{{ hostvars[id]['baremetal_ipmi_ip'] | default(Baremetal_ipmi_ip) }}"
+        baremetal_ipmi_user: "{{ hostvars[id]['baremetal_ipmi_user'] | default(Baremetal_ipmi_user) }}"
+        baremetal_ipmi_pass: "{{ hostvars[id]['baremetal_ipmi_pass'] | default(Baremetal_ipmi_pass) }}"
+        baremetal_os: "{{ hostvars[id]['baremetal_os'] | default(Baremetal_os) }}"
+        baremetal_macs: "{{ hostvars[id]['baremetal_macs'] | default(Baremetal_macs) }}"
+        baremetal_network: "{{ hostvars[id]['baremetal_network'] | default(Baremetal_network) }}"
+        baremetal_fqdn: "{{ hostvars[id]['baremetal_fqdn'] | default(Baremetal_fqdn) }}"
+        baremetal_domain: "{{ hostvars[id]['baremetal_domain'] | default(Baremetal_domain) }}"
+        baremetal_name: "{{ hostvars[id]['baremetal_name'] | default(Baremetal_name) }}"
+        baremetal_console_port: "{{ hostvars[id]['baremetal_console_port'] | default(Baremetal_console_port) }}"
+        baremetal_cloudconfig: "{{ hostvars[id]['baremetal_cloudconfig'] | default(Baremetal_cloudconfig) }}"
+        baremetal_ssh_public_key: "{{ hostvars[id]['baremetal_ssh_public_key'] | default(Baremetal_ssh_public_key) }}"
+        baremetal_ssh_public_key_path: "{{ hostvars[id]['baremetal_ssh_public_key_path'] | default(Baremetal_ssh_public_key_path) }}"
+        baremetal_use_configdrive: "{{ hostvars[id]['baremetal_use_configdrive'] | default(Baremetal_use_configdrive) }}"
 
-    - name: Include image definitions
-      include_vars: "vars/images/{{ baremetal_os }}.yml"
+    - name: Load image variable definitions
+      include_vars: "{{ item }}"
+      with_first_found:
+      - "vars/{{ deployment }}/images/{{ baremetal_os }}.yml"
+      - "vars/images/{{ baremetal_os }}.yml"
 
     # Sanity checks of the variables and check Ironic server definition
     - include: tasks/baremetal_prepare.yml _baremetal_create=true

@@ -9,7 +9,7 @@ baremetal_deploy_ramdisk: "{{ Ironic_deploy_ramdisk }}"
 
 # Depends on the image
 baremetal_image_type: "Debian"
-baremetal_image: "{{ Ironic_http_internal_url }}/images/trusty.qcow2"
+baremetal_image: "{{ Ironic_http_internal_url }}/images/ubuntu-trusty-14.04.5.qcow2"
 baremetal_image_checksum:
 baremetal_image_kernel:
 baremetal_image_ramdisk:

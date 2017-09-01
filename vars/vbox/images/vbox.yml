@@ -4,13 +4,14 @@
 baremetal_driver: "agent_vbox"
 
 # Folder relative to the servers
-baremetal_deploy_kernel: "file://{{ baremetal_server_images_deploy_path }}/coreos_production_pxe.vmlinuz"
-baremetal_deploy_ramdisk: "file://{{ baremetal_server_images_deploy_path }}/coreos_production_pxe_image-oem.cpio.gz"
+baremetal_deploy_kernel: "{{ Ironic_deploy_kernel }}"
+baremetal_deploy_ramdisk: "{{ Ironic_deploy_ramdisk }}"
 
 # Depends on the image
 baremetal_image_type: "Debian"
-baremetal_image: "{{ baremetal_server_repository_url }}/images/trusty.qcow2"
+baremetal_image: "{{ Ironic_http_internal_url }}/images/ubuntu-xenial-16.04.1.qcow2"
 baremetal_image_checksum:
 baremetal_image_kernel:
 baremetal_image_ramdisk:
 baremetal_image_rootsize:
+

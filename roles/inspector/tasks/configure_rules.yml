@@ -1,7 +1,7 @@
 ---
 - name: Load discovery rules from vars files
   include_vars:
-    dir: 'vars/inspector'
+    dir: "{{ ironic_inspector_discovery_enroll_dir }}"
   ignore_errors: yes
 
 

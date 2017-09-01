@@ -5,6 +5,17 @@
   serial: 1
   vars:
     _package_cache_update: true
+
+  pre_tasks:
+    # Load variables from vars instead from the inventory. This is to
+    # be able to encrypt those with vault. Comment out this task in order
+    # to get them from the inventory.
+    - name: "Load Ironic (encrypted) variables"
+      include_vars: "{{ item }}"
+      with_first_found:
+      - "vars/{{ deployment }}/Ironic.yml"
+      - "vars/Ironic.yml"
+
   tasks:
     - include: tasks/package_cache_update.yml
 
@@ -28,6 +39,7 @@
   roles:
   - role: ironic
   - role: inspector
+    ironic_inspector_discovery_enroll_dir: "vars/{{ deployment }}/inspector"
   - role: nginx
   - role: webclient
   - role: monit

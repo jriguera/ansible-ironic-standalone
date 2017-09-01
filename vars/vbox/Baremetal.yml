@@ -1,0 +1,24 @@
+---
+# Baremetal variables
+#
+# This file is used by add-baremetal.yml and del-baremetal.yml playbooks in a pre_task,
+# the idea is define here some default values (mainly ssh keys and ipmi settings) to
+# be able to encrypt this file with ansible-vault.
+#
+# Parameters to be defined in the inventory/host_vars for each baremetal server. Those are the defaults
+#
+Baremetal_ipmi_user: null
+Baremetal_ipmi_pass: null
+Baremetal_macs: []
+Baremetal_network: []
+Baremetal_nameservers: ["8.8.8.8"]
+Baremetal_fqdn: null
+Baremetal_name: null
+Baremetal_domain: "example.com"
+Baremetal_os: "xenial"
+Baremetal_console_port: null
+Baremetal_cloudconfig: null
+Baremetal_ssh_public_key: "ssh-rsa AAAA ... ansible@automation"
+Baremetal_ssh_public_key_path: null
+Baremetal_use_configdrive: true
+
